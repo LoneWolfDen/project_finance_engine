@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Project Finance Portfolio Engine</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa;color:#1a1a2e}
+.hdr{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center}
+.hdr h1{font-size:1.3rem}
+.nav{display:flex;gap:.5rem;padding:.5rem 2rem;background:#fff;border-bottom:1px solid #e0e0e0;flex-wrap:wrap}
+.nav button{padding:.5rem 1rem;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:.85rem;transition:all .2s}
+.nav button.active{background:#1a1a2e;color:#fff;border-color:#1a1a2e}
+.nav button:hover{background:#e8eaf6}
+.content{padding:1.5rem 2rem}.tab{display:none}.tab.active{display:block}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1rem;margin-bottom:1.5rem}
+.card{background:#fff;border-radius:8px;padding:1rem;box-shadow:0 2px 8px rgba(0,0,0,.08);border-left:4px solid #1a1a2e}
+.card h3{font-size:.78rem;color:#666;margin-bottom:.2rem}.card .v{font-size:1.4rem;font-weight:700}
+.card.g{border-left-color:#4caf50}.card.b{border-left-color:#2196f3}.card.o{border-left-color:#ff9800}.card.r{border-left-color:#f44336}.card.p{border-left-color:#9c27b0}
+.box{background:#fff;border-radius:8px;padding:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:1.2rem}
+.box h2{font-size:1rem;margin-bottom:.8rem}
+table{width:100%;border-collapse:collapse;font-size:.78rem;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+th{background:#1a1a2e;color:#fff;padding:.5rem .5rem;text-align:left;font-size:.72rem}
+td{padding:.35rem .5rem;border-bottom:1px solid #eee}tr:hover{background:#f0f4ff}
+.tw{overflow-x:auto;border-radius:8px}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:.72rem;font-weight:600}
+.badge-low{background:#e8f5e9;color:#2e7d32}.badge-over{background:#ffebee;color:#c62828}
+.tl-row{display:flex;align-items:center;margin:3px 0;font-size:.72rem}
+.tl-row .nm{min-width:130px;font-weight:600}.tl-row .ba{flex:1;position:relative;height:20px;background:#f0f0f0;border-radius:3px}
+.tl-row .br{position:absolute;height:20px;border-radius:3px;display:flex;align-items:center;padding:0 5px;color:#fff;font-size:.6rem;font-weight:600;white-space:nowrap}
+.cfg-section{margin-bottom:1rem;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden}
+.cfg-section summary{padding:.6rem 1rem;background:#f5f5f5;cursor:pointer;font-weight:600;font-size:.85rem}
+.cfg-section .inner{padding:1rem}
+.cfg-section textarea{width:100%;min-height:200px;font-family:monospace;font-size:.72rem;border:1px solid #ddd;border-radius:4px;padding:.5rem}
+.btn{padding:.4rem 1rem;border:none;border-radius:4px;cursor:pointer;font-size:.78rem;color:#fff;margin-right:.3rem}
+.btn-green{background:#4caf50}.btn-green:hover{background:#388e3c}
+.btn-red{background:#f44336}.btn-red:hover{background:#c62828}
+.btn-blue{background:#2196f3}.btn-blue:hover{background:#1976d2}
+.btn-orange{background:#ff9800}.btn-orange:hover{background:#f57c00}
+.toast{position:fixed;top:20px;right:20px;padding:.8rem 1.5rem;border-radius:8px;color:#fff;font-size:.85rem;z-index:9999;animation:fadeIn .3s}
+.toast.ok{background:#4caf50}.toast.err{background:#f44336}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+td[contenteditable]{cursor:text;border:1px solid transparent;border-radius:3px;padding:2px 4px}
+td[contenteditable]:hover{border-color:#90caf9}
+td[contenteditable]:focus{border-color:#2196f3;outline:none;background:#e3f2fd}
+.row-new{background:#f1f8e9!important}
+.row-del td{text-decoration:line-through;opacity:.5}
+.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999}
+.modal{background:#fff;border-radius:12px;padding:2rem;min-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.modal h3{margin-bottom:1rem}.modal input{width:100%;padding:.5rem;border:1px solid #ddd;border-radius:4px;font-size:1rem;margin-bottom:1rem}
+.slicer-wrap{position:relative;display:inline-block;margin-left:auto}
+.slicer-btn{font-size:.75rem;padding:4px 12px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;min-width:180px;text-align:left}
+.slicer-btn:hover{border-color:#2196f3}
+.slicer-dd{position:absolute;top:100%;right:0;background:#fff;border:1px solid #ddd;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:100;min-width:280px;max-height:300px;display:none;flex-direction:column}
+.slicer-dd.open{display:flex}
+.slicer-dd input[type=text]{margin:6px;padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:.75rem}
+.slicer-dd .opts{overflow-y:auto;flex:1;padding:4px 8px}
+.slicer-dd label{display:block;font-size:.72rem;padding:2px 0;cursor:pointer}
+.slicer-dd label:hover{background:#f0f4ff}
+.slicer-dd .actions{padding:6px 8px;border-top:1px solid #eee;display:flex;gap:4px}
+.slicer-dd .actions button{font-size:.68rem;padding:2px 8px;border:1px solid #ddd;border-radius:3px;background:#fff;cursor:pointer}
+</style></head>
+<body>
+<div class="hdr"><h1>💰 Project Finance Portfolio Engine</h1><span style="font-size:.75rem;opacity:.7">v5.0 — Config in browser localStorage</span></div>
+<div class="nav" id="nav"></div>
+<div class="content" id="app"></div>
+<script>
+// ─── DEFAULTS ───────────────────────────────────────────────────────────────
+const DEFAULTS={
+po_details:[
+{"PO_Team_Identifier":"987654_SomeCompany_PO_Team_Identifier","PO_WO_value":249590,"PO_Currency_Code":"GBP","Normalized_Currency_Code":"USD","Normalized_Currency_RateMultiplier":1.36,"PO_Validity_Year":2025,"WO_StartDate":"2025-06-30","WO_Approval_Status":"Approved","PO_WO_Number":191919191,"ProjectID":987654,"program":"Default Program"}
+],
+resources:[
+{"name":"Resource_6","empl_id":8468530,"role":"Cloud Engineer(Mid)","location":"UK","start":"2025-10-01","end":"2025-10-14","bill_rate":125,"hour_mult":8,"alloc":1,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_2","empl_id":8412415,"role":"Technical Lead","location":"UK","start":"2025-07-08","end":"2025-10-27","bill_rate":171.25,"hour_mult":8,"alloc":1,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_1","empl_id":8261003,"role":"Practice Architect","location":"UK","start":"2025-06-30","end":"2025-10-10","bill_rate":175.93,"hour_mult":1,"alloc":0.5,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_1","empl_id":8261003,"role":"Practice Architect","location":"UK","start":"2025-10-11","end":"2025-10-24","bill_rate":175.93,"hour_mult":1,"alloc":1,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_1","empl_id":8261003,"role":"Practice Architect","location":"UK","start":"2025-10-25","end":"2025-11-10","bill_rate":175.93,"hour_mult":1,"alloc":0.5,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_3","empl_id":8433231,"role":"Cloud Engineer(Mid)","location":"UK","start":"2025-08-07","end":"2025-09-12","bill_rate":125,"hour_mult":8,"alloc":1,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_4","empl_id":8217421,"role":"Cloud Engineer(Sr)","location":"UK","start":"2025-08-06","end":"2025-09-07","bill_rate":100,"hour_mult":1,"alloc":0.5,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_4","empl_id":8217421,"role":"Cloud Engineer(Sr)","location":"UK","start":"2025-09-08","end":"2025-09-19","bill_rate":100,"hour_mult":1,"alloc":1,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_4","empl_id":8217421,"role":"Cloud Engineer(Sr)","location":"UK","start":"2025-09-20","end":"2025-11-10","bill_rate":100,"hour_mult":1,"alloc":0.5,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"},
+{"name":"Resource_5","empl_id":7821305,"role":"Engagement Manager","location":"UK","start":"2025-06-30","end":"2025-12-31","bill_rate":0,"hour_mult":1,"alloc":0.35,"projectID":987654,"po_team":"987654_SomeCompany_PO_Team_Identifier"}
+],
+ot_params:[{"type":"Overtime_Hours","effective":"2025-06-29","multiplier":1,"trc":"R011"},{"type":"Vacation_Hours","effective":"2025-06-29","multiplier":1,"trc":"R012"},{"type":"Personal_Hours","effective":"2025-06-29","multiplier":1,"trc":""},{"type":"Other_Hours","effective":"2025-06-29","multiplier":1,"trc":""},{"type":"Overtime_Hours","effective":"2026-01-01","multiplier":1.5,"trc":"R011"}],
+fx_rates:[{"code":"GBP","effective":"2024-01-01","rate":1},{"code":"GBP","effective":"2025-01-01","rate":1},{"code":"INR","effective":"2024-01-01","rate":82},{"code":"INR","effective":"2025-01-01","rate":88},{"code":"INR","effective":"2026-01-01","rate":128},{"code":"USD","effective":"2024-01-01","rate":1.3},{"code":"USD","effective":"2025-01-01","rate":1.36},{"code":"USD","effective":"2026-01-01","rate":1.55},{"code":"USD","effective":"2025-09-01","rate":1.44}],
+expenses:[{"name":"Resource_1","date":"2025-07-03","amount":160,"currency":"GBP","desc":"Meeting"},{"name":"Resource_1","date":"2025-11-11","amount":160,"currency":"GBP","desc":"Business Travel"},{"name":"Resource_2","date":"2025-07-29","amount":48.2,"currency":"GBP","desc":"Business Travel"}],
+actuals_monthly:[{"month":"Jul-25","actuals":29240.28,"forecast":40845.56,"actuals_burn":220349.72,"forecast_burn":208744.44},{"month":"Aug-25","actuals":52173.24,"forecast":67748.12,"actuals_burn":168176.48,"forecast_burn":140996.32},{"month":"Sep-25","actuals":60010.68,"forecast":68421.84,"actuals_burn":108165.80,"forecast_burn":72574.48},{"month":"Oct-25","actuals":55732.76,"forecast":68452.76,"actuals_burn":52433.04,"forecast_burn":4121.72},{"month":"Nov-25","actuals":16382.32,"forecast":6622.32,"actuals_burn":36050.72,"forecast_burn":-2500.60},{"month":"Dec-25","actuals":4879.65,"forecast":null,"actuals_burn":31171.07,"forecast_burn":null}],
+invoices:[]
+};
+const MASTER_PIN='1234'; // Change this PIN
+
+// ─── STORAGE ────────────────────────────────────────────────────────────────
+const K_WORK='pf_working',K_MASTER='pf_master';
+function loadWork(){try{const s=localStorage.getItem(K_WORK);return s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULTS));}catch(e){return JSON.parse(JSON.stringify(DEFAULTS));}}
+function saveWork(cfg){localStorage.setItem(K_WORK,JSON.stringify(cfg));}
+function loadMaster(){try{const s=localStorage.getItem(K_MASTER);return s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULTS));}catch(e){return JSON.parse(JSON.stringify(DEFAULTS));}}
+function saveMaster(cfg){localStorage.setItem(K_MASTER,JSON.stringify(cfg));}
+function restoreFromMaster(){const m=loadMaster();saveWork(JSON.parse(JSON.stringify(m)));toast('✓ Restored from Master');}
+
+// ─── FORECAST ENGINE ────────────────────────────────────────────────────────
+// Bank Holidays by location (from Burndown_Template_v4.7.xlsx)
+const HOLIDAYS_BY_LOC={"UK":["2025-01-01","2025-04-18","2025-04-21","2025-05-05","2025-05-26","2025-06-14","2025-08-25","2025-12-25","2025-12-26","2026-01-01","2026-04-03","2026-04-06","2026-05-04","2026-05-25","2026-06-13","2026-08-31","2026-12-25","2026-12-26"],"India":["2025-01-01","2025-01-14","2025-01-26","2025-03-14","2025-03-30","2025-03-31","2025-05-01","2025-08-15","2025-10-02","2025-10-21","2025-12-25","2026-01-01","2026-01-14","2026-01-26","2026-03-04","2026-03-19","2026-03-21","2026-05-01","2026-08-15","2026-10-02","2026-11-08","2026-12-25"],"Germany":["2025-01-01","2025-01-06","2025-04-18","2025-04-21","2025-05-01","2025-05-29","2025-06-09","2025-06-19","2025-08-15","2025-10-03","2025-10-31","2025-11-01","2025-11-19","2025-12-25","2025-12-26","2026-01-01","2026-01-06","2026-04-03","2026-04-06","2026-05-01","2026-05-14","2026-05-25","2026-06-04","2026-08-15","2026-10-03","2026-10-31","2026-11-01","2026-11-18","2026-12-25","2026-12-26"],"France":["2025-01-01","2025-04-21","2025-05-01","2025-05-08","2025-05-29","2025-06-09","2025-07-14","2025-08-15","2025-11-01","2025-11-11","2025-12-25","2026-01-01","2026-04-06","2026-05-01","2026-05-08","2026-05-14","2026-05-25","2026-07-14","2026-08-15","2026-11-01","2026-11-11","2026-12-25"],"Canada":["2025-01-01","2025-04-18","2025-04-21","2025-05-19","2025-07-01","2025-08-04","2025-09-01","2025-09-30","2025-10-13","2025-11-11","2025-12-25","2025-12-26","2026-01-01","2026-04-03","2026-04-06","2026-05-18","2026-07-01","2026-08-03","2026-09-07","2026-09-30","2026-10-12","2026-11-11","2026-12-25","2026-12-26"],"Ireland":["2025-01-01","2025-03-17","2025-04-21","2025-05-05","2025-06-02","2025-08-04","2025-10-27","2025-12-25","2025-12-26","2026-01-01","2026-03-17","2026-04-06","2026-05-04","2026-06-01","2026-08-03","2026-10-26","2026-12-25","2026-12-26"],"Netherlands":["2025-01-01","2025-04-18","2025-04-21","2025-04-27","2025-05-05","2025-05-29","2025-06-09","2025-12-25","2025-12-26","2026-01-01","2026-04-03","2026-04-06","2026-04-27","2026-05-05","2026-05-14","2026-05-25","2026-12-25","2026-12-26"],"Spain":["2025-01-01","2025-01-06","2025-03-19","2025-04-17","2025-04-18","2025-04-21","2025-05-01","2025-06-09","2025-06-24","2025-07-25","2025-08-15","2025-10-12","2025-11-01","2025-12-06","2025-12-08","2025-12-25","2025-12-26","2026-01-01","2026-01-06","2026-03-19","2026-04-02","2026-04-03","2026-04-06","2026-05-01","2026-05-25","2026-06-24","2026-07-25","2026-08-15","2026-10-12","2026-11-01","2026-12-06","2026-12-08","2026-12-25","2026-12-26"]};
+const HOLIDAY_SETS={};Object.entries(HOLIDAYS_BY_LOC).forEach(([k,v])=>{HOLIDAY_SETS[k]=new Set(v);});
+
+function isWorkingDay(d,location){
+  const dow=d.getDay();
+  if(dow===0||dow===6)return false;
+  const hols=HOLIDAY_SETS[location||'UK']||HOLIDAY_SETS['UK'];
+  return !hols.has(d.toISOString().slice(0,10));
+}
+
+// Effective-dated FX lookup: latest rate on or before asOfDate
+function fxRateAsOf(fxRates,code,asOfDate){
+  let best=null,bestDt='';
+  fxRates.forEach(r=>{if(r.code===code&&r.effective<=asOfDate&&r.effective>bestDt){best=r.rate;bestDt=r.effective;}});
+  return best||1;
+}
+
+// Effective-dated rate lookup for a resource: find the rule where start<=date<=end
+function findResourceRule(resources,emplId,poTeam,asOfDate){
+  // Find the rule with latest start date that is <= asOfDate and end >= asOfDate
+  let best=null;
+  resources.forEach(r=>{
+    if(r.empl_id===emplId&&(r.po_team||'')===(poTeam||'')&&r.start<=asOfDate&&r.end>=asOfDate){
+      if(!best||r.start>best.start)best=r;
+    }
+  });
+  return best;
+}
+
+// OT multiplier lookup
+function otMultiplier(otParams,poTeam,otType,asOfDate){
+  let best=null,bestDt='';
+  otParams.forEach(r=>{if(r.type===otType&&r.effective<=asOfDate&&r.effective>bestDt){best=r.multiplier;bestDt=r.effective;}});
+  return best||1;
+}
+
+// Parse date: handles dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd, m/d/yyyy
+// format hint: 'uk'=dd/mm/yyyy, 'us'=mm/dd/yyyy, auto=detect
+function parseDate(s,format){
+  if(!s)return '';
+  s=String(s).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10); // already ISO
+  const parts=s.split(/[\/\-]/);
+  if(parts.length===3){
+    let a=parseInt(parts[0]),b=parseInt(parts[1]),y=parts[2];
+    if(y.length===2)y='20'+y;
+    if(y.length===4){
+      if(format==='uk')return `${y}-${String(b).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
+      if(format==='us')return `${y}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
+      // Auto-detect: if first part > 12, it must be day (dd/mm)
+      if(a>12)return `${y}-${String(b).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
+      // If second part > 12, first must be month (mm/dd)
+      if(b>12)return `${y}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
+      // Ambiguous: default to US (m/d/yyyy) since timesheets are larger dataset
+      return `${y}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
+    }
+  }
+  const d=new Date(s);
+  return isNaN(d)?'':d.toISOString().slice(0,10);
+}
+
+function computeForecast(cfg,filterPoTeams){
+  // Aggregate PO details: sum PO_WO_value per PO_Team, max PO_Validity_Year, earliest WO_StartDate
+  const poArr=cfg.po_details; // now an array
+  const poByTeam={};
+  poArr.forEach(po=>{
+    const key=(po.PO_Team_Identifier||'').replace(/\s+/g,'');
+    if(!poByTeam[key])poByTeam[key]={PO_WO_value:0,PO_Validity_Year:0,WO_StartDate:'9999-12-31',PO_Currency_Code:po.PO_Currency_Code,Normalized_Currency_Code:po.Normalized_Currency_Code,WO_Approval_Status:po.WO_Approval_Status,PO_Team_Identifier:key};
+    poByTeam[key].PO_WO_value+=po.PO_WO_value;
+    poByTeam[key].PO_Validity_Year=Math.max(poByTeam[key].PO_Validity_Year,po.PO_Validity_Year);
+    if(po.WO_StartDate<poByTeam[key].WO_StartDate)poByTeam[key].WO_StartDate=po.WO_StartDate;
+  });
+
+  // Filter by slicer (normalize keys)
+  const normFilter=filterPoTeams&&filterPoTeams.length?filterPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+  const activeTeams=normFilter||Object.keys(poByTeam);
+  const activePOs=activeTeams.map(t=>poByTeam[t]).filter(Boolean);
+
+  const totalPOValue=activePOs.reduce((s,p)=>s+p.PO_WO_value,0);
+  const maxValidYear=activePOs.reduce((m,p)=>Math.max(m,p.PO_Validity_Year),2025);
+  const earliestStart=activePOs.reduce((m,p)=>(p.WO_StartDate&&p.WO_StartDate<m)?p.WO_StartDate:m,'9999-12-31');
+  const currency=activePOs[0]||{PO_Currency_Code:'GBP',Normalized_Currency_Code:'USD'};
+
+  const poStart=new Date(earliestStart!=='9999-12-31'?earliestStart:'2025-01-01');
+  const poEnd=new Date(maxValidYear,11,31);
+  const daily={};
+  const STD_HOURS=8;
+
+  // Filter resources by selected PO_Teams (normalized)
+  const resources=cfg.resources.filter(r=>{
+    const rTeam=(r.po_team||'').replace(/\s+/g,'');
+    return normFilter?normFilter.includes(rTeam):true;
+  });
+
+  // Forecast: BillRate × Allocation% × 8 for working days within resource dates AND within PO validity
+  resources.forEach(r=>{
+    if(!r.bill_rate)return;
+    const rTeam=(r.po_team||'').replace(/\s+/g,'');
+    const teamPO=poByTeam[rTeam];
+    const teamEnd=teamPO?new Date(teamPO.PO_Validity_Year,11,31):poEnd;
+    const rStart=new Date(Math.max(new Date(r.start),poStart));
+    const rEnd=new Date(Math.min(new Date(r.end),teamEnd));
+    if(rStart>rEnd||isNaN(rStart.getTime())||isNaN(rEnd.getTime()))return;
+    const dailyCost=r.bill_rate*r.alloc*STD_HOURS;
+    let d=new Date(rStart);
+    while(d<=rEnd){
+      if(isWorkingDay(d,r.location)){const k=d.toISOString().slice(0,10);daily[k]=(daily[k]||0)+dailyCost;}
+      d=new Date(d.getTime()+86400000);
+    }
+  });
+
+  // Monthly aggregation
+  const monthly={};
+  Object.entries(daily).sort().forEach(([d,c])=>{
+    const dt=new Date(d);
+    const key=dt.toLocaleString('en',{month:'short'})+'-'+String(dt.getFullYear()).slice(2);
+    monthly[key]=(monthly[key]||0)+c;
+  });
+
+  let remFc=totalPOValue;
+  const burndown=Object.entries(monthly).map(([m,c])=>{remFc-=c;return{month:m,forecast:Math.round(c*100)/100,forecast_burn:Math.round(remFc*100)/100};});
+  const total=Object.values(monthly).reduce((a,b)=>a+b,0);
+  const days=Object.keys(daily).length;
+
+  // FX normalization (date-effective)
+  const today=new Date().toISOString().slice(0,10);
+  // FX normalization: convert each PO's value from its currency to normalized currency using date-effective rates
+  let normPO=0;
+  activePOs.forEach(p=>{
+    const fxFrom=fxRateAsOf(cfg.fx_rates,p.PO_Currency_Code,today);
+    const fxTo=fxRateAsOf(cfg.fx_rates,p.Normalized_Currency_Code||'USD',today);
+    normPO+=(p.PO_WO_value/fxFrom)*fxTo;
+  });
+
+  return{monthly,burndown,total:Math.round(total*100)/100,days,rate:days?Math.round(total/days*100)/100:0,normPO:Math.round(normPO*100)/100,totalPOValue,currency:currency.PO_Currency_Code,normCurrency:currency.Normalized_Currency_Code||'USD',status:currency.WO_Approval_Status||'Approved'};
+}
+
+// ─── SLICER STATE ───────────────────────────────────────────────────────────
+let selectedPoTeams=[]; // empty = all
+
+function buildData(){
+  const cfg=loadWork();const fc=computeForecast(cfg,selectedPoTeams);
+  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+  const projToTeam={};
+  cfg.resources.forEach(r=>{const t=(r.po_team||'').replace(/\s+/g,'');if(r.projectID&&t)projToTeam[r.projectID]=t;});
+  (cfg.po_details||[]).forEach(p=>{const t=(p.PO_Team_Identifier||'').replace(/\s+/g,'');if(p.ProjectID&&t)projToTeam[p.ProjectID]=t;});
+
+  // Use pre-computed cache for fast filtering
+  let filteredActuals;
+  if(cfg.actuals_by_project){
+    filteredActuals=computeActualsFromCache(cfg,normFilter,projToTeam);
+  }else if(cfg.raw_actuals&&cfg.raw_actuals.length){
+    filteredActuals=computeActualsMonthly(cfg,normFilter,projToTeam);
+  }else{
+    filteredActuals=cfg.actuals_monthly||[];
+  }
+
+  const tAct=filteredActuals.reduce((s,m)=>s+(m.actuals||0),0);
+  const tExp=cfg.expenses.reduce((s,e)=>s+e.amount,0);
+  const fromRes=cfg.resources.map(r=>(r.po_team||'').replace(/\s+/g,'')).filter(Boolean);
+  const fromPO=(cfg.po_details||[]).map(p=>(p.PO_Team_Identifier||'').replace(/\s+/g,'')).filter(Boolean);
+  const allPoTeams=[...new Set([...fromRes,...fromPO])].sort();
+  return{cfg,fc,tAct:Math.round(tAct*100)/100,tExp:Math.round(tExp*100)/100,rem:Math.round((fc.totalPOValue-tAct-tExp)*100)/100,allPoTeams,actuals:filteredActuals};
+}
+
+// Compute actuals from raw timesheet data, filtered by PO_Team
+function computeActualsMonthly(cfg,normFilter,projToTeam){
+  if(!cfg.raw_actuals||!cfg.raw_actuals.length)return cfg.actuals_monthly||[];
+  const monthly={};
+  cfg.raw_actuals.forEach(row=>{
+    const projId=parseInt(row['Project ID']||row.project_id||0);
+    const team=projToTeam[projId]||'';
+    if(normFilter&&!normFilter.includes(team))return;
+    const dtRaw=row['Reported Dt']||row.reported_dt||'';
+    const dt=parseDate(dtRaw,'us');if(!dt)return;
+    const d=new Date(dt);if(isNaN(d.getTime()))return;
+    const key=d.toLocaleString('en',{month:'short'})+'-'+String(d.getFullYear()).slice(2);
+    const regHrs=parseFloat(row['Regular Hours']||0);
+    const otHrs=parseFloat(row['Overtime Hours']||0);
+    const emplId=parseInt(row['Empl ID']||0);
+    // Find matching resource rule (effective-dated)
+    const rule=cfg.resources.find(r=>r.empl_id===emplId&&r.start<=dt&&r.end>=dt)
+      ||cfg.resources.find(r=>r.empl_id===emplId);
+    const rate=rule?rule.bill_rate:0;
+    const hourMult=rule?rule.hour_mult:1;
+    const poTeam=rule?(rule.po_team||'').replace(/\s+/g,''):'';
+    const otMult=otMultiplier(cfg.ot_params,poTeam,'Overtime_Hours',dt);
+    const cost=(regHrs*hourMult*rate)+(otHrs*hourMult*rate*otMult);
+    if(!monthly[key])monthly[key]=0;
+    monthly[key]+=cost;
+  });
+  const poVal=(cfg.po_details||[]).reduce((s,p)=>{
+    const t=(p.PO_Team_Identifier||'').replace(/\s+/g,'');
+    return(normFilter&&!normFilter.includes(t))?s:s+p.PO_WO_value;
+  },0);
+  let cum=0;
+  return Object.entries(monthly).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).map(([m,v])=>{
+    cum+=v;return{month:m,actuals:Math.round(v*100)/100,forecast:null,actuals_burn:Math.round((poVal-cum)*100)/100,forecast_burn:null};
+  });
+}
+
+// ─── UI ─────────────────────────────────────────────────────────────────────
+const TABS=[{id:'overview',l:'Overview'},{id:'burndown',l:'📉 Burndown'},{id:'monthly',l:'📊 Monthly'},{id:'po',l:'📑 PO Details'},{id:'invoices',l:'🧾 Invoices'},{id:'resources',l:'👥 Resources'},{id:'timeline',l:'📅 Timeline'},{id:'actdata',l:'📋 Actuals Data'},{id:'expenses',l:'💳 Expenses'},{id:'fx',l:'💱 FX & OT'},{id:'upload',l:'📤 Upload'},{id:'config',l:'⚙️ Config'}];
+let tab='overview',charts=[];
+function render(){charts.forEach(c=>c.destroy());charts=[];const D=buildData();
+  // Nav with searchable checkbox slicer
+  let navH=TABS.map(t=>`<button class="${t.id===tab?'active':''}" onclick="show('${t.id}')">${t.l}</button>`).join('');
+  if(D.allPoTeams.length>0){
+    const selCount=selectedPoTeams.length;
+    const label=selCount===0?'All Projects ('+D.allPoTeams.length+')':selCount+' selected';
+    navH+=`<div class="slicer-wrap"><button class="slicer-btn" onclick="toggleSlicer()">🔍 ${label} ▾</button><div class="slicer-dd" id="slicerDD"><input type="text" placeholder="Search projects..." oninput="filterSlicer(this.value)"><div class="opts" id="slicerOpts">`;
+    D.allPoTeams.forEach(pt=>{navH+=`<label><input type="checkbox" value="${pt}" ${selectedPoTeams.includes(pt)?'checked':''} onchange="togglePoTeam('${pt}',this.checked)"> ${pt}</label>`;});
+    navH+=`</div><div class="actions"><button onclick="selectAllPO()">All</button><button onclick="selectNonePO()">None</button><button onclick="toggleSlicer()">Close</button></div></div></div>`;
+  }
+  document.getElementById('nav').innerHTML=navH;
+  document.getElementById('app').innerHTML=`<div class="tab active">${rTab(tab,D)}</div>`;
+  setTimeout(()=>drawCharts(tab,D),60);
+}
+function toggleSlicer(){document.getElementById('slicerDD').classList.toggle('open');}
+function filterSlicer(q){const opts=document.querySelectorAll('#slicerOpts label');opts.forEach(l=>{l.style.display=l.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});}
+function togglePoTeam(pt,checked){if(checked){if(!selectedPoTeams.includes(pt))selectedPoTeams.push(pt);}else{selectedPoTeams=selectedPoTeams.filter(t=>t!==pt);}render();}
+function selectAllPO(){selectedPoTeams=[];render();}
+function selectNonePO(){const D=buildData();selectedPoTeams=[...D.allPoTeams];render();}
+document.addEventListener('click',function(e){if(!e.target.closest('.slicer-wrap')){const dd=document.getElementById('slicerDD');if(dd)dd.classList.remove('open');}});
+function show(id){tab=id;render();}
+function rTab(id,D){return({overview:rOV,burndown:rBD,monthly:rMo,po:rPO,invoices:rInv,resources:rRes,timeline:rTL,actdata:rActData,expenses:rExp,fx:rFX,upload:rUpload,config:rCfg})[id](D);}
+function f(n,c='£'){return n!=null?c+Number(n).toLocaleString(undefined,{maximumFractionDigits:0}):'—';}
+function toast(msg,ok=true){const d=document.createElement('div');d.className='toast '+(ok?'ok':'err');d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2500);}
+// Sortable tables - use event delegation
+document.addEventListener('click',function(e){
+  const th=e.target.closest('th[data-sort]');
+  if(!th)return;
+  const tbl=th.closest('table');if(!tbl)return;
+  const col=parseInt(th.dataset.sort);
+  const tbody=tbl.querySelector('tbody');
+  const rows=[...tbody.querySelectorAll('tr')];
+  const dir=tbl.dataset.sortDir==='asc'?'desc':'asc';tbl.dataset.sortDir=dir;
+  rows.sort((a,b)=>{
+    let av=a.cells[col]?a.cells[col].textContent.trim():'',bv=b.cells[col]?b.cells[col].textContent.trim():'';
+    // Try as number
+    const an=parseFloat(av.replace(/[£$,%—]/g,'')),bn=parseFloat(bv.replace(/[£$,%—]/g,''));
+    if(!isNaN(an)&&!isNaN(bn))return dir==='asc'?an-bn:bn-an;
+    // Try as date
+    const ad=new Date(av),bd=new Date(bv);
+    if(!isNaN(ad)&&!isNaN(bd))return dir==='asc'?ad-bd:bd-ad;
+    return dir==='asc'?av.localeCompare(bv):bv.localeCompare(av);
+  });
+  rows.forEach(r=>tbody.appendChild(r));
+});
+
+function rOV(D){
+  const risk=D.rem>0?'Low':'Over Budget';
+  let h='<div class="cards">';
+  h+=`<div class="card b"><h3>PO Value (${D.fc.currency})</h3><div class="v">${f(D.fc.totalPOValue)}</div></div>`;
+  h+=`<div class="card p"><h3>PO Value (${D.fc.normCurrency})</h3><div class="v">${f(D.fc.normPO,'$')}</div></div>`;
+  h+=`<div class="card g"><h3>Total Actuals</h3><div class="v">${f(D.tAct)}</div></div>`;
+  h+=`<div class="card o"><h3>Remaining Budget</h3><div class="v">${f(D.rem)}</div></div>`;
+  h+=`<div class="card r"><h3>Burn Rate/Day</h3><div class="v">${f(D.fc.rate)}</div></div>`;
+  h+=`<div class="card b"><h3>Total Forecast</h3><div class="v">${f(D.fc.total)}</div></div>`;
+  h+=`<div class="card g"><h3>Expenses</h3><div class="v">${f(D.tExp)}</div></div>`;
+  h+=`<div class="card"><h3>Status</h3><div class="v"><span class="badge ${risk==='Low'?'badge-low':'badge-over'}">${D.fc.status} · ${risk}</span></div></div>`;
+  h+='</div><div class="box"><h2>Monthly: Forecast vs Actuals</h2><canvas id="c1" height="80"></canvas></div>';return h;
+}
+function rBD(D){
+  // Build merged data for table
+  const fcMap={};D.fc.burndown.forEach(m=>{fcMap[m.month]={forecast:m.forecast,forecast_burn:m.forecast_burn};});
+  const actMap={};D.actuals.forEach(m=>{actMap[m.month]={actuals:m.actuals,actuals_burn:m.actuals_burn};});
+  const allMonths=[...new Set([...Object.keys(fcMap),...Object.keys(actMap)])].sort((a,b)=>new Date('1 '+a)-new Date('1 '+b));
+
+  let h='<div class="box"><h2>PO Burndown (Local: '+D.fc.currency+')</h2><p style="font-size:.75rem;color:#666;margin-bottom:.8rem">Green=Actuals Burn, Blue=Forecast Burn, Red dashed=Cumulative PO Value available</p><canvas id="c2" height="100"></canvas></div>';
+  h+='<div class="box"><h2>Normalized Burndown ('+D.fc.normCurrency+')</h2><canvas id="c2norm" height="80"></canvas></div>';
+  // Table
+  h+='<div class="box"><h2>Monthly Detail</h2><div class="tw"><table><thead><tr><th>Month</th><th>Forecast Spend</th><th>Actuals Spend</th><th>Forecast Burn</th><th>Actuals Burn</th><th>Variance</th></tr></thead><tbody>';
+  allMonths.forEach(m=>{
+    const fc=fcMap[m]||{},ac=actMap[m]||{};
+    const v=(ac.actuals!=null&&fc.forecast!=null)?Math.round((ac.actuals-fc.forecast)*100)/100:null;
+    h+=`<tr><td><strong>${m}</strong></td><td>${f(fc.forecast)}</td><td>${f(ac.actuals)}</td><td>${f(fc.forecast_burn)}</td><td>${f(ac.actuals_burn)}</td><td style="${v!=null?(v>0?'color:#c62828':'color:#2e7d32'):''}">${f(v)}</td></tr>`;
+  });
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function rMo(D){
+  // Merge forecast (from resource rules) and actuals (from timesheets) by month
+  const fcMap={};D.fc.burndown.forEach(m=>{fcMap[m.month]={forecast:m.forecast,forecast_burn:m.forecast_burn};});
+  const actMap={};D.actuals.forEach(m=>{actMap[m.month]={actuals:m.actuals,actuals_burn:m.actuals_burn};});
+  const allMonths=[...new Set([...Object.keys(fcMap),...Object.keys(actMap)])].sort((a,b)=>new Date('1 '+a)-new Date('1 '+b));
+  const merged=allMonths.map(m=>({month:m,forecast:fcMap[m]?fcMap[m].forecast:null,actuals:actMap[m]?actMap[m].actuals:null,actuals_burn:actMap[m]?actMap[m].actuals_burn:null,forecast_burn:fcMap[m]?fcMap[m].forecast_burn:null}));
+  let h='<div class="box"><h2>Variance: Actuals − Forecast</h2><canvas id="c3" height="70"></canvas></div>';
+  h+='<div class="tw"><table><thead><tr><th>Month</th><th>Forecast</th><th>Actuals</th><th>Variance</th><th>Actuals Burn</th><th>Forecast Burn</th></tr></thead><tbody>';
+  merged.forEach(m=>{const v=(m.actuals!=null&&m.forecast!=null)?Math.round((m.actuals-m.forecast)*100)/100:null;h+=`<tr><td><strong>${m.month}</strong></td><td>${f(m.forecast)}</td><td>${f(m.actuals)}</td><td style="${v!=null?(v>0?'color:#c62828':'color:#2e7d32'):''}">${f(v)}</td><td>${f(m.actuals_burn)}</td><td>${f(m.forecast_burn)}</td></tr>`;});
+  h+='</tbody></table></div>';return h;
+}
+
+// ─── INVOICES TAB ───────────────────────────────────────────────────────────
+function rInv(D){
+  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+  const invs=(D.cfg.invoices||[]).filter(i=>normFilter?normFilter.includes((i.po_team||'').replace(/\s+/g,'')):true);
+  const paid=invs.filter(i=>i.status==='Paid');
+  const submitted=invs.filter(i=>i.status==='Submitted');
+  const draft=invs.filter(i=>i.status==='Draft');
+  const totalInv=invs.reduce((s,i)=>s+i.amount,0);
+  const totalPaid=paid.reduce((s,i)=>s+i.amount,0);
+
+  let h='<div class="cards">';
+  h+=`<div class="card b"><h3>Total Invoices</h3><div class="v">${invs.length}</div></div>`;
+  h+=`<div class="card g"><h3>Total Invoiced</h3><div class="v">${f(totalInv)}</div></div>`;
+  h+=`<div class="card" style="border-left-color:#4caf50"><h3>Paid</h3><div class="v">${f(totalPaid)} (${paid.length})</div></div>`;
+  h+=`<div class="card o"><h3>Submitted</h3><div class="v">${f(submitted.reduce((s,i)=>s+i.amount,0))} (${submitted.length})</div></div>`;
+  h+=`<div class="card r"><h3>Draft</h3><div class="v">${f(draft.reduce((s,i)=>s+i.amount,0))} (${draft.length})</div></div>`;
+  h+=`<div class="card p"><h3>PO Remaining (uninvoiced)</h3><div class="v">${f(D.fc.totalPOValue-totalInv)}</div></div>`;
+  h+='</div>';
+
+  // Invoice timeline by PO_Team
+  if(invs.length){
+    const allStarts=invs.map(i=>new Date(i.period_from)).filter(d=>!isNaN(d));
+    const allEnds=invs.map(i=>new Date(i.period_to)).filter(d=>!isNaN(d));
+    const tStart=new Date(Math.min(...allStarts)),tEnd=new Date(Math.max(...allEnds));
+    const span=tEnd-tStart||1;
+    const statusColor={'Paid':'#4caf50','Submitted':'#ff9800','Draft':'#9e9e9e'};
+    h+='<div class="box"><h2>Invoice Timeline</h2>';
+    h+='<div style="margin-left:160px;position:relative;height:16px;font-size:.6rem;color:#888;margin-bottom:4px">';
+    let md=new Date(tStart.getFullYear(),tStart.getMonth(),1);
+    while(md<=tEnd){const l=((md-tStart)/span*100);if(l>=0&&l<=100)h+=`<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString('en',{month:'short',year:'2-digit'})}</span>`;md=new Date(md.getFullYear(),md.getMonth()+1,1);}
+    h+='</div>';
+    // Group by po_team
+    const groups={};invs.forEach(i=>{const t=i.po_team||'Unknown';if(!groups[t])groups[t]=[];groups[t].push(i);});
+    Object.entries(groups).forEach(([team,items])=>{
+      h+=`<div style="font-size:.7rem;font-weight:700;margin:6px 0 2px">${team}</div>`;
+      items.forEach(i=>{
+        const rs=new Date(i.period_from),re=new Date(i.period_to);
+        const left=Math.max(0,(rs-tStart)/span*100).toFixed(1);
+        const width=Math.max(2,(re-rs)/span*100).toFixed(1);
+        h+=`<div class="tl-row"><span class="nm" style="min-width:160px;font-size:.65rem">${i.invoice_number}</span><div class="ba"><div class="br" style="left:${left}%;width:${width}%;background:${statusColor[i.status]||'#666'}">${f(i.amount)} · ${i.status}</div></div></div>`;
+      });
+    });
+    h+='<div style="margin-top:8px;font-size:.7rem">🟢 Paid &nbsp; 🟠 Submitted &nbsp; ⚪ Draft</div></div>';
+  }
+
+  // Table
+  h+='<div class="box"><h2>Invoice Details</h2><div class="tw"><table id="tblInv"><thead><tr><th data-sort="0" style="cursor:pointer">PO_Team ⇅</th><th data-sort="1" style="cursor:pointer">Invoice # ⇅</th><th data-sort="2" style="cursor:pointer">From ⇅</th><th data-sort="3" style="cursor:pointer">To ⇅</th><th data-sort="4" style="cursor:pointer">Amount ⇅</th><th data-sort="5" style="cursor:pointer">Status ⇅</th><th>Paid Date</th><th>Notes</th></tr></thead><tbody>';
+  invs.forEach(i=>{
+    const sc=i.status==='Paid'?'color:#2e7d32':i.status==='Submitted'?'color:#e65100':'color:#666';
+    h+=`<tr><td style="font-size:.65rem">${i.po_team}</td><td>${i.invoice_number}</td><td>${i.period_from}</td><td>${i.period_to}</td><td>${f(i.amount)}</td><td style="${sc};font-weight:600">${i.status}</td><td>${i.paid_date||'—'}</td><td>${i.notes||''}</td></tr>`;
+  });
+  h+='</tbody></table></div></div>';return h;
+}
+
+// ─── EDITABLE RESOURCES TABLE ───────────────────────────────────────────────
+function rRes(D){
+  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+  const allRes=normFilter?D.cfg.resources.filter(r=>normFilter.includes((r.po_team||'').replace(/\s+/g,''))):D.cfg.resources;
+  // Deduplicate by unique key: empl_id+projectID+po_team+start+end
+  const seen=new Set();
+  const res=allRes.filter(r=>{const key=`${r.empl_id}|${r.projectID}|${(r.po_team||'').replace(/\s+/g,'')}|${r.start}|${r.end}`;if(seen.has(key))return false;seen.add(key);return true;});
+  let h='<div class="cards">';
+  h+=`<div class="card b"><h3>People</h3><div class="v">${[...new Set(res.map(r=>r.name))].length}</div></div>`;
+  h+=`<div class="card g"><h3>Rules</h3><div class="v">${res.length}</div></div>`;
+  h+=`<div class="card o"><h3>Forecast Days</h3><div class="v">${D.fc.days}</div></div>`;
+  h+=`<div class="card r"><h3>Total Forecast</h3><div class="v">${f(D.fc.total)}</div></div>`;
+  h+='</div>';
+  h+='<div style="margin-bottom:.5rem;display:flex;gap:.5rem;align-items:center">';
+  h+='<button class="btn btn-green" onclick="addResRow()">➕ Add Row</button>';
+  h+='<button class="btn btn-blue" onclick="saveResTable()">💾 Save Changes (recalculates forecast)</button>';
+  h+='<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
+  h+='<span style="font-size:.7rem;color:#888">Double-click cell to edit</span>';
+  h+='</div>';
+  h+='<div class="tw"><table id="resTable"><thead><tr><th data-sort="0" style="cursor:pointer">Name ⇅</th><th data-sort="1" style="cursor:pointer">EmplID ⇅</th><th>Role</th><th>Location</th><th data-sort="4" style="cursor:pointer">ProjectID ⇅</th><th>PO_Team</th><th data-sort="6" style="cursor:pointer">Start ⇅</th><th data-sort="7" style="cursor:pointer">End ⇅</th><th data-sort="8" style="cursor:pointer">Rate/hr ⇅</th><th>Hour_Multiplier</th><th data-sort="10" style="cursor:pointer">Alloc ⇅</th><th>Forecast £/day</th><th>Del</th></tr></thead><tbody>';
+  res.forEach((r,i)=>{
+    const dc=r.bill_rate*r.alloc*8; // Forecast = BillRate × Alloc × 8hrs
+    h+=`<tr data-idx="${i}">`;
+    h+=`<td contenteditable="true" data-field="name">${r.name}</td>`;
+    h+=`<td contenteditable="true" data-field="empl_id">${r.empl_id||0}</td>`;
+    h+=`<td contenteditable="true" data-field="role">${r.role}</td>`;
+    h+=`<td contenteditable="true" data-field="location">${r.location}</td>`;
+    h+=`<td contenteditable="true" data-field="projectID">${r.projectID||''}</td>`;
+    h+=`<td contenteditable="true" data-field="po_team" style="font-size:.65rem">${r.po_team||''}</td>`;
+    h+=`<td contenteditable="true" data-field="start">${r.start}</td>`;
+    h+=`<td contenteditable="true" data-field="end">${r.end}</td>`;
+    h+=`<td contenteditable="true" data-field="bill_rate">${r.bill_rate}</td>`;
+    h+=`<td contenteditable="true" data-field="hour_mult">${r.hour_mult}</td>`;
+    h+=`<td contenteditable="true" data-field="alloc">${r.alloc}</td>`;
+    h+=`<td style="font-weight:600">${f(dc)}</td>`;
+    h+=`<td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td>`;
+    h+=`</tr>`;
+  });
+  h+='</tbody></table></div>';return h;
+}
+function addResRow(){
+  const tbody=document.querySelector('#resTable tbody');
+  const tr=document.createElement('tr');tr.className='row-new';
+  tr.innerHTML=`<td contenteditable="true" data-field="name">New_Resource</td><td contenteditable="true" data-field="empl_id">0</td><td contenteditable="true" data-field="role">Role</td><td contenteditable="true" data-field="location">UK</td><td contenteditable="true" data-field="projectID">111111</td><td contenteditable="true" data-field="po_team">111111_ProjectAlpha_AWS</td><td contenteditable="true" data-field="start">2025-07-01</td><td contenteditable="true" data-field="end">2025-12-31</td><td contenteditable="true" data-field="bill_rate">100</td><td contenteditable="true" data-field="hour_mult">8</td><td contenteditable="true" data-field="alloc">1</td><td>—</td><td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td>`;
+  tbody.appendChild(tr);tr.scrollIntoView({behavior:'smooth'});
+}
+function delResRow(btn){btn.closest('tr').classList.toggle('row-del');}
+function saveResTable(){
+  const rows=[...document.querySelectorAll('#resTable tbody tr:not(.row-del)')];
+  const resources=rows.map(tr=>{
+    const cells=tr.querySelectorAll('td[contenteditable]');
+    return{name:cells[0].textContent.trim(),empl_id:parseInt(cells[1].textContent.trim())||0,role:cells[2].textContent.trim(),location:cells[3].textContent.trim(),projectID:parseInt(cells[4].textContent.trim())||0,po_team:cells[5].textContent.trim(),start:cells[6].textContent.trim(),end:cells[7].textContent.trim(),bill_rate:parseFloat(cells[8].textContent.trim())||0,hour_mult:parseFloat(cells[9].textContent.trim())||1,alloc:parseFloat(cells[10].textContent.trim())||0};
+  });
+  const cfg=loadWork();cfg.resources=resources;saveWork(cfg);
+  toast('✓ Resources saved — forecast recalculated!');
+  setTimeout(render,400);
+}
+
+function rTL(D){
+  // Filter resources by slicer
+  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+  const res=D.cfg.resources.filter(r=>{
+    if(!r.bill_rate)return false;
+    const t=(r.po_team||'').replace(/\s+/g,'');
+    return normFilter?normFilter.includes(t):true;
+  });
+  // Determine date range from resources
+  const allStarts=res.map(r=>new Date(r.start)).filter(d=>!isNaN(d));
+  const allEnds=res.map(r=>new Date(r.end)).filter(d=>!isNaN(d));
+  const start=allStarts.length?new Date(Math.min(...allStarts)):new Date('2025-01-01');
+  const end=allEnds.length?new Date(Math.max(...allEnds)):new Date('2026-12-31');
+  const span=end-start||1;
+  const colors=['#5c6bc0','#26a69a','#e65100','#8e24aa','#2e7d32','#c62828','#1565c0','#4e342e','#00838f'];
+  // Group by PO_Team
+  const groups={};res.forEach(r=>{const t=r.po_team||'Unknown';if(!groups[t])groups[t]=[];groups[t].push(r);});
+  let h='<div class="box"><h2>Resource Timeline</h2>';
+  // Month markers
+  h+='<div style="margin-left:140px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
+  let md=new Date(start.getFullYear(),start.getMonth(),1);
+  while(md<=end){const l=((md-start)/span*100);if(l>=0&&l<=100)h+=`<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString('en',{month:'short',year:'2-digit'})}</span>`;md=new Date(md.getFullYear(),md.getMonth()+1,1);}
+  h+='</div>';
+  Object.entries(groups).forEach(([team,members])=>{
+    h+=`<div style="font-size:.72rem;font-weight:700;margin:8px 0 2px;color:#1a1a2e;border-bottom:1px solid #e0e0e0;padding-bottom:2px">${team}</div>`;
+    // Group by person (empl_id + po_team) — show multiple bars on same line
+    const byPerson={};
+    members.forEach(r=>{const key=`${r.empl_id}|${r.name}`;if(!byPerson[key])byPerson[key]=[];byPerson[key].push(r);});
+    let pi=0;
+    Object.entries(byPerson).forEach(([key,rules])=>{
+      const [eid,name]=key.split('|');
+      h+=`<div class="tl-row"><span class="nm">${name} (${eid})</span><div class="ba">`;
+      rules.forEach(r=>{
+        const rs=new Date(r.start),re=new Date(r.end);
+        if(isNaN(rs)||isNaN(re)||rs>re)return;
+        const left=Math.max(0,(rs-start)/span*100).toFixed(1);
+        const width=Math.max(1,(re-rs)/span*100).toFixed(1);
+        h+=`<div class="br" style="left:${left}%;width:${width}%;background:${colors[pi%colors.length]};opacity:${0.6+r.alloc*0.4}">${r.alloc*100}% £${(r.bill_rate*r.alloc*8).toFixed(0)}/d</div>`;
+      });
+      h+=`</div></div>`;pi++;
+    });
+  });
+  if(!res.length)h+='<p style="color:#888;font-size:.8rem">No resources for selected filter</p>';
+  h+='</div>';return h;
+}
+function rActData(D){
+  const cfg=D.cfg;
+  const rawCount=cfg.raw_actuals?cfg.raw_actuals.length:0;
+  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+  // Build projToTeam
+  const projToTeam={};
+  cfg.resources.forEach(r=>{const t=(r.po_team||'').replace(/\s+/g,'');if(r.projectID&&t)projToTeam[r.projectID]=t;});
+  (cfg.po_details||[]).forEach(p=>{const t=(p.PO_Team_Identifier||'').replace(/\s+/g,'');if(p.ProjectID&&t)projToTeam[p.ProjectID]=t;});
+
+  // Filter raw actuals by slicer
+  const filtered=cfg.raw_actuals?cfg.raw_actuals.filter(row=>{
+    const projId=parseInt(row['Project ID']||0);
+    const team=projToTeam[projId]||'';
+    return normFilter?normFilter.includes(team):true;
+  }):[];
+
+  // Compute date ranges per project
+  const projDates={};
+  (cfg.raw_actuals||[]).forEach(row=>{
+    const projId=row['Project ID']||'';
+    const dt=parseDate(row['Reported Dt']||'','us');if(!dt)return;
+    if(!projDates[projId])projDates[projId]={min:dt,max:dt,count:0,team:projToTeam[parseInt(projId)]||''};
+    if(dt<projDates[projId].min)projDates[projId].min=dt;
+    if(dt>projDates[projId].max)projDates[projId].max=dt;
+    projDates[projId].count++;
+  });
+
+  // Show metrics
+  let h='<div class="cards">';
+  h+=`<div class="card b"><h3>Total Raw Rows</h3><div class="v">${rawCount.toLocaleString()}</div></div>`;
+  h+=`<div class="card g"><h3>Filtered Rows</h3><div class="v">${filtered.length.toLocaleString()}</div></div>`;
+  h+=`<div class="card o"><h3>Matched to Resources</h3><div class="v">${filtered.filter(r=>{const eid=parseInt(r['Empl ID']||0);return cfg.resources.some(res=>res.empl_id===eid);}).length.toLocaleString()}</div></div>`;
+  h+=`<div class="card r"><h3>Unmatched</h3><div class="v">${filtered.filter(r=>{const eid=parseInt(r['Empl ID']||0);return!cfg.resources.some(res=>res.empl_id===eid);}).length.toLocaleString()}</div></div>`;
+  h+='</div>';
+
+  // Date range per project
+  if(Object.keys(projDates).length){
+    h+='<div class="box"><h2>Actuals Date Range by Project</h2><div class="tw"><table id="tblDates"><thead><tr><th data-sort="0" style="cursor:pointer">Project ID ⇅</th><th>PO_Team</th><th data-sort="2" style="cursor:pointer">Start Date ⇅</th><th data-sort="3" style="cursor:pointer">End Date ⇅</th><th data-sort="4" style="cursor:pointer">Rows ⇅</th><th>Duration</th></tr></thead><tbody>';
+    Object.entries(projDates).sort((a,b)=>a[0]-b[0]).forEach(([pid,d])=>{
+      const days=Math.round((new Date(d.max)-new Date(d.min))/86400000);
+      h+=`<tr><td>${pid}</td><td style="font-size:.65rem">${d.team}</td><td>${d.min}</td><td>${d.max}</td><td>${d.count}</td><td>${days} days</td></tr>`;
+    });
+    h+='</tbody></table></div></div>';
+  }
+
+  // Show monthly actuals breakdown
+  h+='<div class="box"><h2>Monthly Actuals (filtered by slicer)</h2>';
+  h+='<div class="tw"><table><thead><tr><th>Month</th><th>Actuals Cost</th><th>Rows</th><th>Actuals Burn (PO remaining)</th></tr></thead><tbody>';
+  const poVal=D.fc.totalPOValue;let cum=0;
+  const monthBuckets={};
+  filtered.forEach(row=>{
+    const dt=parseDate(row['Reported Dt']||'','us');if(!dt)return;
+    const d=new Date(dt);const key=d.toLocaleString('en',{month:'short'})+'-'+String(d.getFullYear()).slice(2);
+    if(!monthBuckets[key])monthBuckets[key]={cost:0,rows:0};
+    const eid=parseInt(row['Empl ID']||0);
+    const rule=cfg.resources.find(r=>r.empl_id===eid&&r.start<=dt&&r.end>=dt)||cfg.resources.find(r=>r.empl_id===eid);
+    const rate=rule?rule.bill_rate:0;const hm=rule?rule.hour_mult:1;
+    const reg=parseFloat(row['Regular Hours']||0);const ot=parseFloat(row['Overtime Hours']||0);
+    monthBuckets[key].cost+=(reg*hm*rate)+(ot*hm*rate);
+    monthBuckets[key].rows++;
+  });
+  Object.entries(monthBuckets).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).forEach(([m,v])=>{
+    cum+=v.cost;
+    h+=`<tr><td><strong>${m}</strong></td><td>${f(v.cost)}</td><td>${v.rows}</td><td>${f(poVal-cum)}</td></tr>`;
+  });
+  h+='</tbody></table></div></div>';
+
+  // Show first 20 raw rows
+  if(filtered.length){
+    h+='<div class="box"><h2>Sample Raw Data (first 20 filtered rows)</h2><div class="tw"><table><thead><tr><th>Name</th><th>Empl ID</th><th>Date</th><th>Project</th><th>Reg Hrs</th><th>OT Hrs</th><th>Matched Rate</th><th>Cost</th></tr></thead><tbody>';
+    filtered.slice(0,20).forEach(row=>{
+      const eid=parseInt(row['Empl ID']||0);
+      const dt=parseDate(row['Reported Dt']||'','us');
+      const rule=cfg.resources.find(r=>r.empl_id===eid&&r.start<=dt&&r.end>=dt)||cfg.resources.find(r=>r.empl_id===eid);
+      const rate=rule?rule.bill_rate:0;const hm=rule?rule.hour_mult:1;
+      const reg=parseFloat(row['Regular Hours']||0);const ot=parseFloat(row['Overtime Hours']||0);
+      const cost=(reg*hm*rate)+(ot*hm*rate);
+      h+=`<tr><td>${row['Empl Name']||''}</td><td>${eid}</td><td>${dt}</td><td>${row['Project ID']||''}</td><td>${reg}</td><td>${ot}</td><td>£${rate}×${hm}</td><td>${f(cost)}</td></tr>`;
+    });
+    h+='</tbody></table></div></div>';
+  }
+  return h;
+}
+
+function rExp(D){
+  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+  const exps=normFilter?D.cfg.expenses.filter(e=>normFilter.includes((e.po_team||'').replace(/\s+/g,''))):D.cfg.expenses;
+  const total=exps.reduce((s,e)=>s+e.amount,0);
+  let h=`<div class="cards"><div class="card g"><h3>Total</h3><div class="v">${f(total)}</div></div><div class="card b"><h3>Claims</h3><div class="v">${exps.length}</div></div></div>`;
+  h+='<div class="tw"><table id="tblExp"><thead><tr><th data-sort="0" style="cursor:pointer">Name ⇅</th><th data-sort="1" style="cursor:pointer">Date ⇅</th><th data-sort="2" style="cursor:pointer">Amount ⇅</th><th>Currency</th><th data-sort="4" style="cursor:pointer">ProjectID ⇅</th><th>PO_Team</th><th>Description</th></tr></thead><tbody>';
+  exps.forEach(e=>{h+=`<tr><td>${e.name}</td><td>${e.date}</td><td>${f(e.amount)}</td><td>${e.currency}</td><td>${e.projectID||''}</td><td style="font-size:.65rem">${e.po_team||''}</td><td>${e.desc}</td></tr>`;});
+  h+='</tbody></table></div>';return h;
+}
+
+// ─── PO DETAILS TAB ─────────────────────────────────────────────────────────
+function rPO(D){
+  const pos=D.cfg.po_details||[];
+  // Aggregate by PO_Team
+  const byTeam={};
+  pos.forEach(p=>{
+    const k=(p.PO_Team_Identifier||'').replace(/\s+/g,'');
+    if(!byTeam[k])byTeam[k]={value:0,maxYear:0,minStart:'9999',currency:p.PO_Currency_Code,normCurrency:p.Normalized_Currency_Code,count:0,pos:[]};
+    byTeam[k].value+=p.PO_WO_value;
+    byTeam[k].maxYear=Math.max(byTeam[k].maxYear,p.PO_Validity_Year);
+    if(p.WO_StartDate<byTeam[k].minStart)byTeam[k].minStart=p.WO_StartDate;
+    byTeam[k].count++;byTeam[k].pos.push(p);
+  });
+  const totalPO=pos.reduce((s,p)=>s+p.PO_WO_value,0);
+  const today=new Date().toISOString().slice(0,10);
+  // FX normalize total
+  const normTotal=Object.values(byTeam).reduce((s,t)=>{
+    const fxFrom=fxRateAsOf(D.cfg.fx_rates,t.currency,today);
+    const fxTo=fxRateAsOf(D.cfg.fx_rates,t.normCurrency,today);
+    return s+(t.value/fxFrom*fxTo);
+  },0);
+
+  let h='<div class="cards">';
+  h+=`<div class="card b"><h3>Total POs</h3><div class="v">${pos.length}</div></div>`;
+  h+=`<div class="card g"><h3>Unique Projects</h3><div class="v">${Object.keys(byTeam).length}</div></div>`;
+  h+=`<div class="card o"><h3>Total PO Value</h3><div class="v">${f(totalPO)}</div></div>`;
+  h+=`<div class="card p"><h3>Normalized Total</h3><div class="v">${f(normTotal,'$')}</div></div>`;
+  h+='</div>';
+
+  // Timeline view of POs
+  const allStarts=pos.map(p=>new Date(p.WO_StartDate)).filter(d=>!isNaN(d));
+  const allEnds=pos.map(p=>new Date(p.PO_Validity_Year,11,31));
+  const tStart=allStarts.length?new Date(Math.min(...allStarts)):new Date('2024-01-01');
+  const tEnd=allEnds.length?new Date(Math.max(...allEnds)):new Date('2027-12-31');
+  const span=tEnd-tStart||1;
+  const colors=['#5c6bc0','#26a69a','#e65100','#8e24aa','#2e7d32','#c62828'];
+  h+='<div class="box"><h2>PO & Invoice Timeline</h2>';
+  h+='<div style="margin-left:200px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
+  let md=new Date(tStart.getFullYear(),0,1);
+  while(md<=tEnd){const l=((md-tStart)/span*100);if(l>=0&&l<=100)h+=`<span style="position:absolute;left:${l.toFixed(1)}%">${md.getFullYear()}</span>`;md=new Date(md.getFullYear()+1,0,1);}
+  h+='</div>';
+  const invAll=D.cfg.invoices||[];
+  const statusColor={'Paid':'#4caf50','Submitted':'#ff9800','Draft':'#bdbdbd'};
+  Object.entries(byTeam).forEach(([team,data],i)=>{
+    const rs=new Date(data.minStart),re=new Date(data.maxYear,11,31);
+    const left=Math.max(0,(rs-tStart)/span*100).toFixed(1);
+    const width=Math.max(2,(re-rs)/span*100).toFixed(1);
+    h+=`<div class="tl-row"><span class="nm" style="min-width:200px;font-size:.68rem">${team}</span><div class="ba"><div class="br" style="left:${left}%;width:${width}%;background:${colors[i%colors.length]}">${f(data.value)} (${data.count} POs) → ${data.maxYear}</div></div></div>`;
+    // Invoice bars for this team
+    const teamInvs=invAll.filter(inv=>(inv.po_team||'').replace(/\s+/g,'')===team);
+    if(teamInvs.length){
+      h+=`<div class="tl-row"><span class="nm" style="min-width:200px;font-size:.6rem;color:#888">└ Invoices</span><div class="ba" style="height:16px">`;
+      teamInvs.forEach(inv=>{
+        const is=new Date(inv.period_from),ie=new Date(inv.period_to);
+        if(isNaN(is)||isNaN(ie))return;
+        const il=Math.max(0,(is-tStart)/span*100).toFixed(1);
+        const iw=Math.max(1,(ie-is)/span*100).toFixed(1);
+        h+=`<div class="br" style="left:${il}%;width:${iw}%;background:${statusColor[inv.status]||'#666'};height:16px;font-size:.55rem">${f(inv.amount)}</div>`;
+      });
+      h+=`</div></div>`;
+    }
+  });
+  h+='<div style="margin-top:6px;font-size:.68rem">🟢 Paid &nbsp; 🟠 Submitted &nbsp; ⚪ Draft</div></div>';
+
+  // Invoice coverage per PO_Team
+  const invs=D.cfg.invoices||[];
+  if(invs.length){
+    h+='<div class="box"><h2>Invoice Coverage</h2><div class="tw"><table><thead><tr><th>PO_Team</th><th>PO Value</th><th>Invoiced</th><th>Paid</th><th>Coverage %</th><th>Remaining</th></tr></thead><tbody>';
+    Object.entries(byTeam).forEach(([team,data])=>{
+      const teamInvs=invs.filter(i=>(i.po_team||'').replace(/\s+/g,'')===team);
+      const invoiced=teamInvs.reduce((s,i)=>s+i.amount,0);
+      const paid=teamInvs.filter(i=>i.status==='Paid').reduce((s,i)=>s+i.amount,0);
+      const pct=data.value?Math.round(invoiced/data.value*100):0;
+      h+=`<tr><td style="font-size:.68rem">${team}</td><td>${f(data.value)}</td><td>${f(invoiced)}</td><td>${f(paid)}</td><td style="font-weight:600;color:${pct>90?'#c62828':pct>70?'#e65100':'#2e7d32'}">${pct}%</td><td>${f(data.value-invoiced)}</td></tr>`;
+    });
+    h+='</tbody></table></div></div>';
+  }
+
+  // Detail table
+  h+='<div class="box"><h2>All PO Entries</h2><div class="tw"><table id="tblPO"><thead><tr><th data-sort="0" style="cursor:pointer">PO_Team ⇅</th><th data-sort="1" style="cursor:pointer">ProjectID ⇅</th><th data-sort="2" style="cursor:pointer">PO Value ⇅</th><th>Currency</th><th>Norm Currency</th><th data-sort="5" style="cursor:pointer">Start ⇅</th><th data-sort="6" style="cursor:pointer">Validity Year ⇅</th><th>Status</th><th>PO Number</th></tr></thead><tbody>';
+  pos.forEach(p=>{
+    h+=`<tr><td style="font-size:.68rem">${p.PO_Team_Identifier}</td><td>${p.ProjectID}</td><td>${f(p.PO_WO_value)}</td><td>${p.PO_Currency_Code}</td><td>${p.Normalized_Currency_Code}</td><td>${p.WO_StartDate}</td><td>${p.PO_Validity_Year}</td><td>${p.WO_Approval_Status}</td><td>${p.PO_WO_Number}</td></tr>`;
+  });
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function rFX(D){
+  let h='<div class="box"><h2>💱 FX Rates</h2><div class="tw"><table><thead><tr><th>Currency</th><th>Effective</th><th>Rate</th></tr></thead><tbody>';
+  D.cfg.fx_rates.forEach(r=>{h+=`<tr><td>${r.code}</td><td>${r.effective}</td><td>${r.rate}</td></tr>`;});
+  h+='</tbody></table></div></div>';
+  h+='<div class="box"><h2>⏱️ OT Params</h2><div class="tw"><table><thead><tr><th>Type</th><th>Effective</th><th>Multiplier</th><th>TRC</th></tr></thead><tbody>';
+  D.cfg.ot_params.forEach(r=>{h+=`<tr><td>${r.type}</td><td>${r.effective}</td><td><strong>${r.multiplier}x</strong></td><td>${r.trc||'—'}</td></tr>`;});
+  h+='</tbody></table></div></div>';return h;
+}
+
+// ─── FILE UPLOAD TAB ────────────────────────────────────────────────────────
+function rUpload(D){
+  let h='<div class="box"><h2>📤 Upload Actuals Data</h2>';
+  h+='<p style="font-size:.8rem;color:#666;margin-bottom:1rem">Upload CSV or JSON files from PeopleSoft query dumps. Data is stored in browser and used for actuals calculations.</p>';
+  h+='<div style="display:grid;gap:1rem;grid-template-columns:1fr 1fr">';
+  // Actuals upload
+  h+='<div class="cfg-section"><summary style="padding:.6rem 1rem;background:#e3f2fd;font-weight:600;font-size:.85rem">Timesheet Actuals (CSV/JSON)</summary><div class="inner">';
+  h+='<p style="font-size:.75rem;margin-bottom:.5rem">Expected columns: Empl ID, Reported Dt, Regular Hours, Overtime Hours, Vacation Hours, Personal Hours, Other, PO_Team_Identifier</p>';
+  h+='<input type="file" accept=".csv,.json" onchange="handleUpload(this,\'actuals\')" style="margin-bottom:.5rem"><br>';
+  h+=`<span style="font-size:.7rem;color:#888">Raw rows: ${(D.cfg.raw_actuals||[]).length} | Projects: ${Object.keys(D.cfg.actuals_by_project||{}).length} | Months: ${D.cfg.actuals_monthly.length}</span>`;
+  h+='</div></div>';
+  // Resources upload
+  h+='<div class="cfg-section"><summary style="padding:.6rem 1rem;background:#e8f5e9;font-weight:600;font-size:.85rem">Resource Rules (CSV/JSON)</summary><div class="inner">';
+  h+='<p style="font-size:.75rem;margin-bottom:.5rem">Expected columns: name, empl_id, role, location, start, end, bill_rate, hour_mult, alloc, projectID, po_team</p>';
+  h+='<input type="file" accept=".csv,.json" onchange="handleUpload(this,\'resources\')" style="margin-bottom:.5rem"><br>';
+  h+=`<span style="font-size:.7rem;color:#888">Current: ${D.cfg.resources.length} resource rules</span>`;
+  h+='</div></div>';
+  h+='</div>';
+  // Preview area
+  h+='<div id="uploadPreview" style="margin-top:1rem"></div>';
+  h+='</div>';
+  return h;
+}
+
+function handleUpload(input,type){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const text=e.target.result;
+    let data;
+    if(file.name.endsWith('.json')){
+      try{data=JSON.parse(text);}catch(err){toast('✗ Invalid JSON: '+err.message,false);return;}
+    }else{
+      // Parse CSV
+      const lines=text.trim().split('\n');
+      const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
+      data=lines.slice(1).map(line=>{
+        const vals=line.split(',').map(v=>v.trim().replace(/"/g,''));
+        const obj={};headers.forEach((h,i)=>{obj[h]=vals[i]||'';});return obj;
+      });
+    }
+    if(type==='resources'){
+      // Normalize resource data
+      const resources=data.map(r=>{
+        const startRaw=r.start||r.RateEffectiveDt||'';
+        const endRaw=r.end||r.ContractEndDt||'';
+        return{
+          name:r.name||r['Empl Name']||'',empl_id:parseInt(r.empl_id||r['Empl ID']||r.EmplID)||0,
+          role:r.role||r.Role||'',location:r.location||r.Location||'UK',
+          start:parseDate(startRaw,'uk'),end:parseDate(endRaw,'uk'),
+          bill_rate:parseFloat(r.bill_rate||r.BillRate)||0,
+          hour_mult:parseFloat(r.hour_mult||r.HourMultiplier_TimeEntry||r.Hour_Multiplier)||1,
+          alloc:parseFloat(r.alloc||r.Allocation_Percentage)||1,
+          projectID:parseInt(r.projectID||r.ProjectID)||0,
+          po_team:(r.po_team||r.PO_Team_Identifier||'').replace(/\s+/g,'')
+        };
+      }).filter(r=>r.start&&r.end);
+      const cfg=loadWork();cfg.resources=resources;saveWork(cfg);
+      // Validation warnings
+      const warnings=[];
+      const poTeams=new Set((cfg.po_details||[]).map(p=>(p.PO_Team_Identifier||'').replace(/\s+/g,'')));
+      const unmatchedTeams=new Set(resources.map(r=>r.po_team).filter(t=>!poTeams.has(t)));
+      if(unmatchedTeams.size)warnings.push(unmatchedTeams.size+' resource PO_Teams not in PO_Details: '+[...unmatchedTeams].slice(0,3).join(', '));
+      const invalidDates=resources.filter(r=>r.start>r.end);
+      if(invalidDates.length)warnings.push(invalidDates.length+' resources have start > end date');
+      const zeroRate=resources.filter(r=>r.bill_rate===0);
+      if(zeroRate.length)warnings.push(zeroRate.length+' resources with zero rate (excluded from forecast)');
+      toast(`✓ ${resources.length} resources uploaded`+(warnings.length?' ⚠️ '+warnings.join('; '):''));
+      setTimeout(render,400);
+    }else if(type==='actuals'){
+      // Store raw actuals for processing
+      const cfg=loadWork();cfg.raw_actuals=data;saveWork(cfg);
+      // Aggregate into monthly
+      aggregateActuals(data);
+    }
+    // Show preview
+    document.getElementById('uploadPreview').innerHTML=`<div class="box"><h2>Preview (first 5 rows of ${data.length})</h2><pre style="font-size:.7rem;max-height:200px;overflow:auto">${JSON.stringify(data.slice(0,5),null,2)}</pre></div>`;
+  };
+  reader.readAsText(file);
+}
+
+function aggregateActuals(data){
+  const cfg=loadWork();
+  cfg.raw_actuals=data;
+  // Pre-compute actuals PER PROJECT for fast slicer filtering
+  const projToTeam={};
+  cfg.resources.forEach(r=>{const t=(r.po_team||'').replace(/\s+/g,'');if(r.projectID&&t)projToTeam[r.projectID]=t;});
+  (cfg.po_details||[]).forEach(p=>{const t=(p.PO_Team_Identifier||'').replace(/\s+/g,'');if(p.ProjectID&&t)projToTeam[p.ProjectID]=t;});
+
+  const byProject={};// {projectID: {month: cost}}
+  let matched=0,unmatched=0;
+  data.forEach(row=>{
+    const dtRaw=row['Reported Dt']||'';
+    const dt=parseDate(dtRaw,'us');if(!dt)return;
+    const d=new Date(dt);if(isNaN(d.getTime()))return;
+    const key=d.toLocaleString('en',{month:'short'})+'-'+String(d.getFullYear()).slice(2);
+    const emplId=parseInt(row['Empl ID']||0);
+    const projId=parseInt(row['Project ID']||0);
+    const rule=cfg.resources.find(r=>r.empl_id===emplId&&r.start<=dt&&r.end>=dt)||cfg.resources.find(r=>r.empl_id===emplId);
+    if(rule)matched++;else{unmatched++;return;}
+    const rate=rule.bill_rate;const hm=rule.hour_mult;
+    const poTeam=(rule.po_team||'').replace(/\s+/g,'');
+    const otMult=otMultiplier(cfg.ot_params,poTeam,'Overtime_Hours',dt);
+    const reg=parseFloat(row['Regular Hours']||0);
+    const ot=parseFloat(row['Overtime Hours']||0);
+    const cost=(reg*hm*rate)+(ot*hm*rate*otMult);
+    if(!byProject[projId])byProject[projId]={};
+    byProject[projId][key]=(byProject[projId][key]||0)+cost;
+  });
+  cfg.actuals_by_project=byProject;
+  cfg.actuals_monthly=computeActualsFromCache(cfg,null,projToTeam);
+  saveWork(cfg);
+  toast(`✓ ${data.length} rows: ${matched} matched, ${unmatched} unmatched → ${Object.keys(byProject).length} projects`);
+  setTimeout(render,400);
+}
+
+// Fast actuals from pre-computed cache (no re-parsing raw data)
+function computeActualsFromCache(cfg,normFilter,projToTeam){
+  const byProject=cfg.actuals_by_project||{};
+  const monthly={};
+  Object.entries(byProject).forEach(([projId,months])=>{
+    const team=projToTeam[parseInt(projId)]||'';
+    if(normFilter&&!normFilter.includes(team))return;
+    Object.entries(months).forEach(([m,cost])=>{monthly[m]=(monthly[m]||0)+cost;});
+  });
+  const poVal=(cfg.po_details||[]).reduce((s,p)=>{
+    const t=(p.PO_Team_Identifier||'').replace(/\s+/g,'');
+    return(normFilter&&!normFilter.includes(t))?s:s+p.PO_WO_value;
+  },0);
+  let cum=0;
+  return Object.entries(monthly).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).map(([m,v])=>{
+    cum+=v;return{month:m,actuals:Math.round(v*100)/100,actuals_burn:Math.round((poVal-cum)*100)/100};
+  });
+}
+
+// ─── CONFIG PAGE ────────────────────────────────────────────────────────────
+function rCfg(D){
+  let h='<div class="box"><h2>⚙️ Working Config</h2>';
+  h+='<p style="font-size:.78rem;color:#666;margin-bottom:.8rem">Edit and save freely — this is your working copy. Use "Restore from Master" to undo experiments.</p>';
+  h+='<div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap">';
+  h+='<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
+  h+='<button class="btn btn-blue" onclick="promptMasterSave()">🔒 Save as Master (PIN required)</button>';
+  h+='</div>';
+  const sections=[{key:'po_details',label:'PO Details',data:D.cfg.po_details},{key:'resources',label:'Resources ('+D.cfg.resources.length+')',data:D.cfg.resources,tall:true},{key:'invoices',label:'Invoices ('+(D.cfg.invoices||[]).length+')',data:D.cfg.invoices||[]},{key:'fx_rates',label:'FX Rates',data:D.cfg.fx_rates},{key:'ot_params',label:'OT Params',data:D.cfg.ot_params},{key:'expenses',label:'Expenses',data:D.cfg.expenses},{key:'actuals_monthly',label:'Monthly Actuals',data:D.cfg.actuals_monthly,tall:true}];
+  sections.forEach((s,i)=>{
+    h+=`<details class="cfg-section"${i===0?' open':''}><summary>${s.label}</summary><div class="inner"><textarea id="cfg_${s.key}"${s.tall?' style="min-height:350px"':''}>${JSON.stringify(s.data,null,2)}</textarea><button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button></div></details>`;
+  });
+  h+='<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner"><p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p><button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button><p style="font-size:.8rem;margin:1rem 0 .5rem">Reset everything to factory defaults (PIN required):</p><button class="btn btn-red" onclick="promptFactoryReset()">⚠️ Factory Reset</button></div></details>';
+  h+='</div>';return h;
+}
+function doSave(key){
+  try{const val=JSON.parse(document.getElementById('cfg_'+key).value);const cfg=loadWork();cfg[key]=val;saveWork(cfg);toast('✓ Saved '+key);setTimeout(render,400);}
+  catch(e){toast('✗ Invalid JSON: '+e.message,false);}
+}
+function promptMasterSave(){
+  const d=document.createElement('div');d.className='modal-bg';
+  d.innerHTML='<div class="modal"><h3>🔒 Save as Master</h3><p style="font-size:.82rem;margin-bottom:.8rem">This overwrites the master config. Enter PIN:</p><input type="password" id="pinInput" placeholder="Enter PIN" maxlength="10"><div><button class="btn btn-green" onclick="checkPin(\'save\')">Confirm</button><button class="btn btn-red" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div></div>';
+  document.body.appendChild(d);d.querySelector('input').focus();
+}
+function promptFactoryReset(){
+  const d=document.createElement('div');d.className='modal-bg';
+  d.innerHTML='<div class="modal"><h3>⚠️ Factory Reset</h3><p style="font-size:.82rem;margin-bottom:.8rem">This resets BOTH master and working config to defaults. Enter PIN:</p><input type="password" id="pinInput" placeholder="Enter PIN" maxlength="10"><div><button class="btn btn-red" onclick="checkPin(\'reset\')">Reset All</button><button class="btn btn-blue" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div></div>';
+  document.body.appendChild(d);d.querySelector('input').focus();
+}
+function checkPin(action){
+  const pin=document.getElementById('pinInput').value;
+  document.querySelector('.modal-bg').remove();
+  if(pin!==MASTER_PIN){toast('✗ Incorrect PIN',false);return;}
+  if(action==='save'){const cfg=loadWork();saveMaster(cfg);toast('✓ Master config updated!');}
+  if(action==='reset'){localStorage.removeItem(K_WORK);localStorage.removeItem(K_MASTER);toast('✓ Factory reset complete!');setTimeout(render,400);}
+}
+
+// ─── CHARTS ─────────────────────────────────────────────────────────────────
+function drawCharts(tab,D){
+  if(tab==='overview'){const am=D.actuals,fc=D.fc.burndown;const fcMap={};fc.forEach(m=>{fcMap[m.month]=m.forecast;});const actMap={};am.forEach(m=>{actMap[m.month]=m.actuals;});const labels=[...new Set([...Object.keys(fcMap),...Object.keys(actMap)])].sort((a,b)=>new Date('1 '+a)-new Date('1 '+b));const ctx=document.getElementById('c1');if(!ctx)return;charts.push(new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Forecast (£)',data:labels.map(l=>fcMap[l]||null),backgroundColor:'rgba(33,150,243,0.7)'},{label:'Actuals (£)',data:labels.map(l=>actMap[l]||null),backgroundColor:'rgba(76,175,80,0.7)'}]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'£'+v.toLocaleString()}}}}}));}
+  if(tab==='burndown'){const am=D.actuals,fm=D.fc.burndown;const allMonths=[...new Set([...am.map(m=>m.month),...fm.map(m=>m.month)])];const ctx=document.getElementById('c2');if(!ctx)return;
+    // Actuals burn: PO_Available_at_month - cumulative actuals
+    // Forecast burn: PO_Available_at_month - cumulative forecast
+    // First compute cumPO per month
+    const poArr=D.cfg.po_details||[];
+    const normFilter2=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
+    const cumPO=allMonths.map(mKey=>{
+      const [mName,yy]=mKey.split('-');const yr=parseInt('20'+yy);
+      const mIdx=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(mName);
+      const monthEnd=new Date(yr,mIdx+1,0).toISOString().slice(0,10);
+      let total=0;
+      poArr.forEach(p=>{
+        const t=(p.PO_Team_Identifier||'').replace(/\s+/g,'');
+        if(normFilter2&&!normFilter2.includes(t))return;
+        if(p.WO_StartDate<=monthEnd&&p.PO_Validity_Year>=yr)total+=p.PO_WO_value;
+      });
+      return total;
+    });
+    // Now compute burn lines using cumPO as the baseline
+    let cumAct=0;const actBurn=allMonths.map((l,i)=>{const m=am.find(x=>x.month===l);if(m&&m.actuals){cumAct+=m.actuals;return cumPO[i]-cumAct;}return null;});
+    let cumFc=0;const fcBurn=allMonths.map((l,i)=>{const m=fm.find(x=>x.month===l);if(m){cumFc+=m.forecast;return cumPO[i]-cumFc;}return null;});
+    const fcSpend=allMonths.map(l=>{const m=fm.find(x=>x.month===l);return m?m.forecast:null;});
+    const actSpend=allMonths.map(l=>{const m=am.find(x=>x.month===l);return m?m.actuals:null;});
+    charts.push(new Chart(ctx,{type:"bar",data:{labels:allMonths,datasets:[{label:"Forecast Spend",data:fcSpend,backgroundColor:"rgba(33,150,243,0.4)",order:2},{label:"Actuals Spend",data:actSpend,backgroundColor:"rgba(76,175,80,0.4)",order:2},{label:"Actuals Burn",type:"line",data:actBurn,borderColor:"#4caf50",borderWidth:2,tension:0.3,spanGaps:false,pointRadius:3,order:1,yAxisID:"y1"},{label:"Forecast Burn",type:"line",data:fcBurn,borderColor:"#2196f3",borderWidth:2,tension:0.3,pointRadius:3,order:1,yAxisID:"y1"},{label:"PO Available",type:"line",data:cumPO,borderColor:"#f44336",borderDash:[5,5],pointRadius:2,borderWidth:2,order:0,yAxisID:"y1"}]},options:{responsive:true,plugins:{legend:{position:"top"}},scales:{y:{position:"left",title:{display:true,text:"Monthly Spend"},beginAtZero:true,ticks:{callback:v=>"£"+v.toLocaleString()}},y1:{position:"right",title:{display:true,text:"PO Burn"},ticks:{callback:v=>"£"+v.toLocaleString()},grid:{drawOnChartArea:false}}}}}));
+    // Normalized chart
+    const today2=new Date().toISOString().slice(0,10);
+    const fxF=fxRateAsOf(D.cfg.fx_rates,D.fc.currency||'GBP',today2);
+    const fxT=fxRateAsOf(D.cfg.fx_rates,D.fc.normCurrency||'USD',today2);
+    const norm=v=>v!=null?Math.round(v/fxF*fxT):null;
+    const ctx2=document.getElementById('c2norm');
+    if(ctx2){charts.push(new Chart(ctx2,{type:'line',data:{labels:allMonths,datasets:[
+      {label:'Actuals Burn ('+D.fc.normCurrency+')',data:actBurn.map(norm),borderColor:'#4caf50',tension:0.3,spanGaps:false},
+      {label:'Forecast Burn ('+D.fc.normCurrency+')',data:fcBurn.map(norm),borderColor:'#2196f3',tension:0.3},
+      {label:'PO Available ('+D.fc.normCurrency+')',data:cumPO.map(norm),borderColor:'#f44336',borderDash:[5,5],pointRadius:2}
+    ]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString()}}}}}));}
+  }
+  if(tab==='monthly'){const am=D.actuals,fc=D.fc.burndown;const fcMap={};fc.forEach(m=>{fcMap[m.month]=m.forecast;});const actMap={};am.forEach(m=>{actMap[m.month]=m.actuals;});const labels=[...new Set([...Object.keys(fcMap),...Object.keys(actMap)])].sort((a,b)=>new Date('1 '+a)-new Date('1 '+b));const varData=labels.map(l=>(actMap[l]!=null&&fcMap[l]!=null)?actMap[l]-fcMap[l]:null);const ctx=document.getElementById('c3');if(!ctx)return;charts.push(new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Variance (Act−Fc)',data:varData,backgroundColor:varData.map(v=>v!=null?(v>0?'rgba(244,67,54,0.7)':'rgba(76,175,80,0.7)'):'rgba(200,200,200,0.3)')}]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{ticks:{callback:v=>'£'+v.toLocaleString()}}}}}));}
+}
+render();
+</script></body></html>
