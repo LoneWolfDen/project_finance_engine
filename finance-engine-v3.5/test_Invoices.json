@@ -1,0 +1,102 @@
+[
+  {
+    "po_team": "111111_ProjectAlpha_AWS",
+    "invoice_number": "INV-2025-001",
+    "period_from": "2025-07-01",
+    "period_to": "2025-07-31",
+    "amount": 45000,
+    "status": "Paid",
+    "paid_date": "2025-08-15",
+    "notes": "Jul labour"
+  },
+  {
+    "po_team": "111111_ProjectAlpha_AWS",
+    "invoice_number": "INV-2025-002",
+    "period_from": "2025-08-01",
+    "period_to": "2025-08-31",
+    "amount": 62000,
+    "status": "Paid",
+    "paid_date": "2025-09-12",
+    "notes": "Aug labour + expenses"
+  },
+  {
+    "po_team": "111111_ProjectAlpha_AWS",
+    "invoice_number": "INV-2025-003",
+    "period_from": "2025-09-01",
+    "period_to": "2025-09-30",
+    "amount": 58000,
+    "status": "Submitted",
+    "paid_date": null,
+    "notes": "Sep labour"
+  },
+  {
+    "po_team": "111111_ProjectAlpha_AWS",
+    "invoice_number": "INV-2025-004",
+    "period_from": "2025-10-01",
+    "period_to": "2025-10-31",
+    "amount": 70000,
+    "status": "Draft",
+    "paid_date": null,
+    "notes": "Oct labour"
+  },
+  {
+    "po_team": "222222_ProjectBeta_GCP",
+    "invoice_number": "INV-B-001",
+    "period_from": "2025-03-01",
+    "period_to": "2025-05-31",
+    "amount": 95000,
+    "status": "Paid",
+    "paid_date": "2025-06-20",
+    "notes": "Q1 labour"
+  },
+  {
+    "po_team": "222222_ProjectBeta_GCP",
+    "invoice_number": "INV-B-002",
+    "period_from": "2025-06-01",
+    "period_to": "2025-08-31",
+    "amount": 88000,
+    "status": "Paid",
+    "paid_date": "2025-09-18",
+    "notes": "Q2 labour"
+  },
+  {
+    "po_team": "222222_ProjectBeta_GCP",
+    "invoice_number": "INV-B-003",
+    "period_from": "2025-09-01",
+    "period_to": "2025-11-30",
+    "amount": 72000,
+    "status": "Submitted",
+    "paid_date": null,
+    "notes": "Q3 labour"
+  },
+  {
+    "po_team": "333333_ProjectGamma_Azure",
+    "invoice_number": "INV-G-001",
+    "period_from": "2025-04-01",
+    "period_to": "2025-06-30",
+    "amount": 120000,
+    "status": "Paid",
+    "paid_date": "2025-07-25",
+    "notes": "Q1 India+Germany"
+  },
+  {
+    "po_team": "333333_ProjectGamma_Azure",
+    "invoice_number": "INV-G-002",
+    "period_from": "2025-07-01",
+    "period_to": "2025-09-30",
+    "amount": 135000,
+    "status": "Paid",
+    "paid_date": "2025-10-20",
+    "notes": "Q2 all teams"
+  },
+  {
+    "po_team": "333333_ProjectGamma_Azure",
+    "invoice_number": "INV-G-003",
+    "period_from": "2025-10-01",
+    "period_to": "2025-12-31",
+    "amount": 110000,
+    "status": "Draft",
+    "paid_date": null,
+    "notes": "Q3 estimate"
+  }
+]
