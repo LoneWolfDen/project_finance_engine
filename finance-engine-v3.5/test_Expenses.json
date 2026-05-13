@@ -1,0 +1,83 @@
+[
+  {
+    "name": "R1_Lead",
+    "date": "2025-07-15",
+    "amount": 250,
+    "currency": "GBP",
+    "desc": "Client meeting travel",
+    "projectID": 111111,
+    "po_team": "111111_ProjectAlpha_AWS"
+  },
+  {
+    "name": "R2_Architect",
+    "date": "2025-08-20",
+    "amount": 180,
+    "currency": "GBP",
+    "desc": "Conference attendance",
+    "projectID": 111111,
+    "po_team": "111111_ProjectAlpha_AWS"
+  },
+  {
+    "name": "R3_Engineer",
+    "date": "2025-09-05",
+    "amount": 95,
+    "currency": "GBP",
+    "desc": "Software license",
+    "projectID": 111111,
+    "po_team": "111111_ProjectAlpha_AWS"
+  },
+  {
+    "name": "R6_Dev",
+    "date": "2025-04-10",
+    "amount": 320,
+    "currency": "GBP",
+    "desc": "Hardware purchase",
+    "projectID": 222222,
+    "po_team": "222222_ProjectBeta_GCP"
+  },
+  {
+    "name": "R6_Dev",
+    "date": "2025-06-22",
+    "amount": 150,
+    "currency": "GBP",
+    "desc": "Team dinner",
+    "projectID": 222222,
+    "po_team": "222222_ProjectBeta_GCP"
+  },
+  {
+    "name": "R7_QA",
+    "date": "2025-05-18",
+    "amount": 75,
+    "currency": "GBP",
+    "desc": "Testing tools",
+    "projectID": 222222,
+    "po_team": "222222_ProjectBeta_GCP"
+  },
+  {
+    "name": "R9_DevIndia",
+    "date": "2025-05-01",
+    "amount": 200,
+    "currency": "GBP",
+    "desc": "Cloud credits",
+    "projectID": 333333,
+    "po_team": "333333_ProjectGamma_Azure"
+  },
+  {
+    "name": "R10_ArchIndia",
+    "date": "2025-07-10",
+    "amount": 450,
+    "currency": "GBP",
+    "desc": "Architecture workshop",
+    "projectID": 333333,
+    "po_team": "333333_ProjectGamma_Azure"
+  },
+  {
+    "name": "R11_DevGermany",
+    "date": "2025-08-15",
+    "amount": 180,
+    "currency": "GBP",
+    "desc": "Travel to client",
+    "projectID": 333333,
+    "po_team": "333333_ProjectGamma_Azure"
+  }
+]
