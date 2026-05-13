@@ -1,0 +1,12 @@
+{
+  "name": "Finance Portfolio Engine",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "forwardPorts": [8889],
+  "postStartCommand": "python3 server.py &",
+  "portsAttributes": {
+    "8889": {
+      "label": "Finance Dashboard",
+      "onAutoForward": "openBrowser"
+    }
+  }
+}
