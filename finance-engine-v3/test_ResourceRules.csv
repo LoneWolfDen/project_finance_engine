@@ -1,0 +1,15 @@
+Empl Name,EmplID,ProjectID,PO_Team_Identifier,Role,Location,RateEffectiveDt,BillRate,HourMultiplier_TimeEntry,ContractEndDt,Allocation_Percentage
+R1_Lead,1001,111111,111111_ProjectAlpha_AWS,Technical Lead,UK,01/07/2025,180,8,31/12/2025,1
+R2_Architect,1002,111111,111111_ProjectAlpha_AWS,Solutions Architect,UK,01/07/2025,200,1,30/09/2025,0.5
+R2_Architect,1002,111111,111111_ProjectAlpha_AWS,Solutions Architect,UK,01/10/2025,200,1,31/10/2025,1
+R2_Architect,1002,111111,111111_ProjectAlpha_AWS,Solutions Architect,UK,01/11/2025,200,1,31/03/2026,0.5
+R3_Engineer,1003,111111,111111_ProjectAlpha_AWS,Cloud Engineer(Mid),UK,01/08/2025,125,8,28/02/2026,1
+R4_Manager,1004,111111,111111_ProjectAlpha_AWS,Engagement Manager,UK,01/07/2025,0,1,31/12/2025,0.3
+R5_Contractor,1005,111111,111111_ProjectAlpha_AWS,DevOps Engineer,UK,15/09/2025,150,8,26/09/2025,1
+R6_Dev,2001,222222,222222_ProjectBeta_GCP,Java Developer,UK,01/03/2025,160,8,30/06/2026,1
+R7_QA,2002,222222,222222_ProjectBeta_GCP,QA Engineer,Ireland,01/04/2025,110,1,31/12/2025,0.6
+R8_Consultant,2003,222222,222222_ProjectBeta_GCP,Consultant,UK,15/08/2025,500,1,15/08/2025,1
+R9_DevIndia,3001,333333,333333_ProjectGamma_Azure,Full Stack Dev,India,01/04/2025,90,8,31/12/2025,1
+R10_ArchIndia,3002,333333,333333_ProjectGamma_Azure,Architect,India,01/04/2025,150,1,31/08/2025,0.5
+R10_ArchIndia,3002,333333,333333_ProjectGamma_Azure,Architect,India,01/09/2025,150,1,31/03/2026,1
+R11_DevGermany,3003,333333,333333_ProjectGamma_Azure,Backend Dev,Germany,01/05/2025,130,8,31/12/2025,1
