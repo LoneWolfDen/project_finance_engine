@@ -26,6 +26,7 @@ print("✅ FILE PATH:", __file__)
 PORT = int(os.environ.get('PORT', 3005))
 HOST = os.environ.get('HOST', '127.0.0.1')
 MAX_BODY_BYTES = int(os.environ.get('MAX_BODY_BYTES', 25 * 1024 * 1024))
+MAX_DRAIN_BYTES = 1024 * 1024  # body read and discarded before an error reply
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 
@@ -114,18 +115,21 @@ class Handler(BaseHTTPRequestHandler):
             return False
         return True
 
+    def _reject(self, status, length):
+        """Send an error after reading (up to 1 MB of) the unread body. Closing a socket
+        with unread data makes the OS reset the connection, and the client would see a
+        network error instead of this response."""
+        remaining = min(length, MAX_DRAIN_BYTES)
+        while remaining > 0:
+            chunk = self.rfile.read(min(remaining, 65536))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+        self.send_error_json(status)
+        return None
+
     def _check_post(self):
         """Return the request body, or None after sending an error response."""
-        content_type = (self.headers.get('Content-Type') or '').split(';')[0].strip().lower()
-        if content_type != 'application/json':
-            self.send_error_json(415)
-            return None
-        origin = self.headers.get('Origin')
-        if origin is not None:
-            allowed = {f"{scheme}://{h}" for h in self.server.allowed_hosts for scheme in ('http', 'https')}
-            if origin.strip().lower() not in allowed:
-                self.send_error_json(403)
-                return None
         try:
             length = int(self.headers.get('Content-Length', 0))
         except ValueError:
@@ -135,8 +139,15 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error_json(400)
             return None
         if length > MAX_BODY_BYTES:
-            self.send_error_json(413)
-            return None
+            return self._reject(413, length)
+        content_type = (self.headers.get('Content-Type') or '').split(';')[0].strip().lower()
+        if content_type != 'application/json':
+            return self._reject(415, length)
+        origin = self.headers.get('Origin')
+        if origin is not None:
+            allowed = {f"{scheme}://{h}" for h in self.server.allowed_hosts for scheme in ('http', 'https')}
+            if origin.strip().lower() not in allowed:
+                return self._reject(403, length)
         try:
             return self.rfile.read(length).decode()
         except UnicodeDecodeError:
