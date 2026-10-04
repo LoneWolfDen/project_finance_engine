@@ -1,12 +1,12 @@
 # Next Actions
 
-Last updated: 2026-10-04 (after DOC-001). Maximum 15 entries. Ordered. Source order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execute coding items with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`.
+Last updated: 2026-10-04 (after the BAS-002 build). Maximum 15 entries. Ordered. Source order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execute coding items with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`.
 
 | # | Backlog ID | Action | Who |
 |---|---|---|---|
-| 1 | DOC-001 | Review the DOC-001 diff (five architecture files) and commit it: `DOC-001: Record identity and Continuum decisions in architecture docs` | Owner |
-| 2 | BAS-002 | Build the probe page `tools/probe/` | Model |
-| 3 | BAS-002 | Copy `tools/probe/` into the synced Teams/SharePoint folder, open `index.html` in managed Edge, press **Copy results**, and paste them into PROJECT_STATE "Probe results" | Owner |
+| 1 | BAS-002 | Review and commit `tools/probe/`: `BAS-002: Environment probe page for managed-laptop validation` | Owner |
+| 2 | BAS-002 | Copy `tools/probe/` into the synced Teams channel folder, open `index.html` in managed Edge, follow `tools/probe/README.md`, press **Copy results**, and paste them to the model (or into PROJECT_STATE "Probe results") | Owner |
+| 3 | BAS-002 | Record the pasted results; append DEC-020/023/026 outcomes as Proposed to DECISIONS.md | Model |
 | 4 | SEC-001 | Harden `server.py` (loopback, `ALLOWED_HOSTS`, origin and content-type checks, body limit; README: Codespaces test data only per DEC-032) | Model |
 | 5 | BLD-004 | Add safe static file serving for `vendor/` and `app/` in `server.py` | Model |
 | 6 | BLD-001 | Vendor the six libraries locally at the current versions; switch the `<script src>` lines | Model |

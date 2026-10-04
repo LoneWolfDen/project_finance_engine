@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:">
+  <title>Continuum Environment Probe</title>
+  <link rel="stylesheet" href="probe.css">
+  <!-- Order matters: probe.js first (it records CSP violations), then the data file, then the inline test. -->
+  <script src="probe.js"></script>
+  <script src="data/probe-data.js"></script>
+  <!-- Check 6: this inline script must NOT run. The CSP above forbids inline scripts.
+       Its blocked attempt is the one CSP console error you should expect (plus one from check 7). -->
+  <script>window.PROBE_INLINE_RAN = true;</script>
+</head>
+<body data-page="index">
+  <header>
+    <h1>Continuum environment probe</h1>
+    <p>Checks what this browser allows when the app is opened from a folder on this laptop. Nothing is sent anywhere: the page is not allowed to use the network.</p>
+  </header>
+
+  <p id="js-missing" class="alert">
+    <strong>probe.js did not run.</strong> This usually means the security rule <code>script-src 'self'</code> does not
+    accept files opened from disk in this browser. Please report exactly this text:
+    <strong>PROBE-JS-BLOCKED</strong>, plus the browser name and the folder type you opened it from.
+  </p>
+
+  <section>
+    <h2>1. Tell us where you opened this page</h2>
+    <div class="field">
+      <label for="where">Opened from</label>
+      <select id="where">
+        <option value="">(choose)</option>
+        <option>Synced Teams channel folder</option>
+        <option>Synced SharePoint library (not Teams)</option>
+        <option>Personal OneDrive folder</option>
+        <option>Downloads or another local folder</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="offline">OneDrive setting for this folder</label>
+      <select id="offline">
+        <option value="">(choose)</option>
+        <option>Always keep on this device</option>
+        <option>Online-only / not sure</option>
+        <option>Not a OneDrive folder</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Click each button (they only touch what you pick)</h2>
+    <div class="buttons">
+      <button type="button" id="btn-folder">9. Pick a folder and test write/read</button>
+      <button type="button" id="btn-reconnect">9. After reload: reconnect stored folder</button>
+      <label class="button-like" for="dir-input">10. Choose a folder to list</label>
+      <input type="file" id="dir-input" webkitdirectory multiple class="visually-hidden">
+      <button type="button" id="btn-save">11. Try the save dialog</button>
+      <button type="button" id="btn-download">12. Download probe-download.js</button>
+      <a class="button-like" id="link-second" href="second.html#/ref/O-1234567" target="_blank" rel="noopener">13. Open second.html#/ref/O-1234567</a>
+      <button type="button" id="btn-clipboard">14. Read the clipboard</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Record what you saw</h2>
+    <div class="field">
+      <label for="obs-download">12. After clicking "Download probe-download.js"</label>
+      <select id="obs-download">
+        <option value="">(not tried yet)</option>
+        <option value="pass:Downloaded with no warning">Downloaded with no warning</option>
+        <option value="pass:Edge showed a warning, but I could keep the file">Edge showed a warning, but I could keep the file</option>
+        <option value="fail:Edge blocked or deleted the file">Edge blocked or deleted the file</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="obs-link">13. After clicking the second.html link</label>
+      <select id="obs-link">
+        <option value="">(not tried yet)</option>
+        <option value="pass:Opened and showed #/ref/O-1234567">Opened and showed #/ref/O-1234567</option>
+        <option value="fail:Opened, but the #/ref/... part was missing">Opened, but the #/ref/... part was missing</option>
+        <option value="fail:Did not open, or Edge blocked it">Did not open, or Edge blocked it</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="notes">Notes (optional, e.g. values from edge://policy; no names or paths)</label>
+      <textarea id="notes" rows="3"></textarea>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Results</h2>
+    <table>
+      <thead><tr><th>#</th><th>Check</th><th>Result</th><th>Detail</th></tr></thead>
+      <tbody id="results"></tbody>
+    </table>
+    <div class="buttons">
+      <button type="button" id="btn-copy" class="primary">Copy results</button>
+      <span id="copy-status" role="status"></span>
+    </div>
+    <textarea id="results-text" rows="12" readonly aria-label="Results as plain text"></textarea>
+  </section>
+
+  <section>
+    <h2>Diagnostics</h2>
+    <p>The probe stores small test values in this browser (keys starting <code>continuum.probe.</code> and a database called <code>continuum-probe</code>).</p>
+    <div class="buttons">
+      <button type="button" id="btn-clear">Clear probe data</button>
+      <span id="clear-status" role="status"></span>
+    </div>
+  </section>
+</body>
+</html>

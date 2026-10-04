@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (after DOC-001)
+Last updated: 2026-10-04 (after BAS-002 build)
 
 ## Repository
 
@@ -9,8 +9,8 @@ Last updated: 2026-10-04 (after DOC-001)
 | Repository | `LoneWolfDen/project_finance_engine` (GitHub; private, to become public). Local: `/Users/wolf/Developer/project_finance_engine` |
 | App root | `finance-engine-v3.5/` (all backlog paths are relative to it; DEC-008) |
 | Branch | `assessment/pwa-readiness-2026-10` (tracks `origin/assessment/pwa-readiness-2026-10`) |
-| Commit | `d43cb51` "Add target architecture, backlog, validation and continuity docs (BAS-001)", on top of `991cacf` (assessment) and `5d453d1` (tagged `pwa-assessment-baseline-2026-10-01`) |
-| Uncommitted | DOC-001 edits to five files in `finance-engine-v3.5/docs/architecture/`, plus these continuity updates. Awaiting owner review and commit |
+| Commit | `d9619fb` "DOC-001: Record identity and Continuum decisions in architecture docs", on top of `d43cb51` (BAS-001), `991cacf` (assessment) and `5d453d1` (tagged `pwa-assessment-baseline-2026-10-01`) |
+| Uncommitted | BAS-002: new `finance-engine-v3.5/tools/probe/` (6 files), plus these continuity updates. Awaiting owner review and commit |
 | Related repository | Continuum: `LoneWolfDen/project_onion` (public; separate; not assessed) |
 
 ## Current implementation state (unchanged since the assessment; no code has been modified)
@@ -58,8 +58,7 @@ Full detail: `docs/architecture/TARGET_ARCHITECTURE.md` (as amended by DOC-001 o
 
 | Blocker | Blocks | Resolution |
 |---|---|---|
-| Planning artefacts uncommitted | All items (models need them on the branch) | Owner commits (BAS-001) |
-| Probe results missing (OV-1…OV-6, CSP, storage origin, save picker) | DEC-020, DEC-023, DEC-026 → SEC-005, PUB-001, ODI-002, SPO-001 | BAS-002 built, then the owner runs it from the synced folder |
+| Probe results missing (OV-1…OV-6, CSP, storage origin, save picker) | DEC-020, DEC-023, DEC-026 → SEC-005, PUB-001, ODI-002, SPO-001 | BAS-002 is built; the owner runs it from the synced folder (`tools/probe/README.md`) |
 | SEC-01/02 legacy server exposure | Safe daily use of the legacy app | SEC-001 |
 | No tests or goldens | All refactors (SRC-*), upgrades (BLD-002/003), DAT-006, FIX-* | TST-001 → TST-004 → TST-002 → TST-003 |
 
@@ -71,7 +70,7 @@ Status of the 88 items. Order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execu
 |---|---|---|---|---|---|
 | — | — | — | — | — | — |
 | 2026-10-04 | BAS-001 | Done | Committed by the owner as `d43cb51` ("Add target architecture, backlog, validation and continuity docs (BAS-001)") | None (no tests named) | None |
-| 2026-10-04 | DOC-001 | Done (uncommitted; awaiting owner review) | `docs/architecture/ADR_REGISTER.md`, `DATA_AND_STORAGE_ARCHITECTURE.md`, `ONEDRIVE_SHAREPOINT_ARCHITECTURE.md`, `TARGET_ARCHITECTURE.md`, `COPILOT_AND_CHAT_ARCHITECTURE.md` (66 lines added; 4 table rows extended in place; no text deleted) | None named; `grep -n "CR-"` manual check run, see the known gap | None |
+| 2026-10-04 | DOC-001 | Done (committed as `d9619fb`) | `docs/architecture/ADR_REGISTER.md`, `DATA_AND_STORAGE_ARCHITECTURE.md`, `ONEDRIVE_SHAREPOINT_ARCHITECTURE.md`, `TARGET_ARCHITECTURE.md`, `COPILOT_AND_CHAT_ARCHITECTURE.md` (66 lines added; 4 table rows extended in place; no text deleted) | None named; `grep -n "CR-"` manual check run, see the known gap | None |
 
 **Known gap after DOC-001:** six `CR-` mentions sit in sections DOC-001 was not allowed to edit, and have no "Superseded" note next to them:
 * `ADR_REGISTER.md` ADR-007;
@@ -81,12 +80,39 @@ Status of the 88 items. Order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execu
 
 DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need an owner-approved scope extension, or the next DOCUMENTATION item, to annotate them.
 
+| Date | ID | Status | Files changed | Tests | Unverified checks |
+|---|---|---|---|---|---|
+| 2026-10-04 | BAS-002 | **Partial**: probe built and pre-checked; acceptance criterion 4 (managed-laptop Edge results recorded) waits for the owner | New `tools/probe/index.html`, `probe.js`, `probe.css`, `second.html`, `data/probe-data.js`, `README.md` | `node --check tools/probe/probe.js` → OK. Developer pre-check in headless Chrome on macOS; owner run in Chrome on macOS; reload-persistence fix verified headless (see Probe results) | All of the probe on the managed laptop: owner runs `tools/probe/README.md` from the synced Teams channel folder |
+
 Everything else is **Not started**.
 
 ## Probe results
 
-(BAS-002 not yet built. Paste the "Copy results" output here, with the date and the folder used.)
+Paste each "Copy results" output below, with the date, the laptop and the folder type. The managed-laptop Edge run from the **synced Teams channel folder** is the one that decides DEC-020, DEC-023 and DEC-026 (V-24).
+
+### Developer pre-check (not a substitute for the owner run)
+
+2026-10-04, headless Chrome on the developer Mac, opened from the repository folder (not synced, no policies). Automatic checks only, no clicks:
+* PASS: 1 (`isSecureContext=true`, origin `file://`), 2, 3, 4 (quota about 10 GB; `persist()` false), 5, 6, 7, 8, 9a, 11a, 15 (`script-src 'self'` loads local scripts), 17 (only the two expected CSP violations).
+* N/A, as designed: 9b, 9c, 10, 11b, 12, 13, 14, 16 (click or manual checks).
+* `second.html#/ref/O-1234567` displayed the hash.
+
+### Owner's Mac, Chrome 154, local folder (not synced): 2026-10-04 21:30 UTC
+
+Pasted by the owner. Run after the reload in step 9:
+* PASS: 1 (`isSecureContext=true`, origin `file://`), 2, 3, 4 (quota 10 GB; `persist()` false), 5, 6, 7, 8, 9a, 11a, 15, 17 (2 violations, both expected).
+* **9c PASS:** the stored folder handle survived the reload with `queryPermission = granted`. This also shows that button 9 (pick, write, read back) had succeeded before the reload.
+* **16 PASS:** a value written by the probe opened from a different folder was visible, so `file://` pages share one storage origin in Chrome on macOS (ADR-009 assumption holds here; V-21).
+* N/A: 9b, 10, 11b, 12, 13, 14. These were lost on the reload, a probe defect fixed the same day: `probe.js` now keeps button results and drop-down choices across a reload. They need re-running.
+
+Not decided by this run (needs the managed laptop): DEC-020, DEC-023, DEC-026, OV-4 (Edge `.js` download warning), OV-6 (policies), and synced-folder behaviour (OV-3 from a OneDrive folder).
+
+### Managed laptop, Edge, synced Teams channel folder
+
+(not yet run)
 
 ## Next task
 
-The owner reviews and commits DOC-001. Then **BAS-002** (build the probe) and SEC-001 (FINAL_EXECUTION_SEQUENCE F0.2).
+The owner reviews and commits BAS-002 (`tools/probe/`), then runs the probe on the work laptop from the synced Teams channel folder (`tools/probe/README.md`) and pastes the results above. Meanwhile a model can start **SEC-001** (FINAL_EXECUTION_SEQUENCE F0.2).
+
+When the results arrive, a model records them and marks the DEPENDENCY_MAP §3 alternatives they point to as **Proposed** in `DECISIONS.md` (append-only; `docs/backlog/` stays unchanged under MNC-STD). The owner confirms them.

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:">
+  <title>Continuum Probe: Second Page</title>
+  <link rel="stylesheet" href="probe.css">
+  <script src="probe.js"></script>
+</head>
+<body data-page="second">
+  <h1>Second page (check 13)</h1>
+  <p id="js-missing" class="alert"><strong>probe.js did not run on this page.</strong> Report: PROBE-JS-BLOCKED (second page).</p>
+  <p>This page was opened from the probe. The part of its address after <code>#</code> is:</p>
+  <p class="big" id="hash">(none)</p>
+  <p id="shared"></p>
+  <p>Go back to the probe tab and record what you saw under check 13. You can close this tab.</p>
+</body>
+</html>
