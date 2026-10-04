@@ -1,0 +1,6 @@
+Empl Name,EmplID,ProjectID,PO_Team_Identifier,Role,Location,RateEffectiveDt,BillRate,HourMultiplier_TimeEntry,ContractEndDt,Allocation_Percentage
+R1_Lead,1001,111111,111111_ProjectAlpha_AWS,Technical Lead,UK,01/07/2025,180,8,31/12/2025,1
+R1_Lead,1001,111111,111111_ProjectAlpha_AWS,Technical Lead,UK,1/1/2026,190,8,30/6/2026,1
+R2_Architect,1002,111111,111111_ProjectAlpha_AWS,Solutions Architect,UK,02/03/2026,200,1,03/02/2027,0.5
+R3_Engineer,1003,111111,111111_ProjectAlpha_AWS,Cloud Engineer(Mid),UK,15/08/2025,125,8,28/02/26,1
+R4_Manager,1004,222222,222222_ProjectBeta_GCP,Engagement Manager,IN,05/01/2026,950,1,31/12/2026,0.25

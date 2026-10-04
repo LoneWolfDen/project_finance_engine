@@ -1,0 +1,7 @@
+Empl Name,Empl ID,Reported Dt,PC Bus Unit,Project ID,Customer Name,Project Name,Week Ending,Country Time Rptd,State Time Rptd,Activity,Reported Status,Worksite Country,Worksite State,Worksite City,Worksite Postal,Bill Indicator,Regular Hours,Overtime Hours,Vacation Hours,Personal Hours,Other,Total Hours
+R1_Lead,1001,03/04/2026,GB005,111111,TestCo,TestProject,,GBR,,PERFORM,Approved,GBR,,CITY,POST,Y,8,0,0,0,0,8.0
+R1_Lead,1001,04/03/2026,GB005,111111,TestCo,TestProject,,GBR,,PERFORM,Approved,GBR,,CITY,POST,Y,8,0,0,0,0,8.0
+R1_Lead,1001,13/04/2026,GB005,111111,TestCo,TestProject,,GBR,,PERFORM,Approved,GBR,,CITY,POST,Y,8,0,0,0,0,8.0
+R1_Lead,1001,04/13/2026,GB005,111111,TestCo,TestProject,,GBR,,PERFORM,Approved,GBR,,CITY,POST,Y,8,0,0,0,0,8.0
+R1_Lead,1001,3/4/26,GB005,111111,TestCo,TestProject,,GBR,,PERFORM,Approved,GBR,,CITY,POST,Y,8,0,0,0,0,8.0
+R1_Lead,1001,2026-04-03,GB005,111111,TestCo,TestProject,,GBR,,PERFORM,Approved,GBR,,CITY,POST,Y,8,0,0,0,0,8.0

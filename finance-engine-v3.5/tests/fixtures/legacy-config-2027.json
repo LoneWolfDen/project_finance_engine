@@ -1,0 +1,158 @@
+{
+  "_fixture": "SYNTHETIC (TST-002): POs and resources spanning 2026-2027 (year filter, multi-year forecast, PO validity mm-yy beyond 2026).",
+  "po_details": [
+    {
+      "PO_Team_Identifier": "444444_ProjectDelta_Data",
+      "PO_WO_value": 400000,
+      "PO_Currency_Code": "GBP",
+      "Normalized_Currency_Code": "USD",
+      "Normalized_Currency_RateMultiplier": 1.3,
+      "PO_Validity": "12-26",
+      "rollover_allowed": false,
+      "WO_StartDate": "2026-01-05",
+      "WO_Approval_Status": "Approved",
+      "PO_WO_Number": 400400400,
+      "ProjectID": 444444,
+      "program": "TestCo Program"
+    },
+    {
+      "PO_Team_Identifier": "444444_ProjectDelta_Data",
+      "PO_WO_value": 250000,
+      "PO_Currency_Code": "GBP",
+      "Normalized_Currency_Code": "USD",
+      "Normalized_Currency_RateMultiplier": 1.3,
+      "PO_Validity": "06-27",
+      "rollover_allowed": true,
+      "WO_StartDate": "2027-01-04",
+      "WO_Approval_Status": "Pending",
+      "PO_WO_Number": 400400401,
+      "ProjectID": 444444,
+      "program": "TestCo Program"
+    }
+  ],
+  "resources": [
+    {
+      "name": "R7_Analyst",
+      "empl_id": 1007,
+      "role": "Data Analyst",
+      "location": "UK",
+      "start": "2026-01-05",
+      "end": "2027-06-30",
+      "bill_rate": 90,
+      "hour_mult": 8,
+      "alloc": 1,
+      "projectID": 444444,
+      "po_team": "444444_ProjectDelta_Data"
+    },
+    {
+      "name": "R8_Engineer",
+      "empl_id": 1008,
+      "role": "Data Engineer",
+      "location": "UK",
+      "start": "2026-03-01",
+      "end": "2026-12-31",
+      "bill_rate": 110,
+      "hour_mult": 8,
+      "alloc": 0.5,
+      "projectID": 444444,
+      "po_team": "444444_ProjectDelta_Data"
+    },
+    {
+      "name": "R8_Engineer",
+      "empl_id": 1008,
+      "role": "Data Engineer",
+      "location": "UK",
+      "start": "2027-01-01",
+      "end": "2027-06-30",
+      "bill_rate": 120,
+      "hour_mult": 8,
+      "alloc": 1,
+      "projectID": 444444,
+      "po_team": "444444_ProjectDelta_Data"
+    },
+    {
+      "name": "R9_Manager",
+      "empl_id": 1009,
+      "role": "Engagement Manager",
+      "location": "UK",
+      "start": "2026-01-05",
+      "end": "2027-06-30",
+      "bill_rate": 900,
+      "hour_mult": 1,
+      "alloc": 0.2,
+      "projectID": 444444,
+      "po_team": "444444_ProjectDelta_Data"
+    }
+  ],
+  "fx_rates": [
+    {
+      "code": "GBP",
+      "effective": "2024-01-01",
+      "rate": 1
+    },
+    {
+      "code": "USD",
+      "effective": "2024-01-01",
+      "rate": 1.3
+    },
+    {
+      "code": "USD",
+      "effective": "2026-01-01",
+      "rate": 1.25
+    },
+    {
+      "code": "INR",
+      "effective": "2024-01-01",
+      "rate": 105
+    },
+    {
+      "code": "INR",
+      "effective": "2026-01-01",
+      "rate": 112
+    }
+  ],
+  "ot_params": [
+    {
+      "type": "Overtime_Hours",
+      "effective": "2025-01-01",
+      "multiplier": 1.5,
+      "trc": "R011"
+    },
+    {
+      "type": "Vacation_Hours",
+      "effective": "2025-01-01",
+      "multiplier": 1,
+      "trc": "R012"
+    },
+    {
+      "type": "Overtime_Hours",
+      "effective": "2026-01-01",
+      "multiplier": 2,
+      "trc": "R011"
+    }
+  ],
+  "expenses": [
+    {
+      "name": "R7_Analyst",
+      "date": "2027-02-01",
+      "amount": 75,
+      "currency": "GBP",
+      "desc": "Workshop",
+      "projectID": 444444,
+      "po_team": "444444_ProjectDelta_Data"
+    }
+  ],
+  "invoices": [
+    {
+      "po_team": "444444_ProjectDelta_Data",
+      "invoice_number": "INV-2026-001",
+      "period_from": "2026-01-01",
+      "period_to": "2026-01-31",
+      "amount": 30000,
+      "status": "Paid",
+      "paid_date": "2026-02-20",
+      "notes": "Jan labour"
+    }
+  ],
+  "raw_actuals": []
+}
