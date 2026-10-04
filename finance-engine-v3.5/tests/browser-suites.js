@@ -5,11 +5,15 @@
   'use strict';
 
   // app/** scripts the browser suites need, in load order.
-  var APP_SCRIPTS = [];
+  var APP_SCRIPTS = [
+    'app/continuum-core/CORE_VERSION.js',
+    'app/continuum-core/html.js'
+  ];
 
   // Browser-safe test files.
   var SUITES = [
-    'unit/harness.test.js'
+    'unit/harness.test.js',
+    'unit/html.test.js'
   ];
 
   function loadScript(src) {
