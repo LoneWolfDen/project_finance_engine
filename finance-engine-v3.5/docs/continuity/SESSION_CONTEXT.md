@@ -1,0 +1,46 @@
+# Session Context: Restart Briefing
+
+For a model starting with no conversation history. Last updated 2026-10-04.
+
+**Project.** Continuum Finance Engine: a project-finance dashboard (PO burn, forecast, actuals, invoices, expenses). The owner is a non-developer who built it with coding agents. Viewers are senior leaders who use it only through the UI. One publisher (the owner) refreshes the data from PeopleSoft CSV/XLSX downloads. It belongs to the owner's "World of Continuum" apps; Continuum itself is the separate repository `LoneWolfDen/project_onion`.
+
+**Where things are.**
+* Git root: `/Users/wolf/Developer/project_finance_engine`.
+* App root: `finance-engine-v3.5/`. Backlog paths are relative to it.
+* Branch: `assessment/pwa-readiness-2026-10`. HEAD `991cacf`.
+* The planning documents may be uncommitted. Check `git status`, and if they are, the next action is BAS-001 (owner).
+
+**Current state.** No application code has been changed yet. The legacy app is `finance-engine-v3.5/index.html` plus `server.py` (until SHL-004 moves it to `legacy/index.html`; check `PROJECT_STATE.md`). Assessment, architecture, an 88-item backlog, validation and continuity are complete.
+
+**Read these files, in this order:**
+1. `finance-engine-v3.5/docs/continuity/PROJECT_STATE.md` (state, blockers, backlog status, probe results)
+2. `finance-engine-v3.5/docs/continuity/NEXT_ACTIONS.md` (what to do next)
+3. `finance-engine-v3.5/docs/continuity/SOURCE_OF_TRUTH.md` (which document wins)
+4. `finance-engine-v3.5/docs/backlog/SMALL_MODEL_EXECUTION_RULES.md` (mandatory rules)
+5. The item's section in `finance-engine-v3.5/docs/backlog/MASTER_BACKLOG.md`. Read the amendment note under its heading first.
+6. `finance-engine-v3.5/docs/continuity/DECISIONS.md` (latest decisions; "-R1" rows supersede the originals)
+7. Only as cited by the item: `docs/architecture/*`, `docs/assessment/*`
+
+**Next action.** The first non-Done row of `NEXT_ACTIONS.md`. As of this briefing that is BAS-001 (owner commit), then DOC-001, BAS-002 and SEC-001. Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
+
+**Key decisions to keep in mind.**
+* Reference ID = the first opportunity number entered, trimmed, whitespace removed, upper-cased, permanent. **No regex, no suffix.**
+* Distribution is `file://` from a user-chosen synced folder. No server for viewers. **No network calls from the app.**
+* Libraries are vendored locally; CDNs currently *do* load, but must not be used.
+* Real names are published. Present mode masks them.
+* Copilot: no API. Fact packs plus a Work-mode handoff. Shared Agent Builder agent on a Teams channel folder.
+* Codespaces: test data only.
+* MIT licence, "Copyright (c) 2026 Vamsi Yedlapalli". Attribution is kept.
+
+**Do not:**
+* Commit, push, tag, rebase or rewrite history (the owner commits).
+* Execute more than one backlog item per session or change, or widen its scope.
+* Edit `docs/assessment/**`, `docs/architecture/**` (except DOCUMENTATION items naming them) or golden files not named by the item.
+* Add frameworks, npm packages, bundlers, minified first-party code or CDN URLs.
+* Add any network call (fetch, XHR, WebSocket, beacon) to the new app, or any analytics.
+* Put real data in the repository or Codespaces. Use only `samples/` and `tests/fixtures/` synthetic data.
+* Merge demo/default values into imported or published data, or invent fallback values (dates, FX rate 1, currencies).
+* Delete user data paths without a backup step. Do not touch the owner's real `published/`, drop or `Registry/` folders.
+* Start Graph, MSAL, Copilot API, connectors or hosting work (Phase 4 records only).
+* Modify `LoneWolfDen/project_onion` from this repository.
+* Claim a browser behaviour works without running it. Report it as UNVERIFIED with manual steps instead.
