@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (after BAS-002 build)
+Last updated: 2026-10-04 (after SEC-001)
 
 ## Repository
 
@@ -9,8 +9,8 @@ Last updated: 2026-10-04 (after BAS-002 build)
 | Repository | `LoneWolfDen/project_finance_engine` (GitHub; private, to become public). Local: `/Users/wolf/Developer/project_finance_engine` |
 | App root | `finance-engine-v3.5/` (all backlog paths are relative to it; DEC-008) |
 | Branch | `assessment/pwa-readiness-2026-10` (tracks `origin/assessment/pwa-readiness-2026-10`) |
-| Commit | `d9619fb` "DOC-001: Record identity and Continuum decisions in architecture docs", on top of `d43cb51` (BAS-001), `991cacf` (assessment) and `5d453d1` (tagged `pwa-assessment-baseline-2026-10-01`) |
-| Uncommitted | BAS-002: new `finance-engine-v3.5/tools/probe/` (6 files), plus these continuity updates. Awaiting owner review and commit |
+| Commit | `60ea319` "BAS-002: remember all probe folders; record Mac Chrome results" (after `18f200b` BAS-002, `d9619fb` DOC-001, `d43cb51` BAS-001, `991cacf` assessment, `5d453d1` tagged `pwa-assessment-baseline-2026-10-01`) |
+| Uncommitted | SEC-001: `finance-engine-v3.5/server.py`, `finance-engine-v3.5/Dockerfile`, root `README.md`, new `finance-engine-v3.5/tests/server/test_server.py`, plus these continuity updates. Awaiting owner review and commit |
 | Related repository | Continuum: `LoneWolfDen/project_onion` (public; separate; not assessed) |
 
 ## Current implementation state (unchanged since the assessment; no code has been modified)
@@ -19,7 +19,7 @@ Last updated: 2026-10-04 (after BAS-002 build)
 * **What runs:** a single 2,279-line hand-written `index.html` (no framework, not minified) plus Python stdlib `server.py` with SQLite. Four parallel copies exist (v1, v2, v3, v3.5).
 * **Works today:** dashboard, forecast, imports and exports. Confirmed on the work laptop when opened from `file://` (Downloads), with CDN libraries loading (OD-5a).
 * **Not working or unsafe:**
-  - server open on all interfaces with wildcard CORS (SEC-01/02, BLOCKER);
+  - ~~server open on all interfaces with wildcard CORS (SEC-01/02, BLOCKER)~~ **mitigated (legacy) by SEC-001 on 2026-10-04**: loopback bind, no CORS, Host/Origin/Content-Type checks, 25 MB body limit;
   - unescaped HTML (XSS);
   - silent data-loss paths (D-01…D-10), including a broken Factory Reset;
   - incomplete backup;
@@ -59,7 +59,6 @@ Full detail: `docs/architecture/TARGET_ARCHITECTURE.md` (as amended by DOC-001 o
 | Blocker | Blocks | Resolution |
 |---|---|---|
 | Probe results missing (OV-1…OV-6, CSP, storage origin, save picker) | DEC-020, DEC-023, DEC-026 → SEC-005, PUB-001, ODI-002, SPO-001 | BAS-002 is built; the owner runs it from the synced folder (`tools/probe/README.md`) |
-| SEC-01/02 legacy server exposure | Safe daily use of the legacy app | SEC-001 |
 | No tests or goldens | All refactors (SRC-*), upgrades (BLD-002/003), DAT-006, FIX-* | TST-001 → TST-004 → TST-002 → TST-003 |
 
 ## Backlog status
@@ -83,6 +82,10 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | Date | ID | Status | Files changed | Tests | Unverified checks |
 |---|---|---|---|---|---|
 | 2026-10-04 | BAS-002 | **Partial**: probe built and pre-checked; acceptance criterion 4 (managed-laptop Edge results recorded) waits for the owner | New `tools/probe/index.html`, `probe.js`, `probe.css`, `second.html`, `data/probe-data.js`, `README.md` | `node --check tools/probe/probe.js` → OK. Developer pre-check in headless Chrome on macOS; owner run in Chrome on macOS; reload-persistence fix verified headless (see Probe results) | All of the probe on the managed laptop: owner runs `tools/probe/README.md` from the synced Teams channel folder |
+
+| 2026-10-04 | SEC-001 | Done (uncommitted; awaiting owner review) | `server.py`, `Dockerfile`, `/README.md`, new `tests/server/test_server.py` | `python3 -m unittest discover -s tests/server -v` → Ran 18 tests, OK. Manual 1 (headless Chrome, temp DB, port 3099): app loaded, POST 200, round-trip OK. Manual 2: socket listens on `127.0.0.1` only; connecting through the Mac's LAN IP failed; LAN-style Host → 421 | Owner: run `python3 server.py` with the real database, open `http://localhost:3005`, save, reload, check data persists. Codespaces: the forwarded Host value is not verified; set `ALLOWED_HOSTS` if it returns 421 (test data only, DEC-032). Docker image not built here |
+
+Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
 
 Everything else is **Not started**.
 
@@ -122,6 +125,6 @@ Not decided by these runs (needs the managed laptop): DEC-020, DEC-023, DEC-026,
 
 ## Next task
 
-The owner reviews and commits BAS-002 (`tools/probe/`), then runs the probe on the work laptop from the synced Teams channel folder (`tools/probe/README.md`) and pastes the results above. Meanwhile a model can start **SEC-001** (FINAL_EXECUTION_SEQUENCE F0.2).
+The owner reviews and commits BAS-002 (`tools/probe/`), then runs the probe on the work laptop from the synced Teams channel folder (`tools/probe/README.md`) and pastes the results above. SEC-001 is done (uncommitted). Next model item: **BLD-004** (F0.3).
 
 When the results arrive, a model records them and marks the DEPENDENCY_MAP §3 alternatives they point to as **Proposed** in `DECISIONS.md` (append-only; `docs/backlog/` stays unchanged under MNC-STD). The owner confirms them.

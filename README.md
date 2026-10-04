@@ -42,7 +42,7 @@ From the repository root, build the image and start a container:
 
 ```bash
 docker build -t finance-engine-v3.5 ./finance-engine-v3.5
-docker run --rm -p 3005:3005 finance-engine-v3.5
+docker run --rm -p 127.0.0.1:3005:3005 finance-engine-v3.5
 ```
 
 Then open [http://localhost:3005](http://localhost:3005).
@@ -53,7 +53,34 @@ directory and run the container from the version directory instead:
 ```bash
 cd finance-engine-v3.5
 docker build -t finance-engine-v3.5 .
-docker run --rm -p 3005:3005 -v "$PWD:/app" finance-engine-v3.5
+docker run --rm -p 127.0.0.1:3005:3005 -v "$PWD:/app" finance-engine-v3.5
+```
+
+### Local-only access
+
+The server is reachable from this computer only. It listens on `127.0.0.1`,
+sends no cross-origin (CORS) headers, answers only requests addressed to
+`localhost:<PORT>` or `127.0.0.1:<PORT>`, and rejects request bodies over 25 MB.
+The Docker commands above publish the port as `127.0.0.1:3005:3005` for the
+same reason.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3005` | Port to listen on |
+| `HOST` | `127.0.0.1` | Interface to listen on (the Docker image sets `0.0.0.0` inside the container) |
+| `ALLOWED_HOSTS` | `localhost:<PORT>,127.0.0.1:<PORT>` | Comma-separated `host:port` values the server answers |
+| `MAX_BODY_BYTES` | `26214400` (25 MB) | Largest accepted request body |
+| `FINANCE_DB` | `finance_engine.db` next to `server.py` | SQLite database path |
+
+### GitHub Codespaces: test data only
+
+A Codespaces forwarded port (`*.app.github.dev`) is hosted by GitHub, outside
+your organisation. **Use Codespaces with test or synthetic data only, never real
+data** (project decision DEC-032). To allow the forwarded address, set it
+explicitly, for example:
+
+```bash
+ALLOWED_HOSTS="<your-codespace>-3005.app.github.dev,localhost:3005" python3 server.py
 ```
 
 ### Optional: Ollama chat mode

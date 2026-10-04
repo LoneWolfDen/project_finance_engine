@@ -6,6 +6,10 @@ GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
 POST /api/config → saves config JSON to SQLite
 POST /api/chat   → proxies to local Ollama LLM
+
+Local use only (SEC-001): binds 127.0.0.1 by default, sends no CORS headers,
+accepts only allowed Host headers, and limits POST bodies.
+Environment: PORT, HOST, ALLOWED_HOSTS, MAX_BODY_BYTES, FINANCE_DB.
 """
 
 import json
@@ -20,12 +24,27 @@ print("✅ RUNNING V3.5 SERVER FILE")
 print("✅ FILE PATH:", __file__)
 
 PORT = int(os.environ.get('PORT', 3005))
+HOST = os.environ.get('HOST', '127.0.0.1')
+MAX_BODY_BYTES = int(os.environ.get('MAX_BODY_BYTES', 25 * 1024 * 1024))
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 
 BASE_DIR = Path(__file__).parent
 HTML_FILE = BASE_DIR / "index.html"
-DB_FILE = BASE_DIR / "finance_engine.db"
+DB_FILE = Path(os.environ.get('FINANCE_DB', BASE_DIR / "finance_engine.db"))
+
+# Fixed error texts, so internal details never reach the browser.
+ERRORS = {
+    400: "Bad request",
+    403: "Origin not allowed",
+    404: "Not found",
+    405: "Method not allowed",
+    413: "Request body too large",
+    415: "Content-Type must be application/json",
+    421: "Host not allowed",
+    500: "Internal server error",
+    503: "Ollama not running",
+}
 
 DEFAULT_CONFIG = {
     "summary": {"total_budget": 0, "used": 0, "remaining": 0},
@@ -66,18 +85,67 @@ def save_config(data, config_id='working'):
     conn.close()
 
 
+def allowed_hosts(port):
+    """Host header values the server answers. ALLOWED_HOSTS is comma-separated host:port
+    values (for example a Codespaces forwarding host); the default is this laptop only."""
+    raw = os.environ.get('ALLOWED_HOSTS', '')
+    hosts = [h.strip().lower() for h in raw.split(',') if h.strip()]
+    return hosts or [f"localhost:{port}", f"127.0.0.1:{port}"]
+
+
 class Handler(BaseHTTPRequestHandler):
 
     def send_json(self, data, status=200):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         if isinstance(data, (dict, list)):
             data = json.dumps(data)
         self.wfile.write(data.encode())
 
+    def send_error_json(self, status):
+        self.send_json({"error": ERRORS[status]}, status)
+
+    def _check_host(self):
+        """Reject requests addressed to any other host name (DNS rebinding, LAN access)."""
+        host = (self.headers.get('Host') or '').strip().lower()
+        if host not in self.server.allowed_hosts:
+            self.send_error_json(421)
+            return False
+        return True
+
+    def _check_post(self):
+        """Return the request body, or None after sending an error response."""
+        content_type = (self.headers.get('Content-Type') or '').split(';')[0].strip().lower()
+        if content_type != 'application/json':
+            self.send_error_json(415)
+            return None
+        origin = self.headers.get('Origin')
+        if origin is not None:
+            allowed = {f"{scheme}://{h}" for h in self.server.allowed_hosts for scheme in ('http', 'https')}
+            if origin.strip().lower() not in allowed:
+                self.send_error_json(403)
+                return None
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+        except ValueError:
+            self.send_error_json(400)
+            return None
+        if length < 0:
+            self.send_error_json(400)
+            return None
+        if length > MAX_BODY_BYTES:
+            self.send_error_json(413)
+            return None
+        try:
+            return self.rfile.read(length).decode()
+        except UnicodeDecodeError:
+            self.send_error_json(400)
+            return None
+
     def do_GET(self):
+        if not self._check_host():
+            return
         if self.path == '/api/config':
             data = load_config('working')
             self.send_json(data if data else "null")
@@ -96,12 +164,18 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(HTML_FILE.read_bytes())
             else:
-                self.send_json({"error": "index.html not found"}, 500)
+                self.send_error_json(500)
 
     def do_POST(self):
+        if not self._check_host():
+            return
+        if self.path not in ('/api/chat', '/api/config', '/api/config/master'):
+            self.send_error_json(404)
+            return
+        body = self._check_post()
+        if body is None:
+            return
         if self.path == '/api/chat':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length).decode()
             try:
                 payload = json.loads(body)
                 ollama_req = json.dumps({
@@ -118,37 +192,39 @@ class Handler(BaseHTTPRequestHandler):
                 result = json.loads(resp.read())
                 self.send_json({"content": result.get("message", {}).get("content", "")})
             except URLError:
-                self.send_json({"error": "Ollama not running"}, 503)
-            except Exception as e:
-                self.send_json({"error": str(e)}, 500)
+                self.send_error_json(503)
+            except Exception:
+                self.send_error_json(500)
 
-        elif self.path in ('/api/config', '/api/config/master'):
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length).decode()
+        else:
             try:
                 parsed = json.loads(body)
-            except json.JSONDecodeError as e:
-                self.send_json({"error": str(e)}, 400)
+            except json.JSONDecodeError:
+                self.send_error_json(400)
                 return
             config_id = 'master' if 'master' in self.path else 'working'
             save_config(json.dumps(parsed), config_id)
             self.send_json({"ok": True, "id": config_id})
-        else:
-            self.send_json({"error": "Not found"}, 404)
 
     def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
+        # No cross-origin access: preflight requests are refused.
+        self.send_error_json(405)
 
     def log_message(self, format, *args):
         return
 
 
+def make_server(host=None, port=None):
+    """Create the server. Tests pass port 0 to get a free port."""
+    server = HTTPServer((HOST if host is None else host, PORT if port is None else port), Handler)
+    server.allowed_hosts = allowed_hosts(server.server_address[1])
+    return server
+
+
 if __name__ == "__main__":
     get_db()
+    server = make_server()
     print(f"✅ Project Finance Dashboard v3.5 → http://localhost:{PORT}")
+    print(f"✅ Listening on {HOST}:{PORT}; allowed hosts: {', '.join(server.allowed_hosts)}")
     print(f"✅ SQLite DB: {DB_FILE}")
-    HTTPServer(("", PORT), Handler).serve_forever()
+    server.serve_forever()
