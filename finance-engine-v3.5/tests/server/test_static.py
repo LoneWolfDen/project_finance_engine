@@ -105,9 +105,10 @@ class VendoredLibraryTests(ServerTestCase):
     def test_index_html_uses_vendored_scripts_only(self):
         html = (server.BASE_DIR / 'index.html').read_text(encoding='utf-8')
         sources = re.findall(r'<script src="([^"]+)"', html)
-        self.assertEqual(len(sources), 6)
+        self.assertEqual(len([s for s in sources if s.startswith('vendor/')]), 6)
         for src in sources:
-            self.assertTrue(src.startswith('vendor/'), src)
+            # Only local files: the six vendored libraries and continuum-core/app scripts (SEC-002).
+            self.assertTrue(src.startswith(('vendor/', 'app/')), src)
             self.assertTrue((server.BASE_DIR / src).is_file(), src)
             status, _, _ = self.request('GET', '/' + src)
             self.assertEqual(status, 200, src)
