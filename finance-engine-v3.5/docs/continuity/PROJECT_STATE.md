@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (overnight run: after CHT-002)
+Last updated: 2026-10-04 (overnight run: after BLD-002)
 
 ## Repository
 
@@ -95,6 +95,7 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | 2026-10-04 | CHT-001 | Done | `index.html`: `smartAnswer` rewritten (scope line on every answer, Fact: labels, budget regex `\b(budget\|remaining budget\|remaining)\b`, zero-burn-rate text, "Planned allocation above 80% (not measured utilisation)", invoices filtered by team and year, whole-word person match; two unused variables removed); new `scopeLine`, `wholeWord`. New `tests/unit/legacy-smart-answer.test.js` | TEST-NODE 79 passed (goldens unchanged); 7 smart-answer tests. Manual (headless Chrome, sample data): "remaining budget" → "Scope: All years · All PO teams · Source: SAMPLE DATA (not real) · Actuals to Dec-25 \| Fact: 💰 PO Value: £249,590 \| … Remaining: £30,803 \| Burn rate: £2,624/day (~12 working days left)"; "who is over utilized" → "… Planned allocation above 80% (not measured utilisation): Resource_6 (100%) …"; "invoices" → "… 0 invoices in scope …" | None |
 | 2026-10-04 | CHT-002 | Done | `index.html` chat script: `CHAT_FLAGS={ollama:false,copilotIframe:false}`, `enabledChatModes`, `initChatMode` (resets a stored disabled mode to smart, hides the Mode button, replaces the 'click Mode to switch' hint), `switchChatMode` cycles enabled modes only, `sendChat` uses Smart whenever the mode is not enabled, Ollama errors name the server's model (no more phi3:mini). `server.py`: `/api/chat` → 404 unless `ENABLE_OLLAMA=1`; its 503 includes `model`. Tests: new `tests/unit/legacy-chat-modes.test.js`, 2 new cases in `tests/server/test_server.py`. Code is kept (REP-003); `pf_copilot_url` untouched | TEST-NODE 84 passed (London and New York); TEST-SERVER 34 OK; TEST-BROWSER All suites passed (16). Manual (headless Chrome, server): Mode button hidden; stored 'ollama' reset to 'smart'; "burn rate" answered locally with scope line; POST /api/chat → 404 | None |
 | 2026-10-04 | SEC-002 (test fix) | Done | `tests/server/test_static.py`: the vendored-scripts test now allows `app/` scripts (SEC-002 added two). Commit `f96e4ef` | TEST-SERVER was failing 1 test after the SEC-002 commit `29a6bdf` because TEST-SERVER was not run for SEC-002; now 34 OK | None |
+| 2026-10-04 | BLD-002 | Done (criterion 2 UNVERIFIED: open the export in Excel) | `index.html` (one line → `vendor/xlsx-0.20.3/`), new `vendor/xlsx-0.20.3/` (xlsx.full.min.js + LICENSE), removed `vendor/xlsx-0.18.5/`, `vendor/VENDOR.md` (rows, upgrade and advisory notes), new `tests/unit/vendor-xlsx.test.js`, new `tests/golden/vendor/xlsx-basic.json` (made with 0.18.5 before the swap). Also (not in the item's list): new `tests/support/vendor-loader.js` (loads the app's SheetJS for tests; test files cannot require), and `tests/support/make-xlsx-fixtures.js` now uses it instead of the deleted 0.18.5 path | 0.20.3 = latest on cdn.sheetjs.com; SHA-256 identical to the official xlsx-0.20.3.tgz. Advisory check (GitHub advisory DB): CVE-2024-22363 (<0.20.2) and CVE-2023-30533 (<0.19.3) fixed. 0.20.3 parses the xlsx fixture into the same rows as 0.18.5; write/read round trip OK. All suites: NODE 87 (London, New York), SERVER 34 OK, BROWSER 16. Manual (headless Chrome): uploaded test_ResourceRules.csv (14 rules) and timesheet-basic.xlsx (20 rows) through the real inputs; Export Excel → valid zip, 5 sheets, re-read with 0.20.3 | Owner: open an Excel export from the app in Microsoft Excel; it must open without a repair prompt (acceptance criterion 2) |
 <!-- overnight-rows -->
 
 Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
@@ -111,6 +112,7 @@ Everything else is **Not started**.
 * Assessment finding **SEC-05: fixed for the chat panel (legacy)** by SEC-002. Other renderers remain for SEC-003/SEC-004
 * Assessment findings **CH-02…CH-05: fixed (legacy)** by CHT-001
 * Assessment findings **SEC-09, SEC-10: closed by default (legacy)** by CHT-002 (Ollama proxy and Copilot iframe off unless re-enabled)
+* Assessment finding **SEC-06: closed (legacy)** by BLD-002 (SheetJS 0.20.3; advisories checked 2026-10-04)
 <!-- findings -->
 
 ## Test commands (from `finance-engine-v3.5/`)

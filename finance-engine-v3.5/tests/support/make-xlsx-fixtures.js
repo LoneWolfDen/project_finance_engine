@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Generates tests/fixtures/xlsx/timesheet-basic.xlsx with the vendored SheetJS 0.18.5 (the
-// same library the legacy app uses), loaded into a vm context. Built-in Node modules only.
+// Generates tests/fixtures/xlsx/timesheet-basic.xlsx with the vendored SheetJS that index.html
+// loads (0.18.5 when the fixture was first made; 0.20.3 since BLD-002), in a vm context.
+// Built-in Node modules only.
 //
 //   node tests/support/make-xlsx-fixtures.js
 //
@@ -13,18 +14,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 
 const APP_DIR = path.resolve(__dirname, '..', '..');
-const SHEETJS = path.join(APP_DIR, 'vendor', 'xlsx-0.18.5', 'xlsx.full.min.js');
 const OUT = path.join(APP_DIR, 'tests', 'fixtures', 'xlsx', 'timesheet-basic.xlsx');
 
 function main() {
-  const ctx = vm.createContext({ console });
-  ctx.window = ctx;
-  vm.runInContext(fs.readFileSync(SHEETJS, 'utf8'), ctx, { filename: 'xlsx.full.min.js' });
-  const XLSX = ctx.XLSX;
-  if (!XLSX || XLSX.version !== '0.18.5') throw new Error('Expected vendored SheetJS 0.18.5, got ' + (XLSX && XLSX.version));
+  const XLSX = require('./vendor-loader.js').sheetjs().XLSX;
 
   const basic = JSON.parse(fs.readFileSync(path.join(APP_DIR, 'tests', 'fixtures', 'legacy-config-basic.json'), 'utf8'));
   const rows = basic.raw_actuals.slice(0, 20);
