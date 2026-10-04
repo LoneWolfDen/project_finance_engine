@@ -2277,6 +2277,20 @@ function showCopilotSetup(){
 
 // ─── SMART ASSISTANT (rule-based, no model needed) ───
 // Answers are SafeHtml (Continuum.html.t): data values are escaped, the markup is kept (SEC-002).
+// Every answer starts with a scope line saying what it covers and whether the data is sample (CHT-001).
+function scopeLine(D){
+  const months=D.actuals||[];
+  const last=months.length?months[months.length-1].month:'none';
+  const teams=selectedPoTeams.length?selectedPoTeams.length+' PO team(s)':'All PO teams';
+  const source=sampleSections(D.cfg).length?'SAMPLE DATA (not real)':'loaded data';
+  return `Scope: ${selectedYear||'All years'} · ${teams} · Source: ${source} · Actuals to ${last}`;
+}
+// True when term appears in text as a whole word (letters, digits and _ count as word characters).
+function wholeWord(text,term){
+  if(!term)return false;
+  const re=new RegExp('(^|[^\\p{L}\\p{N}_])'+term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[^\\p{L}\\p{N}_])','u');
+  return re.test(text);
+}
 function smartAnswer(msg,D){
   const H=Continuum.html;
   const q=msg.toLowerCase();
@@ -2284,59 +2298,61 @@ function smartAnswer(msg,D){
   const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
   const fRes=normFilter?res.filter(r=>normFilter.includes((r.po_team||'').replace(/\s+/g,''))):res;
   const people=[...new Set(fRes.map(r=>r.name))];
+  const reply=body=>H.t`<small>${scopeLine(D)}</small><br>${body}`;
 
   // Budget/remaining
-  if(q.match(/budget|remaining|left|how much/)){
-    return H.t`💰 PO Value: ${f(D.fc.totalPOValue)} | Actuals: ${f(D.tAct)} | Expenses: ${f(D.tExp)} | <strong>Remaining: ${f(D.rem)}</strong> | Burn rate: ${f(D.fc.rate)}/day${D.rem>0?` (~${Math.round(D.rem/D.fc.rate)} working days left)`:' ⚠️ Over budget!'}`;}
+  if(q.match(/\b(budget|remaining budget|remaining)\b/)){
+    const days=D.rem<=0?' ⚠️ Over budget!':D.fc.rate>0?` (~${Math.round(D.rem/D.fc.rate)} working days left)`:' (cannot estimate days remaining (burn rate is 0))';
+    return reply(H.t`Fact: 💰 PO Value: ${f(D.fc.totalPOValue)} | Actuals: ${f(D.tAct)} | Expenses: ${f(D.tExp)} | <strong>Remaining: ${f(D.rem)}</strong> | Burn rate: ${f(D.fc.rate)}/day${days}`);}
 
   // Burn rate
   if(q.match(/burn\s*rate|daily\s*cost|per\s*day/)){
-    return H.t`🔥 Current burn rate: <strong>${f(D.fc.rate)}/day</strong> across ${people.length} people. Total forecast: ${f(D.fc.total)} over ${D.fc.days} working days.`;}
+    return reply(H.t`Fact: 🔥 Current burn rate: <strong>${f(D.fc.rate)}/day</strong> across ${people.length} people. Total forecast: ${f(D.fc.total)} over ${D.fc.days} working days.`);}
 
-  // Utilization / over-utilized
+  // Planned allocation (this is not measured utilisation)
   if(q.match(/utiliz|over.?util|under.?util|who is over/)){
-    const fullCfg=loadWork();
-    const byP={};fRes.forEach(r=>{const k=r.name;if(!byP[k])byP[k]={avail:0,actual:0};});
-    // simplified: just show allocation summary
     const overAlloc=fRes.filter(r=>r.alloc>0.8).map(r=>`${r.name} (${r.alloc*100}%)`);
-    return H.t`👥 ${people.length} people in scope. High allocation (>80%): ${overAlloc.length?overAlloc.slice(0,5).join(', '):'None'}. Check ⏱️ Utilization tab for full actuals-based analysis.`;}
+    return reply(H.t`Fact: 👥 <strong>Planned allocation above 80% (not measured utilisation)</strong>: ${overAlloc.length?overAlloc.slice(0,5).join(', '):'None'}. ${people.length} people in scope. Check the ⏱️ Utilization tab for hours actually recorded.`);}
 
   // Resources / who / team
   if(q.match(/who|resource|people|team|staff/)){
     const summary=H.raw(people.slice(0,10).map(n=>{const rules=fRes.filter(r=>r.name===n);return String(H.t`${n} (${rules[0].role}, £${rules[0].bill_rate}/hr, ${rules[0].alloc*100}%)`);}).join('<br>'));
-    return H.t`👥 <strong>${people.length} people</strong> in ${[...new Set(fRes.map(r=>r.po_team))].length} team(s):<br>${summary}${people.length>10?H.raw('<br>...and '+(people.length-10)+' more'):''}`;}
+    return reply(H.t`Fact: 👥 <strong>${people.length} people</strong> in ${[...new Set(fRes.map(r=>r.po_team))].length} team(s):<br>${summary}${people.length>10?H.raw('<br>...and '+(people.length-10)+' more'):''}`);}
 
   // Forecast
   if(q.match(/forecast|predict|project.*cost/)){
-    return H.t`📈 Total forecast: <strong>${f(D.fc.total)}</strong> over ${D.fc.days} working days. PO Value: ${f(D.fc.totalPOValue)}. Variance from budget: ${f(D.fc.totalPOValue-D.fc.total)} ${D.fc.total>D.fc.totalPOValue?'⚠️ OVER':'✅ Under'}.`;}
+    return reply(H.t`Fact: 📈 Total forecast: <strong>${f(D.fc.total)}</strong> over ${D.fc.days} working days. PO Value: ${f(D.fc.totalPOValue)}. Variance from budget: ${f(D.fc.totalPOValue-D.fc.total)} ${D.fc.total>D.fc.totalPOValue?'⚠️ OVER':'✅ Under'}.`);}
 
   // Actuals / spent
   if(q.match(/actual|spent|spend|cost so far/)){
     const months=D.actuals||[];
     const latest=months.length?months[months.length-1]:null;
-    return H.t`📊 Total actuals: <strong>${f(D.tAct)}</strong> across ${months.length} months. ${latest?H.t`Latest: ${latest.month} = ${f(latest.actuals)}`:''} Expenses: ${f(D.tExp)}.`;}
+    return reply(H.t`Fact: 📊 Total actuals: <strong>${f(D.tAct)}</strong> across ${months.length} months. ${latest?H.t`Latest: ${latest.month} = ${f(latest.actuals)}`:''} Expenses: ${f(D.tExp)}.`);}
 
-  // Invoices
+  // Invoices (same team and year filters as the rest of the dashboard)
   if(q.match(/invoice|paid|submitted|billing/)){
-    const invs=D.cfg.invoices||[];
+    const invs=(D.cfg.invoices||[]).filter(i=>{
+      if(normFilter&&!normFilter.includes((i.po_team||'').replace(/\s+/g,'')))return false;
+      if(selectedYear&&!String(i.period_from||'').startsWith(selectedYear)&&!String(i.period_to||'').startsWith(selectedYear))return false;
+      return true;
+    });
     const paid=invs.filter(i=>i.status==='Paid');
     const sub=invs.filter(i=>i.status==='Submitted');
-    return H.t`🧾 ${invs.length} invoices total. Paid: ${paid.length} (${f(paid.reduce((s,i)=>s+i.amount,0))}). Submitted: ${sub.length} (${f(sub.reduce((s,i)=>s+i.amount,0))}). Draft: ${invs.length-paid.length-sub.length}.`;}
+    return reply(H.t`Fact: 🧾 ${invs.length} invoices in scope. Paid: ${paid.length} (${f(paid.reduce((s,i)=>s+i.amount,0))}). Submitted: ${sub.length} (${f(sub.reduce((s,i)=>s+i.amount,0))}). Draft: ${invs.length-paid.length-sub.length}.`);}
 
-  // Specific person
-  const personMatch=people.find(p=>q.includes(p.toLowerCase()));
+  // Specific person (whole-word match, so "R1" does not match "R10")
+  const personMatch=people.find(p=>wholeWord(q,String(p).toLowerCase()));
   if(personMatch){
     const rules=fRes.filter(r=>r.name===personMatch);
-    const totalDays=rules.reduce((s,r)=>{const d=Math.round((new Date(r.end)-new Date(r.start))/86400000);return s+d;},0);
-    return H.t`👤 <strong>${personMatch}</strong>: ${rules.length} allocation rule(s). Role: ${rules[0].role}. Rate: £${rules[0].bill_rate}/hr. Period: ${rules[0].start} → ${rules[rules.length-1].end}. Daily cost: £${(rules[0].bill_rate*rules[0].alloc*8).toFixed(0)}/day.`;}
+    return reply(H.t`Fact: 👤 <strong>${personMatch}</strong>: ${rules.length} allocation rule(s). Role: ${rules[0].role}. Rate: £${rules[0].bill_rate}/hr. Period: ${rules[0].start} → ${rules[rules.length-1].end}. Daily cost: £${(rules[0].bill_rate*rules[0].alloc*8).toFixed(0)}/day.`);}
 
   // Expenses
   if(q.match(/expense|claim|travel/)){
-    return H.t`💳 Total expenses: <strong>${f(D.tExp)}</strong> (${D.filteredExpenses.length} claims). ${D.filteredExpenses.slice(0,3).map(e=>`${e.name}: ${f(e.amount)} (${e.desc})`).join(', ')}.`;}
+    return reply(H.t`Fact: 💳 Total expenses: <strong>${f(D.tExp)}</strong> (${D.filteredExpenses.length} claims). ${D.filteredExpenses.slice(0,3).map(e=>`${e.name}: ${f(e.amount)} (${e.desc})`).join(', ')}.`);}
 
   // Help
   if(q.match(/help|what can you|commands/)){
-    return H.t`I can answer questions about:<br>• 💰 Budget/remaining<br>• 🔥 Burn rate<br>• 👥 Resources/team<br>• 📈 Forecast<br>• 📊 Actuals/spend<br>• 🧾 Invoices<br>• 💳 Expenses<br>• 👤 Specific person (use their name)<br>• 👥 Utilization<br><br>Switch to <strong>Ollama AI</strong> mode for free-form questions.`;}
+    return reply(H.t`I can answer questions about:<br>• 💰 Budget/remaining<br>• 🔥 Burn rate<br>• 👥 Resources/team<br>• 📈 Forecast<br>• 📊 Actuals/spend<br>• 🧾 Invoices<br>• 💳 Expenses<br>• 👤 Specific person (use their name)<br>• 👥 Planned allocation<br><br>Switch to <strong>Ollama AI</strong> mode for free-form questions.`);}
 
   return null;// no match → fallback
 }
