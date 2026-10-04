@@ -2,6 +2,7 @@
 Project Finance Portfolio Engine v3.5 — SQLite-backed server.
 Finance Engine – Version 3.5
 GET  /           → serves index.html
+GET  /vendor/…, /app/… → serves .js/.css/.json files from those folders (BLD-004)
 GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
 POST /api/config → saves config JSON to SQLite
@@ -15,8 +16,10 @@ Environment: PORT, HOST, ALLOWED_HOSTS, MAX_BODY_BYTES, FINANCE_DB.
 import json
 import sqlite3
 import os
+import re
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import unquote
 from urllib.request import Request, urlopen
 from urllib.error import URLError
 
@@ -32,6 +35,9 @@ OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 
 BASE_DIR = Path(__file__).parent
 HTML_FILE = BASE_DIR / "index.html"
+STATIC_DIRS = ("vendor", "app")
+STATIC_PATH = re.compile(r"^/(vendor|app)/[A-Za-z0-9._/-]+\.(js|css|json)$")
+STATIC_TYPES = {".js": "text/javascript", ".css": "text/css", ".json": "application/json"}
 DB_FILE = Path(os.environ.get('FINANCE_DB', BASE_DIR / "finance_engine.db"))
 
 # Fixed error texts, so internal details never reach the browser.
@@ -154,8 +160,33 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error_json(400)
             return None
 
+    def _serve_static(self):
+        """Serve a file from vendor/ or app/. Returns False if the path is not a static path.
+        Anything under those folders that is missing or not allowed gets 404 (no listings)."""
+        path = unquote(self.path.split('?', 1)[0].split('#', 1)[0])
+        if not path.startswith(tuple(f"/{d}/" for d in STATIC_DIRS)):
+            return False
+        if not STATIC_PATH.match(path) or '..' in path.split('/'):
+            self.send_error_json(404)
+            return True
+        root = (BASE_DIR / path.split('/')[1]).resolve()
+        target = (BASE_DIR / path.lstrip('/')).resolve()
+        if root not in target.parents or not target.is_file():
+            self.send_error_json(404)
+            return True
+        body = target.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", STATIC_TYPES[target.suffix])
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        self.wfile.write(body)
+        return True
+
     def do_GET(self):
         if not self._check_host():
+            return
+        if self._serve_static():
             return
         if self.path == '/api/config':
             data = load_config('working')

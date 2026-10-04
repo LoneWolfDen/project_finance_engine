@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (after SEC-001)
+Last updated: 2026-10-04 (overnight run: after BLD-004)
 
 ## Repository
 
@@ -9,8 +9,8 @@ Last updated: 2026-10-04 (after SEC-001)
 | Repository | `LoneWolfDen/project_finance_engine` (GitHub; private, to become public). Local: `/Users/wolf/Developer/project_finance_engine` |
 | App root | `finance-engine-v3.5/` (all backlog paths are relative to it; DEC-008) |
 | Branch | `assessment/pwa-readiness-2026-10` (tracks `origin/assessment/pwa-readiness-2026-10`) |
-| Commit | `60ea319` "BAS-002: remember all probe folders; record Mac Chrome results" (after `18f200b` BAS-002, `d9619fb` DOC-001, `d43cb51` BAS-001, `991cacf` assessment, `5d453d1` tagged `pwa-assessment-baseline-2026-10-01`) |
-| Uncommitted | SEC-001: `finance-engine-v3.5/server.py`, `finance-engine-v3.5/Dockerfile`, root `README.md`, new `finance-engine-v3.5/tests/server/test_server.py`, plus these continuity updates. Awaiting owner review and commit |
+| Commit | See `git log --oneline` on this branch. Overnight run started from `60ea319` (BAS-002 follow-up); items committed one per commit (DEC-034) |
+| Uncommitted | None between items. During the overnight run (DEC-034) each item is committed locally on its own (`<ID>: <title>`), never pushed. See `git log` |
 | Related repository | Continuum: `LoneWolfDen/project_onion` (public; separate; not assessed) |
 
 ## Current implementation state (unchanged since the assessment; no code has been modified)
@@ -82,12 +82,17 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | Date | ID | Status | Files changed | Tests | Unverified checks |
 |---|---|---|---|---|---|
 | 2026-10-04 | BAS-002 | **Partial**: probe built and pre-checked; acceptance criterion 4 (managed-laptop Edge results recorded) waits for the owner | New `tools/probe/index.html`, `probe.js`, `probe.css`, `second.html`, `data/probe-data.js`, `README.md` | `node --check tools/probe/probe.js` → OK. Developer pre-check in headless Chrome on macOS; owner run in Chrome on macOS; reload-persistence fix verified headless (see Probe results) | All of the probe on the managed laptop: owner runs `tools/probe/README.md` from the synced Teams channel folder |
-
-| 2026-10-04 | SEC-001 | Done (uncommitted; awaiting owner review) | `server.py`, `Dockerfile`, `/README.md`, new `tests/server/test_server.py` | `python3 -m unittest discover -s tests/server -v` → Ran 18 tests, OK. Manual 1 (headless Chrome, temp DB, port 3099): app loaded, POST 200, round-trip OK. Manual 2: socket listens on `127.0.0.1` only; connecting through the Mac's LAN IP failed; LAN-style Host → 421 | Owner: run `python3 server.py` with the real database, open `http://localhost:3005`, save, reload, check data persists. Codespaces: the forwarded Host value is not verified; set `ALLOWED_HOSTS` if it returns 421 (test data only, DEC-032). Docker image not built here |
+| 2026-10-04 | SEC-001 | Done (committed `d96c227`; follow-up fix `bee586c` reads rejected bodies before replying, which removed a flaky connection-reset test failure) | `server.py`, `Dockerfile`, `/README.md`, new `tests/server/test_server.py` | `python3 -m unittest discover -s tests/server -v` → Ran 18 tests, OK. Manual 1 (headless Chrome, temp DB, port 3099): app loaded, POST 200, round-trip OK. Manual 2: socket listens on `127.0.0.1` only; connecting through the Mac's LAN IP failed; LAN-style Host → 421 | Owner: run `python3 server.py` with the real database, open `http://localhost:3005`, save, reload, check data persists. Codespaces: the forwarded Host value is not verified; set `ALLOWED_HOSTS` if it returns 421 (test data only, DEC-032). Docker image not built here |
+| 2026-10-04 | BLD-004 | Done | `server.py` (`_serve_static`, static path rules), `Dockerfile` (COPY app, vendor), new `tests/server/test_static.py`, `app/.keep`, `vendor/.keep` | TEST-SERVER: Ran 28 tests, OK. Manual: `/vendor/.keep` → 404; app loads and renders through the server (headless Chrome screenshot) | None (Docker image not built here) |
+<!-- overnight-rows -->
 
 Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
 
 Everything else is **Not started**.
+
+**Findings during execution** (not in the assessment; not fixed, because outside the item that found them):
+* **L-01 (2026-10-04, found during BLD-004):** when served by `server.py`, the legacy app throws `Uncaught Error: Canvas is already in use. Chart with ID '0' must be destroyed before the canvas with ID 'c1' can be reused.` on every load (headless Chrome). It also happens with the original pre-SEC-001 server (`5d453d1`), so it is pre-existing. It does not occur when the app is opened from `file://`. Likely cause: the overview renders twice (initial render plus the server config load) without destroying chart c1. The dashboard still renders. Candidate for a FIX item or TST-003 golden note
+<!-- findings -->
 
 ## Probe results
 
