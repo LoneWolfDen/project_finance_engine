@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (overnight run: after BLD-001)
+Last updated: 2026-10-04 (overnight run: after TST-001)
 
 ## Repository
 
@@ -85,6 +85,7 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | 2026-10-04 | SEC-001 | Done (committed `d96c227`; follow-up fix `bee586c` reads rejected bodies before replying, which removed a flaky connection-reset test failure) | `server.py`, `Dockerfile`, `/README.md`, new `tests/server/test_server.py` | `python3 -m unittest discover -s tests/server -v` → Ran 18 tests, OK. Manual 1 (headless Chrome, temp DB, port 3099): app loaded, POST 200, round-trip OK. Manual 2: socket listens on `127.0.0.1` only; connecting through the Mac's LAN IP failed; LAN-style Host → 421 | Owner: run `python3 server.py` with the real database, open `http://localhost:3005`, save, reload, check data persists. Codespaces: the forwarded Host value is not verified; set `ALLOWED_HOSTS` if it returns 421 (test data only, DEC-032). Docker image not built here |
 | 2026-10-04 | BLD-004 | Done | `server.py` (`_serve_static`, static path rules), `Dockerfile` (COPY app, vendor), new `tests/server/test_static.py`, `app/.keep`, `vendor/.keep` | TEST-SERVER: Ran 28 tests, OK. Manual: `/vendor/.keep` → 404; app loads and renders through the server (headless Chrome screenshot) | None (Docker image not built here) |
 | 2026-10-04 | BLD-001 | Done (criterion 4 UNVERIFIED: managed laptop) | `index.html` lines 4–9 only (six `<script src>` → `vendor/…`), new `vendor/<lib>-<ver>/` (6 libraries + 6 licence files), `vendor/VENDOR.md`, `tests/server/test_static.py` (hash + path tests). `server.py` unchanged (amendment V-01); Dockerfile COPY vendor already added by BLD-004 | TEST-SERVER: Ran 32 tests, OK (incl. SHA-256 of all 12 files vs VENDOR.md). Manual (headless Chrome, CDN hosts blocked), via server and via file://: all six libraries defined; all 11 tabs render with no new errors; Excel, PDF (4 pages) and PPTX exports downloaded and are valid files; only hosts contacted: localhost / file:. `grep https:// index.html` → only the GitHub profile link. Integrity: datalabels and xlsx match jsDelivr's published npm hashes; chart.umd.min.js is jsDelivr's auto-minified build (noted in VENDOR.md) | Owner: open the app on the managed laptop with DevTools → Network and confirm no CDN hosts (acceptance criterion 4) |
+| 2026-10-04 | TST-001 | Done | New `tests/harness.js`, `tests/run-node.js`, `tests/index.html` (styles inline: no CSS file is listed), `tests/browser-suites.js`, `tests/unit/harness.test.js`, `tests/README.md`. Sandbox and smoke test moved to TST-004 (V-03) | `node tests/run-node.js` → 10 passed, 0 failed, All suites passed (exit 0). `--suite` and `--tz` work. A temporary failing test made it exit 1 (removed). `tests/index.html` via file:// in headless Chrome → "All suites passed (10 tests)" | Owner: open `tests/index.html` from Finder/Explorer in Edge and see "All suites passed" |
 <!-- overnight-rows -->
 
 Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
@@ -95,6 +96,14 @@ Everything else is **Not started**.
 * **L-01 (2026-10-04, found during BLD-004):** when served by `server.py`, the legacy app throws `Uncaught Error: Canvas is already in use. Chart with ID '0' must be destroyed before the canvas with ID 'c1' can be reused.` on every load (headless Chrome). It also happens with the original pre-SEC-001 server (`5d453d1`), so it is pre-existing. It does not occur when the app is opened from `file://`. Likely cause: the overview renders twice (initial render plus the server config load) without destroying chart c1. The dashboard still renders. Candidate for a FIX item or TST-003 golden note
 * **BLD-001 result (2026-10-04):** the legacy app works without any CDN. All six libraries load from `vendor/` (byte-identical, same versions)
 <!-- findings -->
+
+## Test commands (from `finance-engine-v3.5/`)
+
+| Suite | Command |
+|---|---|
+| Node (TEST-NODE) | `node tests/run-node.js` (options `--suite=`, `--tz=`, `--update-golden=<dir>`) |
+| Browser (TEST-BROWSER) | open `tests/index.html` via `file://` → "All suites passed" |
+| Legacy server (TEST-SERVER) | `python3 -m unittest discover -s tests/server -v` |
 
 ## Probe results
 
