@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (overnight run: after TST-001)
+Last updated: 2026-10-04 (overnight run: after TST-004)
 
 ## Repository
 
@@ -86,6 +86,7 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | 2026-10-04 | BLD-004 | Done | `server.py` (`_serve_static`, static path rules), `Dockerfile` (COPY app, vendor), new `tests/server/test_static.py`, `app/.keep`, `vendor/.keep` | TEST-SERVER: Ran 28 tests, OK. Manual: `/vendor/.keep` → 404; app loads and renders through the server (headless Chrome screenshot) | None (Docker image not built here) |
 | 2026-10-04 | BLD-001 | Done (criterion 4 UNVERIFIED: managed laptop) | `index.html` lines 4–9 only (six `<script src>` → `vendor/…`), new `vendor/<lib>-<ver>/` (6 libraries + 6 licence files), `vendor/VENDOR.md`, `tests/server/test_static.py` (hash + path tests). `server.py` unchanged (amendment V-01); Dockerfile COPY vendor already added by BLD-004 | TEST-SERVER: Ran 32 tests, OK (incl. SHA-256 of all 12 files vs VENDOR.md). Manual (headless Chrome, CDN hosts blocked), via server and via file://: all six libraries defined; all 11 tabs render with no new errors; Excel, PDF (4 pages) and PPTX exports downloaded and are valid files; only hosts contacted: localhost / file:. `grep https:// index.html` → only the GitHub profile link. Integrity: datalabels and xlsx match jsDelivr's published npm hashes; chart.umd.min.js is jsDelivr's auto-minified build (noted in VENDOR.md) | Owner: open the app on the managed laptop with DevTools → Network and confirm no CDN hosts (acceptance criterion 4) |
 | 2026-10-04 | TST-001 | Done | New `tests/harness.js`, `tests/run-node.js`, `tests/index.html` (styles inline: no CSS file is listed), `tests/browser-suites.js`, `tests/unit/harness.test.js`, `tests/README.md`. Sandbox and smoke test moved to TST-004 (V-03) | `node tests/run-node.js` → 10 passed, 0 failed, All suites passed (exit 0). `--suite` and `--tz` work. A temporary failing test made it exit 1 (removed). `tests/index.html` via file:// in headless Chrome → "All suites passed (10 tests)" | Owner: open `tests/index.html` from Finder/Explorer in Edge and see "All suites passed" |
+| 2026-10-04 | TST-004 | Done | New `tests/support/legacy-sandbox.js` (`loadLegacy`), `tests/characterisation/legacy-smoke.test.js` | `node tests/run-node.js` → 15 passed, 0 failed (also with `--tz=America/New_York`). Smoke: computeForecast is a function; DEFAULTS.po_details.length = 1; fixed clock; two loads independent; toasts, protocol and confirm configurable | None |
 <!-- overnight-rows -->
 
 Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
