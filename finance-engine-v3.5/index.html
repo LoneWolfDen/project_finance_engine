@@ -1373,6 +1373,7 @@ function rUpload(D){
   h+='<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">';
   h+='<input type="file" id="fullCfgImport" accept=".json" style="font-size:.78rem">';
   h+='<button class="btn btn-blue" onclick="importFullConfig()">⬆️ Import & Apply</button>';
+  h+='<label style="font-size:.75rem"><input type="checkbox" id="fullCfgAlso"> Also restore master and scenarios (backup files only)</label>';
   h+='</div>';
   h+='<div id="fullCfgStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
   h+='</div></div>';
@@ -1965,34 +1966,106 @@ function doSave(key){
   const cfg=loadWork();cfg[key]=val;saveWork(cfg);toast('✓ Saved '+key);setTimeout(render,400);
 }
 
-function exportFullConfig(){
-  const cfg=loadWork();
-  const exportData={po_details:cfg.po_details,resources:cfg.resources,fx_rates:cfg.fx_rates,ot_params:cfg.ot_params,expenses:cfg.expenses,invoices:cfg.invoices||[],actuals_monthly:cfg.actuals_monthly};
-  const blob=new Blob([JSON.stringify(exportData,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='finance_config_'+new Date().toISOString().slice(0,10)+'.json';a.click();
-  toast('✓ Config exported as JSON');
+// ─── BACKUP (BAK-001) ───────────────────────────────────────────────────────
+// Complete backup: working config, master and scenarios, with a SHA-256 checksum.
+const BACKUP_FORMAT='cfe-legacy-backup';
+function bakEsc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function hasMaster(){return !!(_cache.master||localStorage.getItem(K_MASTER));}
+function buildBackup(){
+  let scenarios={};
+  try{scenarios=JSON.parse(localStorage.getItem('pf_scenarios')||'{}');}catch(e){scenarios={};}
+  return{working:loadWork(),master:hasMaster()?loadMaster():null,scenarios};
 }
-function importFullConfig(){
+// Hex SHA-256 of a string, or null where the browser offers no crypto.subtle (e.g. some file:// pages).
+async function sha256Hex(text){
+  if(!(window.crypto&&crypto.subtle&&crypto.subtle.digest))return null;
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function downloadBackup(reason){
+  const b=buildBackup();
+  const hash=await sha256Hex(JSON.stringify(b));
+  const file={format:BACKUP_FORMAT,schema_version:1,exported_utc:new Date().toISOString(),app_version:'3.5',working:b.working,master:b.master,scenarios:b.scenarios,sha256:hash};
+  if(hash===null)file.hash_unavailable=true;
+  const stamp=new Date().toISOString().slice(0,16).replace('T','_').replace(':','');
+  const name='finance_backup_'+stamp+(reason&&reason!=='manual'?'_'+reason:'')+'.json';
+  const blob=new Blob([JSON.stringify(file,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  return name;
+}
+async function exportFullConfig(){
+  const name=await downloadBackup('manual');
+  toast('✓ Backup exported ('+name+'). It contains all timesheet rows (personal data). Saving it into a synced folder copies it to Microsoft 365.');
+}
+async function importFullConfig(){
   const file=document.getElementById('fullCfgImport').files[0];
   const status=document.getElementById('fullCfgStatus');
-  if(!file){status.innerHTML='<span style="color:#c62828">⚠️ Please select a JSON file first.</span>';return;}
-  file.text().then(t=>{
-    let data;
-    try{data=JSON.parse(t);}catch(e){status.innerHTML='<span style="color:#c62828">❌ Invalid JSON: '+e.message+'</span>';return;}
-    if(typeof data!=='object'||Array.isArray(data)){status.innerHTML='<span style="color:#c62828">❌ File must be a JSON object with sections (po_details, resources, etc.)</span>';return;}
-    const cfg=loadWork();
-    const keys=['po_details','resources','fx_rates','ot_params','expenses','invoices','actuals_monthly'];
+  const alsoEl=document.getElementById('fullCfgAlso');
+  const alsoMaster=!!(alsoEl&&alsoEl.checked);
+  const fail=msg=>{status.innerHTML='<span style="color:#c62828">'+msg+'</span>';};
+  if(!file){fail('⚠️ Please select a JSON file first.');return;}
+  const t=await file.text();
+  let data;
+  try{data=JSON.parse(t);}catch(e){fail('❌ Invalid JSON: '+bakEsc(e.message));return;}
+  if(typeof data!=='object'||data===null||Array.isArray(data)){fail('❌ File must be a JSON object with sections (po_details, resources, etc.)');return;}
+  const isBackup=data.format===BACKUP_FORMAT;
+  if(isBackup){
+    if(data.schema_version!==1){fail('❌ Unsupported backup version '+bakEsc(String(data.schema_version))+'. Nothing was imported.');return;}
+    const hash=await sha256Hex(JSON.stringify({working:data.working,master:data.master,scenarios:data.scenarios}));
+    if(data.sha256==null||hash===null){
+      if(!confirm('⚠️ The integrity of this backup cannot be checked ('+(data.sha256==null?'it was exported without a checksum':'this browser cannot compute checksums here')+').\n\nImport it anyway?'))return;
+    }else if(hash!==data.sha256){fail('❌ Checksum mismatch: the backup file was changed or damaged. Nothing was imported.');return;}
+    if(!data.working||typeof data.working!=='object'){fail('❌ The backup has no working data. Nothing was imported.');return;}
+  }
+  const src=isBackup?data.working:data;
+  const keys=['po_details','resources','fx_rates','ot_params','expenses','invoices','actuals_monthly'];
+  // Validate every section before applying anything. Year-only POs (PO_Validity_Year) are
+  // accepted everywhere else in this app, so they count as valid here; stored data is not changed.
+  const errs=[];
+  const sets=[['',src]];
+  if(isBackup&&alsoMaster&&data.master)sets.push(['master ',data.master]);
+  sets.forEach(([label,obj])=>keys.forEach(k=>{
+    if(obj[k]===undefined)return;
+    let rows=obj[k];
+    if(k==='po_details'&&Array.isArray(rows))rows=rows.map(p=>(p&&!p.PO_Validity&&p.PO_Validity_Year)?Object.assign({},p,{PO_Validity:'12-'+String(p.PO_Validity_Year).slice(-2)}):p);
+    validateData(k,rows).forEach(e=>errs.push(label+k+': '+e));
+  }));
+  if(errs.length){
+    status.innerHTML='<div class="val-err"><strong>⚠️ Not imported: '+errs.length+' validation error(s)</strong><ul>'+errs.slice(0,15).map(e=>'<li>'+bakEsc(e)+'</li>').join('')+'</ul></div>';
+    toast('✗ Import refused: validation errors',false);return;
+  }
+  const cfg=loadWork();
+  let next,loaded=[];
+  if(isBackup){
+    if(!confirm('⚠️ This replaces ALL working data with the backup from '+data.exported_utc+'.'+(alsoMaster?'\nMaster and scenarios are replaced too.':'')+'\n\nA safety backup of your current data is downloaded first. Continue?'))return;
+    next=data.working;loaded.push('working data');
+  }else{
     const existing=[];
     keys.forEach(k=>{if(data[k]&&Array.isArray(data[k])&&cfg[k]&&cfg[k].length)existing.push(k+' ('+cfg[k].length+' rows)');});
     if(existing.length&&!confirm('⚠️ This will OVERWRITE existing data in:\n\n• '+existing.join('\n• ')+'\n\nContinue?'))return;
-    const loaded=[];
-    keys.forEach(k=>{if(data[k]&&Array.isArray(data[k])){cfg[k]=data[k];loaded.push(k+' ('+data[k].length+')');}});
-    if(!loaded.length){status.innerHTML='<span style="color:#c62828">❌ No recognized sections found. Expected: '+keys.join(', ')+'</span>';return;}
-    saveWork(cfg);
-    status.innerHTML='<span style="color:#2e7d32">✅ Imported: '+loaded.join(', ')+'. Dashboard updated!</span>';
-    toast('✓ Full config imported — '+loaded.length+' sections loaded');
-    setTimeout(render,500);
-  });
+    next=cfg;
+    keys.forEach(k=>{if(data[k]&&Array.isArray(data[k])){next[k]=data[k];loaded.push(k+' ('+data[k].length+')');}});
+    if(!loaded.length){fail('❌ No recognized sections found. Expected: '+keys.join(', '));return;}
+    // Imported monthly actuals would be hidden by older per-project actuals; remove those after confirmation.
+    if(Array.isArray(data.actuals_monthly)&&!data.actuals_by_project&&!data.raw_actuals){
+      const stale=[];
+      if(next.actuals_by_project)stale.push('actuals_by_project (pre-computed actuals for '+Object.keys(next.actuals_by_project).length+' projects)');
+      if(next.raw_actuals&&next.raw_actuals.length)stale.push('raw_actuals ('+next.raw_actuals.length+' timesheet rows)');
+      if(stale.length){
+        if(!confirm('⚠️ The imported monthly actuals would be hidden by older data. These will be REMOVED:\n\n• '+stale.join('\n• ')+'\n\nContinue?'))return;
+        delete next.actuals_by_project;delete next.raw_actuals;
+      }
+    }
+  }
+  await downloadBackup('pre-import');
+  saveWork(next);
+  if(isBackup&&alsoMaster){
+    if(data.master){saveMaster(data.master);loaded.push('master');}
+    localStorage.setItem('pf_scenarios',JSON.stringify(data.scenarios||{}));loaded.push('scenarios');
+  }
+  status.innerHTML='<span style="color:#2e7d32">✅ Imported: '+bakEsc(loaded.join(', '))+'. A safety backup of the previous data was downloaded. Dashboard updated!</span>';
+  toast('✓ Imported — '+loaded.length+' section(s) loaded');
+  setTimeout(render,500);
 }
 function cfgImportFile(){
   const file=document.getElementById('cfgImportFile').files[0];

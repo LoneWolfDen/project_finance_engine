@@ -7,7 +7,8 @@
 //
 // Options: htmlPath (relative to finance-engine-v3.5, default the legacy index.html), now (ISO
 // time returned by new Date() and Date.now()), protocol (location.protocol, default 'http:'),
-// confirm / prompt (functions answering the legacy dialogs).
+// confirm / prompt (functions answering the legacy dialogs), webcrypto (true injects Node's
+// crypto.subtle and TextEncoder, which the sandbox otherwise lacks, like a browser without SubtleCrypto).
 // Each call returns a fresh, independent context. Nothing touches the network or the disk.
 'use strict';
 
@@ -128,6 +129,10 @@ function loadLegacy(options) {
   const html = fs.readFileSync(path.join(APP_DIR, opts.htmlPath), 'utf8');
   const toasts = [];
   const ctx = vm.createContext({ console });
+  if (opts.webcrypto) {
+    ctx.crypto = require('crypto').webcrypto;
+    ctx.TextEncoder = TextEncoder;
+  }
   vm.runInContext(PRELUDE, ctx, { filename: 'legacy-sandbox-prelude.js' })({
     now: opts.now, protocol: opts.protocol, confirm: opts.confirm, prompt: opts.prompt
   });
