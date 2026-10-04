@@ -6,11 +6,11 @@ GET  /vendor/…, /app/… → serves .js/.css/.json files from those folders (B
 GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
 POST /api/config → saves config JSON to SQLite
-POST /api/chat   → proxies to local Ollama LLM
+POST /api/chat   → proxies to local Ollama LLM (only with ENABLE_OLLAMA=1)
 
 Local use only (SEC-001): binds 127.0.0.1 by default, sends no CORS headers,
 accepts only allowed Host headers, and limits POST bodies.
-Environment: PORT, HOST, ALLOWED_HOSTS, MAX_BODY_BYTES, FINANCE_DB.
+Environment: PORT, HOST, ALLOWED_HOSTS, MAX_BODY_BYTES, FINANCE_DB, ENABLE_OLLAMA.
 """
 
 import json
@@ -211,7 +211,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self._check_host():
             return
-        if self.path not in ('/api/chat', '/api/config', '/api/config/master'):
+        # The Ollama proxy is experimental and off unless ENABLE_OLLAMA=1 (CHT-002).
+        chat_enabled = os.environ.get('ENABLE_OLLAMA') == '1'
+        if self.path not in ('/api/config', '/api/config/master') and not (chat_enabled and self.path == '/api/chat'):
             self.send_error_json(404)
             return
         body = self._check_post()
@@ -234,7 +236,7 @@ class Handler(BaseHTTPRequestHandler):
                 result = json.loads(resp.read())
                 self.send_json({"content": result.get("message", {}).get("content", "")})
             except URLError:
-                self.send_error_json(503)
+                self.send_json({"error": ERRORS[503], "model": OLLAMA_MODEL}, 503)
             except Exception:
                 self.send_error_json(500)
 

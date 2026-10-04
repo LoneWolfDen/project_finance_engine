@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (overnight run: after CHT-001)
+Last updated: 2026-10-04 (overnight run: after CHT-002)
 
 ## Repository
 
@@ -93,6 +93,8 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | 2026-10-04 | MIG-001 | Done | `index.html`: new `sampleConfig`, `sampleSections`, `markReal`; `loadWork`/`loadMaster` fallbacks flag all DEFAULTS sections; `markReal` in `doSave`, `processUpload` (resources, actuals), `applySolutionResources`, `aggregateActuals`, `importFullConfig` (old format; a full backup carries its own flag); amber banner in `render()` on every tab; "SAMPLE DATA – " prefix plus a note sheet/line/slide note in Excel, PDF and PPTX. New `tests/unit/legacy-sample-flag.test.js` | TEST-NODE 63 passed (goldens unchanged). 7 sample-flag tests. Manual (headless Chrome, fresh profile, temp DB): banner on all 11 tabs; after uploading test_ResourceRules.csv through the real upload input the banner no longer lists resources; PDF title "SAMPLE DATA – Project Finance Report" plus note line (en dash encoded as WinAnsi 0x96, renders correctly) | None |
 | 2026-10-04 | SEC-002 | Done | New `app/continuum-core/html.js` (`Continuum.html`: escape, t, raw, setText, plus isRaw), `app/continuum-core/CORE_VERSION.js` (0.1.0); `index.html`: script tags for both before the chat script, `.chat-msg` white-space:pre-wrap, new `appendChatMessage`, the four innerHTML sites converted, `smartAnswer` templates built with `Continuum.html.t`; new `tests/unit/html.test.js` (Node + browser), `tests/unit/legacy-chat-escape.test.js`; `tests/browser-suites.js` lists the core scripts and html.test.js | TEST-NODE 72 passed (goldens unchanged); TEST-BROWSER via file:// in headless Chrome → All suites passed (16 tests). `grep msgs.innerHTML index.html` → none. Manual (headless Chrome, server): typed `<b>hi</b>` shows literally (no <b> element); the budget answer keeps its <strong>; Continuum.coreVersion = 0.1.0 | None |
 | 2026-10-04 | CHT-001 | Done | `index.html`: `smartAnswer` rewritten (scope line on every answer, Fact: labels, budget regex `\b(budget\|remaining budget\|remaining)\b`, zero-burn-rate text, "Planned allocation above 80% (not measured utilisation)", invoices filtered by team and year, whole-word person match; two unused variables removed); new `scopeLine`, `wholeWord`. New `tests/unit/legacy-smart-answer.test.js` | TEST-NODE 79 passed (goldens unchanged); 7 smart-answer tests. Manual (headless Chrome, sample data): "remaining budget" → "Scope: All years · All PO teams · Source: SAMPLE DATA (not real) · Actuals to Dec-25 \| Fact: 💰 PO Value: £249,590 \| … Remaining: £30,803 \| Burn rate: £2,624/day (~12 working days left)"; "who is over utilized" → "… Planned allocation above 80% (not measured utilisation): Resource_6 (100%) …"; "invoices" → "… 0 invoices in scope …" | None |
+| 2026-10-04 | CHT-002 | Done | `index.html` chat script: `CHAT_FLAGS={ollama:false,copilotIframe:false}`, `enabledChatModes`, `initChatMode` (resets a stored disabled mode to smart, hides the Mode button, replaces the 'click Mode to switch' hint), `switchChatMode` cycles enabled modes only, `sendChat` uses Smart whenever the mode is not enabled, Ollama errors name the server's model (no more phi3:mini). `server.py`: `/api/chat` → 404 unless `ENABLE_OLLAMA=1`; its 503 includes `model`. Tests: new `tests/unit/legacy-chat-modes.test.js`, 2 new cases in `tests/server/test_server.py`. Code is kept (REP-003); `pf_copilot_url` untouched | TEST-NODE 84 passed (London and New York); TEST-SERVER 34 OK; TEST-BROWSER All suites passed (16). Manual (headless Chrome, server): Mode button hidden; stored 'ollama' reset to 'smart'; "burn rate" answered locally with scope line; POST /api/chat → 404 | None |
+| 2026-10-04 | SEC-002 (test fix) | Done | `tests/server/test_static.py`: the vendored-scripts test now allows `app/` scripts (SEC-002 added two). Commit `f96e4ef` | TEST-SERVER was failing 1 test after the SEC-002 commit `29a6bdf` because TEST-SERVER was not run for SEC-002; now 34 OK | None |
 <!-- overnight-rows -->
 
 Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
@@ -108,6 +110,7 @@ Everything else is **Not started**.
 * **MIG-001 storage note:** stored configs may now carry an optional `_sample_sections` array. Configs without it are treated as real data (no banner), so existing users see no change
 * Assessment finding **SEC-05: fixed for the chat panel (legacy)** by SEC-002. Other renderers remain for SEC-003/SEC-004
 * Assessment findings **CH-02…CH-05: fixed (legacy)** by CHT-001
+* Assessment findings **SEC-09, SEC-10: closed by default (legacy)** by CHT-002 (Ollama proxy and Copilot iframe off unless re-enabled)
 <!-- findings -->
 
 ## Test commands (from `finance-engine-v3.5/`)

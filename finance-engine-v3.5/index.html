@@ -2249,13 +2249,27 @@ render();
 <script src="app/continuum-core/CORE_VERSION.js"></script>
 <script src="app/continuum-core/html.js"></script>
 <script>
+// Experimental chat modes are off by default (CHT-002): Ollama sends dashboard figures to a local
+// model server, and the Copilot iframe embeds any pasted URL. Set a flag to true only for experiments.
+const CHAT_FLAGS={ollama:false,copilotIframe:false};
+function enabledChatModes(){return['smart'].concat(CHAT_FLAGS.ollama?['ollama']:[],CHAT_FLAGS.copilotIframe?['copilot']:[]);}
 let chatMode=localStorage.getItem('pf_chat_mode')||'smart'; // 'smart','ollama','copilot'
 let copilotUrl=localStorage.getItem('pf_copilot_url')||'';
+// A stored mode that is not enabled falls back to Smart; the Mode button is hidden when Smart is the only mode.
+function initChatMode(){
+  chatMode=localStorage.getItem('pf_chat_mode')||'smart';
+  if(!enabledChatModes().includes(chatMode)){chatMode='smart';localStorage.setItem('pf_chat_mode','smart');}
+  const onlySmart=enabledChatModes().length===1;
+  const btn=document.getElementById('chatModeBtn');if(btn)btn.style.display=onlySmart?'none':'';
+  const label=document.getElementById('chatModeLabel');if(label)label.textContent=chatMode==='smart'?'Smart (Local)':chatMode==='ollama'?'Ollama AI':'Copilot';
+  if(onlySmart&&label&&label.parentElement)label.parentElement.textContent='Mode: Smart (Local) · answers come only from the data in this dashboard';
+}
+initChatMode();
 
 function toggleChatPanel(){document.getElementById('chatPanel').classList.toggle('open');}
 function switchChatMode(){
-  const modes=['smart','ollama','copilot'];
-  const i=(modes.indexOf(chatMode)+1)%modes.length;
+  const modes=enabledChatModes();
+  const i=(Math.max(modes.indexOf(chatMode),0)+1)%modes.length;
   chatMode=modes[i];
   if(chatMode==='copilot'){if(copilotUrl){showCopilotFrame();}else{showCopilotSetup();return;}}
   else{document.getElementById('chatBody').style.display='';document.getElementById('copilotFrame').style.display='none';}
@@ -2364,8 +2378,8 @@ async function sendChat(){
   appendChatMessage('user',msg);
   const D=buildData();
 
-  // Smart mode (rule-based)
-  if(chatMode==='smart'){
+  // Smart mode (rule-based). Also used whenever the current mode is not enabled.
+  if(chatMode==='smart'||!enabledChatModes().includes(chatMode)||chatMode==='copilot'){
     const answer=smartAnswer(msg,D);
     if(answer){appendChatMessage('ai',answer);}
     else{appendChatMessage('ai',Continuum.html.raw(`🤔 I didn't understand that. Try asking about: budget, burn rate, resources, forecast, actuals, invoices, expenses, or a person's name.<br><small>Switch to Ollama mode for free-form AI answers.</small>`));}
@@ -2378,9 +2392,9 @@ async function sendChat(){
     appendChatMessage('ai','⏳ Thinking...').id='chatLoading';
     const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:[{role:'system',content:'You are a project finance assistant. Answer concisely. '+ctx},{role:'user',content:msg}]})});
     document.getElementById('chatLoading')?.remove();
-    if(!resp.ok){const err=await resp.json();appendChatMessage('err',`⚠️ ${err.error}. Try Smart mode (click Mode).`);}
+    if(!resp.ok){const err=await resp.json();appendChatMessage('err',`⚠️ ${err.error}${err.model?' (model '+err.model+')':''}. Try Smart mode (click Mode).`);}
     else{const data=await resp.json();appendChatMessage('ai',data.content);}
-  }catch(e){document.getElementById('chatLoading')?.remove();appendChatMessage('err',Continuum.html.raw('⚠️ Ollama not running. Use Smart mode or run: <code>ollama serve &amp;</code> then <code>ollama pull phi3:mini</code>'));}
+  }catch(e){document.getElementById('chatLoading')?.remove();appendChatMessage('err',Continuum.html.raw('⚠️ Could not reach the server\'s chat endpoint. Use Smart mode, or start the server with <code>ENABLE_OLLAMA=1</code> and run <code>ollama serve</code> with the model set in <code>OLLAMA_MODEL</code>.'));}
 }
 
 // Adds one chat message. SafeHtml (Continuum.html.t / raw) is inserted as markup; anything

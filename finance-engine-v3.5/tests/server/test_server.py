@@ -160,6 +160,34 @@ class DefaultServerTests(ServerTestCase):
         self.assertEqual(status, 200)
 
 
+class ChatEndpointTests(ServerTestCase):
+    """CHT-002: the Ollama proxy is off unless ENABLE_OLLAMA=1."""
+
+    def setUp(self):
+        self._saved_flag = os.environ.pop('ENABLE_OLLAMA', None)
+        self._saved_url = server.OLLAMA_URL
+        server.OLLAMA_URL = 'http://127.0.0.1:9'  # nothing listens here, so Ollama is "not running"
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        server.OLLAMA_URL = self._saved_url
+        os.environ.pop('ENABLE_OLLAMA', None)
+        if self._saved_flag is not None:
+            os.environ['ENABLE_OLLAMA'] = self._saved_flag
+
+    def test_chat_disabled_by_default(self):
+        status, _, body = self.post_json('/api/chat', {'messages': []})
+        self.assertEqual(status, 404)
+        self.assertEqual(json.loads(body), {'error': 'Not found'})
+
+    def test_chat_enabled_reports_model_when_ollama_down(self):
+        os.environ['ENABLE_OLLAMA'] = '1'
+        status, _, body = self.post_json('/api/chat', {'messages': []})
+        self.assertEqual(status, 503)
+        self.assertEqual(json.loads(body), {'error': 'Ollama not running', 'model': server.OLLAMA_MODEL})
+
+
 class AllowedHostsTests(ServerTestCase):
     env = {'ALLOWED_HOSTS': 'example.test:3005'}
 
