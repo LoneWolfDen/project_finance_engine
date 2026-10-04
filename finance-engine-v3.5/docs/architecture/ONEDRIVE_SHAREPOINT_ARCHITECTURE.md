@@ -29,6 +29,12 @@ Set-up (one-off, documented in `docs/operations/SETUP.md`):
 
 Users can create these dedicated folders themselves (OD-10). The browser still needs **one user gesture** to grant folder access (it cannot open a path typed as text). Only the publisher and "New project" creators need that; viewers need nothing.
 
+> **Updated on 2026-10-04 by DEC-033, OD-5a and owner evidence.** Where this conflicts with the table and steps above, this note wins.
+> * **All folder locations are user-configurable** (DEC-033, Accepted): the drop folder, the Continuum library and Finance folder, the Registry, and the Copilot agent's knowledge folder. The names in the table are suggestions, not fixed paths. The app works from wherever its folder is placed (relative layout), and folders are chosen through pickers.
+> * **Recommended location:** the **Files of a Teams channel**. Agent Builder accepts Teams channel folders as knowledge but not SharePoint links (owner test, 2026-10-04), so keeping `Continuum/` there lets COPILOT_AND_CHAT §4 V2 use `published/copilot/` directly. This is recommended, not required.
+> * **Downloads policy:** on the work laptop, Edge's "Ask where to save each file" is **off and disabled by policy**, though the default download folder can be changed. Publishing and saving must therefore use the save picker (`showSaveFilePicker`) or a connected folder handle, not rely on the download prompt (DEC-023, open until BAS-002).
+> * The OneDrive "Sync" and "Always keep on this device" options are both available (owner check).
+
 ## 3. Input levels
 
 ### V1: User-selected local or synced files (available in all browsers)
@@ -84,6 +90,12 @@ No V3 code is written until those approvals exist (charter §6 V3).
 | Continuum app hosted on a corporate **web** URL (`https://…`) → Finance | Browsers block web pages from opening `file://` links. Fallback: a **Copy reference** button in the web app, then **Paste reference** in Finance (top bar), which reads the clipboard on user click and routes to `#/ref/<CRID>` | Supported fallback; owner to confirm Continuum's hosting (open question) |
 | Finance → other Continuum apps | Each reference page shows links built from `Registry` `links.other` and a per-deployment app map (`published/manifest.js` `deployment.apps`) | Supported |
 | Unknown reference | "CR-… is not in this dataset (as of …). It exists in the Registry as '<name>' but has no finance links yet." Or: "not found in the Registry" | Never falls back to the portfolio view |
+
+> **Superseded in part on 2026-10-04 by DEC-001-R1, DEC-003, DEC-004 and DEC-032.** The table above is kept for history.
+> * **`CR-…` in the table is superseded:** links and messages use the plain reference, e.g. `../Finance/index.html#/ref/O-5030460` and "O-5030460 is not in this dataset (as of …)".
+> * **Continuum today (DEC-003, Proposed):** Continuum (`LoneWolfDen/project_onion`) is itself a PWA served from **`http://localhost:8002`**, not `file://` and not a corporate web URL. Browsers block `http` → `file://` navigation, so the handoff is **Copy reference** in Continuum, then **Paste reference** in Finance (top bar), routing to `#/ref/<ref>`. The relative-link row applies only if Continuum is later opened from the synced folder as `file://`.
+> * **Continuum IDs (DEC-004, Proposed):** Continuum stops generating timestamp IDs (`genProjectReferenceID`, `Prefix-Opp-DDMMYYHHMMSS`). Existing ones become aliases of the reference. This change is made in project_onion (XREP-001), not here.
+> * **Codespaces (DEC-032, Accepted):** Continuum's footer currently links Finance to a `*.app.github.dev` (Codespaces) URL. Codespaces may hold **test data only, never real data**, so that link is a test path, not a production handoff.
 
 The CRID contract and `ref.js` are identical in every app (DATA_AND_STORAGE §2), so a link built by one app is understood by all.
 

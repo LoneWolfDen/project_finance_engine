@@ -16,12 +16,14 @@ This is a design document. It contains no implementation code.
 | OD-2 | The app runs on the user's work laptop and must **not communicate outside** the device or tenant. Hosting choice: **open the app from a SharePoint library synced by OneDrive** (`file://`) | No web host, no server, no runtime network calls |
 | OD-3 | Viewers are senior leaders who will not run Python or a terminal. Everything is click-only, with a clear readiness status | No local server; status banner is mandatory |
 | OD-4 | One publisher (the owner) refreshes data from PeopleSoft CSV/XLSX dumps. Others only view | Publisher/viewer split |
-| OD-5 | Corporate proxy blocks public CDNs | All libraries are vendored in the repository |
+| OD-5 | Corporate proxy blocks public CDNs | All libraries are vendored in the repository. **Superseded on 2026-10-04 by OD-5a** |
+| OD-5a | (2026-10-04) CDN-hosted libraries **do** load on the work laptop. The legacy app opened from Downloads (`file://`) worked, including charts (owner test) | Libraries are still vendored, because charter §10–11 and ADR-008 require it (no runtime network, CSP `connect-src 'none'`). BLD-001 is no longer an emergency fix |
 | OD-6 | AI target is the existing **Microsoft 365 Copilot (premium) licence**, with no Copilot API. Ollama is experimental only | No in-app AI provider in releases; Copilot via packages and agents |
-| OD-7 | A cross-application **Continuum Reference ID** derived from the user-entered **OpportunityID** must identify a project in every Continuum application, and must be copy-pasteable code | Shared identity contract and a shared `continuum-core` folder |
+| OD-7 | A cross-application **Continuum Reference ID** derived from the user-entered **OpportunityID** must identify a project in every Continuum application, and must be copy-pasteable code | Shared identity contract and a shared `continuum-core` folder. **Superseded in part on 2026-10-04 by DEC-001-R1, DEC-002 and DEC-003:** the reference is the first opportunity number entered (e.g. `O-5030460`), normalised only by trimming, removing whitespace and upper-casing, with no regex, no `CR-` prefix and no workstream suffix. It is permanent; numbers added later are linked aliases. Continuum runs at `http://localhost:8002` and hands off by copy/paste (DATA_AND_STORAGE §2, ONEDRIVE_SHAREPOINT §4) |
 | OD-8 | Agent Builder agents should be shareable, or reproducible by each user | Agent instructions are versioned in the repo |
 | OD-9 | DEFAULTS and the PIN were synthetic/test data. The repo will become public; attribution stays | Licence + About panel; no real data ever committed |
-| OD-10 | Users can create dedicated folders during set-up | Fixed folder layout convention |
+| OD-10 | Users can create dedicated folders during set-up | Fixed folder layout convention. **Updated on 2026-10-04 by DEC-033:** every folder location is user-chosen; a Teams channel Files folder is recommended (ONEDRIVE_SHAREPOINT §2) |
+| OD-11 | (2026-10-04) Real person names are published to viewers; everything stays inside the tenant | Name policy `included` by default; Present mode still masks names and rates (DEC-006; DATA_AND_STORAGE §9) |
 
 ---
 

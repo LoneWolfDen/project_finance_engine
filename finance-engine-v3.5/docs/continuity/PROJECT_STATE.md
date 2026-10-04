@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (after prompt 05)
+Last updated: 2026-10-04 (after DOC-001)
 
 ## Repository
 
@@ -9,8 +9,8 @@ Last updated: 2026-10-04 (after prompt 05)
 | Repository | `LoneWolfDen/project_finance_engine` (GitHub; private, to become public). Local: `/Users/wolf/Developer/project_finance_engine` |
 | App root | `finance-engine-v3.5/` (all backlog paths are relative to it; DEC-008) |
 | Branch | `assessment/pwa-readiness-2026-10` (tracks `origin/assessment/pwa-readiness-2026-10`) |
-| Commit | `991cacf` "Add forensic repository assessment" (on top of `5d453d1`, tagged `pwa-assessment-baseline-2026-10-01`) |
-| Uncommitted | `finance-engine-v3.5/.claude/` (prompts 01–05 + `IMPLEMENT_ONE_ITEM_TEMPLATE.md`), `finance-engine-v3.5/docs/architecture/` (6 documents + charter), `finance-engine-v3.5/docs/backlog/` (8 files), `finance-engine-v3.5/docs/continuity/` (these 5 files). To be committed by the owner under **BAS-001** |
+| Commit | `d43cb51` "Add target architecture, backlog, validation and continuity docs (BAS-001)", on top of `991cacf` (assessment) and `5d453d1` (tagged `pwa-assessment-baseline-2026-10-01`) |
+| Uncommitted | DOC-001 edits to five files in `finance-engine-v3.5/docs/architecture/`, plus these continuity updates. Awaiting owner review and commit |
 | Related repository | Continuum: `LoneWolfDen/project_onion` (public; separate; not assessed) |
 
 ## Current implementation state (unchanged since the assessment; no code has been modified)
@@ -65,11 +65,23 @@ Full detail: `docs/architecture/TARGET_ARCHITECTURE.md` (as amended by DOC-001 o
 
 ## Backlog status
 
-All 88 items are **Not started**. Order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Executed items are recorded below (newest last) using CONT-STD from `docs/backlog/SMALL_MODEL_EXECUTION_RULES.md`.
+Status of the 88 items. Order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Executed items are recorded below (newest last) using CONT-STD from `docs/backlog/SMALL_MODEL_EXECUTION_RULES.md`.
 
 | Date | ID | Status | Files changed | Tests | Unverified checks |
 |---|---|---|---|---|---|
 | — | — | — | — | — | — |
+| 2026-10-04 | BAS-001 | Done | Committed by the owner as `d43cb51` ("Add target architecture, backlog, validation and continuity docs (BAS-001)") | None (no tests named) | None |
+| 2026-10-04 | DOC-001 | Done (uncommitted; awaiting owner review) | `docs/architecture/ADR_REGISTER.md`, `DATA_AND_STORAGE_ARCHITECTURE.md`, `ONEDRIVE_SHAREPOINT_ARCHITECTURE.md`, `TARGET_ARCHITECTURE.md`, `COPILOT_AND_CHAT_ARCHITECTURE.md` (66 lines added; 4 table rows extended in place; no text deleted) | None named; `grep -n "CR-"` manual check run, see the known gap | None |
+
+**Known gap after DOC-001:** six `CR-` mentions sit in sections DOC-001 was not allowed to edit, and have no "Superseded" note next to them:
+* `ADR_REGISTER.md` ADR-007;
+* `COPILOT_AND_CHAT_ARCHITECTURE.md` §2.1 (Scope example);
+* `DATA_AND_STORAGE_ARCHITECTURE.md` §5 step 7;
+* `TARGET_ARCHITECTURE.md` §3.1, §3.2 and §26 row 5.
+
+DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need an owner-approved scope extension, or the next DOCUMENTATION item, to annotate them.
+
+Everything else is **Not started**.
 
 ## Probe results
 
@@ -77,4 +89,4 @@ All 88 items are **Not started**. Order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.
 
 ## Next task
 
-**BAS-001**: the owner stages and commits `finance-engine-v3.5/.claude/` and `finance-engine-v3.5/docs/`. Then DOC-001, BAS-002 and SEC-001 (FINAL_EXECUTION_SEQUENCE F0.2).
+The owner reviews and commits DOC-001. Then **BAS-002** (build the probe) and SEC-001 (FINAL_EXECUTION_SEQUENCE F0.2).

@@ -9,7 +9,7 @@ Date: 2026-10-04 · All decisions are **Proposed** until the owner accepts them.
 | ADR-003 | Retire `server.py` and SQLite | Proposed |
 | ADR-004 | Publisher/viewer split; SharePoint permissions as access control | Proposed |
 | ADR-005 | Deliver data as `dataset.js` (script tag) with `dataset.json` twin | Proposed |
-| ADR-006 | Continuum Reference ID (`CR-<OpportunityID>[-Wnn]`) | Proposed |
+| ADR-006 | Continuum Reference ID (`CR-<OpportunityID>[-Wnn]`) | Proposed. **Superseded on 2026-10-04 by DEC-001-R1, DEC-002 and DEC-011-R1** (see the note under ADR-006) |
 | ADR-007 | Registry as one JSON file per reference | Proposed |
 | ADR-008 | Vendor all libraries locally with hashes; upgrade SheetJS and jsPDF | Proposed |
 | ADR-009 | Namespaced browser storage on the shared `file://` origin | Proposed |
@@ -60,6 +60,13 @@ Date: 2026-10-04 · All decisions are **Proposed** until the owner accepts them.
 * **Risks:** Executable data file (mitigated by write permissions, a serialiser-only writer, shape and hash validation); `.js` download warnings (publishing uses File System Access, not downloads; OV-4).
 
 ### ADR-006: Continuum Reference ID
+
+> **Superseded on 2026-10-04 by DEC-001-R1, DEC-002 and DEC-011-R1** (`docs/continuity/DECISIONS.md`). The original text below is kept for history.
+> * **Format (DEC-001-R1):** no `CR-` prefix and **no format regex**. The reference is the first opportunity number the user enters, normalised only by trimming, removing whitespace and upper-casing (1–64 characters, no control characters). The owner's OpportunityIDs look like `O-` plus digits, so a typical reference is **`O-5030460`**. It is stored once and can never be edited; corrections only via `superseded_by`. The Registry file name is `<fileNameFor(ref)>.json` (REF-001). Deep link `#/ref/<ref>`.
+> * **Several opportunity numbers (DEC-002):** a project can carry several opportunity numbers (Continuum's `opportunity_numbers` list). The **first one entered at project creation is the primary** and *is* the reference. Numbers added later are linked and act as aliases that resolve to the same record.
+> * **No workstream suffix (DEC-011-R1, Proposed):** `-Wnn` is not generated or accepted as a separate form, so `O-5030460-W02` is no longer a valid example of a derived reference. A separately tracked project is created with its own first opportunity number.
+> * **Open item resolved:** the "exact CRM OpportunityID format" question below is closed by the owner's choice of no regex.
+
 * **Context:** OD-7. A user-entered, non-temporal key shared by all Continuum apps is needed. The closest current key (`PO_Team_Identifier`) is finance-specific.
 * **Decision:** `CR-<normalised OpportunityID>` plus an optional `-Wnn` workstream suffix. Immutable, never reused, corrections by `superseded_by`, characters `A–Z 0–9 -`. Deep link `#/ref/<CRID>`.
 * **Consequences:** `PO_Team_Identifier` and PeopleSoft Project IDs become linked attributes in the Registry crosswalk.
@@ -113,6 +120,8 @@ Date: 2026-10-04 · All decisions are **Proposed** until the owner accepts them.
 ### ADR-017: Attribution and licence
 * **Context:** OD-9. The owner built this in their own time and will publish the repository.
 * **Decision:** Keep attribution in the About panel and an export footer (default on, user-switchable). Add a LICENSE before the repository becomes public (owner chooses; MIT suggested). Fixtures and samples are synthetic and labelled.
+
+> **Updated on 2026-10-04 by DEC-005 and DEC-031.** The licence is **MIT** (owner decision; DEC-005, Accepted). LICENSE text: "Copyright (c) 2026 Vamsi Yedlapalli" (DEC-031, Accepted). It is added by REL-001. Real names in published data are covered by DEC-006 (DATA_AND_STORAGE §9), not by this ADR.
 
 ### ADR-018: Primary browser Edge
 * **Decision:** Edge is fully supported (viewer and publisher), Chrome is equivalent, Safari and Firefox are viewer plus V1 fallbacks. Publisher features require Edge or Chrome.

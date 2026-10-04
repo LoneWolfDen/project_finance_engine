@@ -76,6 +76,10 @@ Pasted-back Copilot text can be stored as a **note** on a reference, labelled `D
 
 Data boundary: the text the user pastes enters Copilot under the organisation's Microsoft 365 enterprise data protection. That is a device-to-tenant transfer, initiated by the user and named in the dialog.
 
+> **Updated on 2026-10-04 by DEC-007 and DEC-030-R1.** Where the table above conflicts with this note, the note wins.
+> * **Work-mode warning (DEC-007, Proposed):** Copilot has a Work/Web switch. Work mode stays inside the tenant; **Web mode is the only path by which pasted figures could leave the organisation**. The **Ask Copilot** dialog therefore tells the user to check that Copilot is in **Work** mode before pasting, and warns that Web mode sends the text to web search. The prompt template repeats this.
+> * **Copilot address (DEC-030-R1, Proposed):** "Open Copilot" uses the configurable `CFE.config.copilotUrl`, which defaults to `https://m365.cloud.microsoft/chat`. This is the base of the address the owner sees (`https://m365.cloud.microsoft/hwav2/chat/conversations/…`). Conversation-specific addresses are never stored. The owner confirms during COP-002 that the base address opens a new chat in Work mode (CV-3).
+
 ### V2: Agent grounded on published files (target; owner wants shareable or reproducible)
 
 | Requirement | Design |
@@ -88,6 +92,10 @@ Data boundary: the text the user pastes enters Copilot under the organisation's 
 | Governance explicit | The fact-sheet folder inherits SharePoint permissions; sharing the agent does **not** grant file access; retention per site policy. These are recorded in `docs/operations/COPILOT.md` |
 | File formats | Fact sheets are produced as `.md` **and** `.html` (and optionally `.pdf` via jsPDF). Which formats Agent Builder indexes best must be validated (CV-2); `.md` is kept for humans and Git diffs |
 | Freshness | Each fact sheet starts with "Data as of …". The agent instructions require stating it. Indexing delay after publish is not under app control and is documented |
+
+> **Updated on 2026-10-04 by DEC-012, DEC-033 and owner evidence (CV-1).** Where the table above conflicts with this note, the note wins.
+> * **Knowledge source:** Agent Builder accepts **Teams channel folders** as knowledge, but **not SharePoint links** (owner test, 2026-10-04). The knowledge folder is therefore `published/copilot/` inside a **Teams channel's Files**, chosen by the user (DEC-033). "SharePoint folder (or site) as knowledge" in the rows above is superseded.
+> * **Sharing (CV-1 PASS, DEC-012 Accepted):** agents can be shared within the organisation. The owner builds the agent once and shares it with the viewers. `AGENT_SETUP.md` and `AGENT_INSTRUCTIONS.md` stay versioned so the agent can be rebuilt; per-user replication is a fallback only. Sharing the agent still does not grant file access.
 
 ### V3: Approved APIs, agents or connectors (future)
 

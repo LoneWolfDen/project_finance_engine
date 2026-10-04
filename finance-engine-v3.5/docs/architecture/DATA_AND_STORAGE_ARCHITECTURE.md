@@ -26,6 +26,12 @@ The SQLite database and `server.py` are retired (ADR-003).
 
 ### 2.2 Format
 
+> **Superseded on 2026-10-04 by DEC-001-R1 and DEC-011-R1** (`docs/continuity/DECISIONS.md`; REF-001 amendment V-08). The grammar and the `CR-` rules below are kept for history only.
+> * **Reference (`ref`)** = the first opportunity number the user enters, normalised only by: trim, remove all whitespace, upper-case. Valid if 1–64 characters with no control characters. **No format regex**, no prefix, nothing else rejected.
+> * Example: the user enters `o-5030460`, and the reference is **`O-5030460`**. `O-5030460-W02` is **not** a generated form, because there is no workstream suffix (DEC-011-R1, Proposed).
+> * File-name and URL safety, previously guaranteed by the character set, now comes from `fileNameFor(ref)` (`encodeURIComponent`, with `*` → `%2A` and a leading `.` → `%2E`), e.g. `a/b` → `A/B` → `A%2FB.json`.
+> * Immutable, never reused, corrections by `superseded_by`, and case-insensitive resolution all still apply.
+
 ```
 CRID      = "CR-" OPPID [ "-W" NN ]
 OPPID     = 1*40 ( "A"-"Z" / "0"-"9" / "-" )        ; normalised OpportunityID
@@ -47,6 +53,13 @@ Examples:   CR-0061234567        CR-OPP-2026-00042        CR-0061234567-W02
 Open question for the owner: the exact OpportunityID format in the CRM, which determines the validation pattern. Until it is known, the generic rule above applies.
 
 ### 2.3 Registry record (`Continuum/Registry/CR-<OPPID>[-Wnn].json`)
+
+> **Superseded in part on 2026-10-04 by DEC-001-R1, DEC-002, DEC-004, DEC-011-R1 and DEC-033.** The example below is kept for history. Changes:
+> * File: `<Registry folder>/<fileNameFor(ref)>.json`, e.g. `O-5030460.json`. The Registry folder is **user-chosen** (DEC-033), not a fixed path.
+> * Key field: `ref` (e.g. `"O-5030460"`) replaces `crid`.
+> * `opportunity_numbers`: a list, using the same field name as Continuum. **The first entry is the primary** and equals `ref` (DEC-002). Numbers added later are appended and resolve to this record.
+> * `workstream` is removed (DEC-011-R1).
+> * `aliases` also holds Continuum's existing timestamp IDs (`Prefix-Opp-DDMMYYHHMMSS`) once Continuum adopts the contract (DEC-004, XREP-001).
 
 ```
 {
@@ -76,6 +89,13 @@ Open question for the owner: the exact OpportunityID format in the CRM, which de
 
 ### 2.4 Shared code (`continuum-core/ref.js`, copied verbatim into each Continuum app)
 
+> **Updated on 2026-10-04 by DEC-001-R1 and DEC-002** (REF-001 amendment V-08). Where the table below conflicts with this note, the note wins.
+> * `normalise(input)` applies only trim, whitespace removal and upper-casing, plus the 1–64-character and no-control-character checks.
+> * `isValid(ref)` checks the same conditions.
+> * New: `fileNameFor(ref)`.
+> * `resolve` matches `ref`, then `opportunity_numbers[]`, then `aliases[]`, and follows `superseded_by` (max 5 steps).
+> * `recordFromForm` takes `opportunity_numbers` with the first as primary, and has no workstream field.
+
 Interface (specification only):
 
 | Function | Behaviour |
@@ -90,6 +110,12 @@ Interface (specification only):
 The module has no dependencies and its own `CORE_VERSION.js`. Each app's Diagnostics shows the core version, so mismatched copies are visible.
 
 ### 2.5 Create-once flow (any Continuum app)
+
+> **Updated on 2026-10-04 by DEC-001-R1, DEC-002, DEC-003 and DEC-033.** Where the steps below conflict with this note, the note wins.
+> * In step 1, the user enters the **first opportunity number**. It becomes the permanent primary and the reference, so the app asks the user to retype it to confirm (V-09), since it can never be changed.
+> * Extra opportunity numbers can be linked later. They are not separate references.
+> * In steps 2–3, the reference is used as entered after normalisation (no `CR-` prefix), and the file written is `<fileNameFor(ref)>.json` in the user-chosen Registry folder.
+> * Continuum itself runs at `http://localhost:8002`. It hands a reference to Finance (`file://`) by **Copy reference → Paste reference**, not by a link (DEC-003; ONEDRIVE_SHAREPOINT §4).
 
 1. The user clicks **New project** and enters the OpportunityID (required), name and client.
 2. The app normalises it to a CRID and looks it up in `Registry/` (folder handle, or a picker if not connected).
@@ -224,3 +250,8 @@ Migrations are `app/data/migrate.js` functions `vN_to_vN+1(obj) → obj`, pure a
 * The published dataset contains aggregates. The person-name policy is set at publish time (`included` for the leadership audience, or `pseudonymised` as role + index). Present mode masks names and rates regardless.
 * No employee personal fields beyond ID, name, role and location are ever imported. Mapping profiles drop other columns at parse time.
 * The repository holds only `samples/` and `tests/fixtures/`, both synthetic and labelled.
+
+> **Updated on 2026-10-04 by DEC-006, DEC-007 and DEC-032.**
+> * **Real person names are published** to viewers (owner decision OD-11 / DEC-006, Accepted), so the publish-time name policy defaults to `included` for this deployment; `pseudonymised` remains available. **Present mode still masks names and rates** for screen sharing.
+> * The only path by which data can leave the tenant is a user pasting it into Copilot in **Web** mode. The Copilot handoff therefore instructs Work mode and warns about Web mode (DEC-007; COPILOT_AND_CHAT §4 V1).
+> * GitHub Codespaces (`*.app.github.dev`) is outside the tenant and may hold **test/synthetic data only, never real data** (DEC-032).
