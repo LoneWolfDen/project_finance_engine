@@ -298,13 +298,17 @@
     var key = LS_PREFIX + 'page';
     var here = location.pathname.replace(/[^/]*$/, '');
     try {
-      var prev = JSON.parse(localStorage.getItem(key) || 'null');
-      if (prev && prev.dir && prev.dir !== here) {
-        set('16', 'PASS', 'A value written by a probe opened from a different folder (' + prev.when + ') is visible here: file:// pages share storage');
+      // Every folder the probe has been opened from: [{dir, when}]. Older single-object values are accepted.
+      var seen = JSON.parse(localStorage.getItem(key) || '[]');
+      if (!Array.isArray(seen)) seen = seen && seen.dir ? [seen] : [];
+      var other = seen.filter(function (s) { return s.dir !== here; });
+      if (other.length) {
+        set('16', 'PASS', 'Values written by the probe opened from ' + other.length + ' other folder(s) (latest ' + other[other.length - 1].when + ') are visible here: file:// pages share storage');
       } else {
         set('16', 'N/A', 'Open a second copy of the probe from a different folder to test (README step 7). If you did and this stays N/A, storage is NOT shared');
       }
-      localStorage.setItem(key, JSON.stringify({ dir: here, when: new Date().toISOString() }));
+      seen = other.concat([{ dir: here, when: new Date().toISOString() }]).slice(-10);
+      localStorage.setItem(key, JSON.stringify(seen));
     } catch (e) {
       set('16', 'FAIL', errText(e));
     }

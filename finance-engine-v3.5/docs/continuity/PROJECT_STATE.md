@@ -105,7 +105,16 @@ Pasted by the owner. Run after the reload in step 9:
 * **16 PASS:** a value written by the probe opened from a different folder was visible, so `file://` pages share one storage origin in Chrome on macOS (ADR-009 assumption holds here; V-21).
 * N/A: 9b, 10, 11b, 12, 13, 14. These were lost on the reload, a probe defect fixed the same day: `probe.js` now keeps button results and drop-down choices across a reload. They need re-running.
 
-Not decided by this run (needs the managed laptop): DEC-020, DEC-023, DEC-026, OV-4 (Edge `.js` download warning), OV-6 (policies), and synced-folder behaviour (OV-3 from a OneDrive folder).
+### Owner's Mac, Chrome 154, local folder (not synced): 2026-10-04 21:39 UTC (second run, button checks)
+
+Pasted by the owner, with the reload-persistence fix:
+* PASS: 1–8, 9a, **9b** (wrote and read back the test file), **9c** (after reload, permission granted on click and file re-read), **10** (folder listing: 1 file), 11a, **11b** (save dialog wrote the file), **12** (`.js` download: no warning in Chrome), **13** (`file://` → `file://` link opened and showed `#/ref/O-1234567`), 15, 17.
+* N/A: 14 (clipboard button not clicked; optional on the Mac).
+* N/A: 16. This was a probe quirk: it remembered only the last folder, and this run compared against the previous run from the same folder. The first run already showed PASS. Fixed the same day: the probe now remembers every folder it has been opened from.
+
+**Mac/Chrome summary:** every behaviour the architecture relies on works in Chrome on macOS from a local folder: script-tag data loading, the strict CSP with `script-src 'self'`, folder access with persisted handles, the save dialog, `file://` links with a hash, and shared storage. This is supporting evidence only.
+
+Not decided by these runs (needs the managed laptop): DEC-020, DEC-023, DEC-026, OV-4 (Edge `.js` download warning), OV-6 (policies), and synced-folder behaviour (OV-3 from a OneDrive folder).
 
 ### Managed laptop, Edge, synced Teams channel folder
 
