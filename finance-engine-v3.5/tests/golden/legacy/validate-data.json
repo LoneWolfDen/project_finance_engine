@@ -1,0 +1,69 @@
+{
+  "_what": "validate-data",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "any",
+  "value": {
+    "not_array": [
+      "Data must be a JSON array"
+    ],
+    "po_details": {
+      "valid": [],
+      "invalid": [
+        "Row 1: PO_WO_value must be a positive number",
+        "Row 1: PO_Validity must be mm-yy format (e.g. \"12-25\")",
+        "Row 1: WO_StartDate must be yyyy-mm-dd",
+        "Row 1: rollover_allowed must be true/false",
+        "Row 2: missing required field \"PO_Team_Identifier\"",
+        "Row 2: missing required field \"PO_WO_value\"",
+        "Row 2: missing required field \"PO_Currency_Code\"",
+        "Row 2: missing required field \"PO_Validity\"",
+        "Row 2: missing required field \"WO_StartDate\""
+      ]
+    },
+    "po_details_legacy_test_file": [
+      "Row 1: missing required field \"PO_Validity\"",
+      "Row 2: missing required field \"PO_Validity\"",
+      "Row 3: missing required field \"PO_Validity\"",
+      "Row 4: missing required field \"PO_Validity\""
+    ],
+    "resources": {
+      "valid": [],
+      "invalid": [
+        "Row 1: missing name",
+        "Row 1: missing po_team",
+        "Row 1: missing start date",
+        "Row 1: missing end date",
+        "Row 1: bill_rate must be a number",
+        "Row 1: alloc must be 0-1"
+      ]
+    },
+    "invoices": {
+      "valid": [],
+      "invalid": [
+        "Row 1: missing po_team",
+        "Row 1: missing invoice_number",
+        "Row 1: amount must be a number",
+        "Row 1: period_from must be yyyy-mm-dd",
+        "Row 1: period_to must be yyyy-mm-dd",
+        "Row 1: status must be Paid/Submitted/Draft"
+      ]
+    },
+    "fx_rates": {
+      "valid": [],
+      "invalid": [
+        "Row 1: missing currency code",
+        "Row 1: effective must be yyyy-mm-dd",
+        "Row 1: rate must be a number"
+      ]
+    },
+    "expenses": {
+      "valid": [],
+      "invalid": [
+        "Row 1: missing name",
+        "Row 1: date must be yyyy-mm-dd",
+        "Row 1: amount must be a number"
+      ]
+    },
+    "unknown_key": []
+  }
+}

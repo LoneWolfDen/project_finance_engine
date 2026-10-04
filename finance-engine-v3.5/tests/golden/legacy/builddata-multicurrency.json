@@ -1,0 +1,19 @@
+{
+  "_what": "builddata-multicurrency",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Europe/London",
+  "_fixture": "multicurrency",
+  "value": {
+    "tAct": 0,
+    "tExp": 21930,
+    "rem": 78070,
+    "fcTotal": 202400,
+    "fcRate": 800,
+    "allYears": [
+      2026
+    ],
+    "allPoTeams": [
+      "111111_ProjectAlpha_AWS"
+    ]
+  }
+}

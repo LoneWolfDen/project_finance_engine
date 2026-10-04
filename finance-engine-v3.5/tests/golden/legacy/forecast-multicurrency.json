@@ -1,0 +1,239 @@
+{
+  "_what": "forecast-multicurrency",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Europe/London",
+  "_fixture": "multicurrency",
+  "value": {
+    "all": {
+      "monthly": {
+        "Jul-25": 18400,
+        "Aug-25": 16000,
+        "Sep-25": 17600,
+        "Oct-25": 18400,
+        "Nov-25": 16000,
+        "Dec-25": 16800,
+        "Jan-26": 16800,
+        "Feb-26": 16000,
+        "Mar-26": 17600,
+        "Apr-26": 16000,
+        "May-26": 15200,
+        "Jun-26": 17600
+      },
+      "burndown": [
+        {
+          "month": "Jul-25",
+          "forecast": 18400,
+          "forecast_burn": 81600
+        },
+        {
+          "month": "Aug-25",
+          "forecast": 16000,
+          "forecast_burn": 65600
+        },
+        {
+          "month": "Sep-25",
+          "forecast": 17600,
+          "forecast_burn": 48000
+        },
+        {
+          "month": "Oct-25",
+          "forecast": 18400,
+          "forecast_burn": 29600
+        },
+        {
+          "month": "Nov-25",
+          "forecast": 16000,
+          "forecast_burn": 13600
+        },
+        {
+          "month": "Dec-25",
+          "forecast": 16800,
+          "forecast_burn": -3200
+        },
+        {
+          "month": "Jan-26",
+          "forecast": 16800,
+          "forecast_burn": -20000
+        },
+        {
+          "month": "Feb-26",
+          "forecast": 16000,
+          "forecast_burn": -36000
+        },
+        {
+          "month": "Mar-26",
+          "forecast": 17600,
+          "forecast_burn": -53600
+        },
+        {
+          "month": "Apr-26",
+          "forecast": 16000,
+          "forecast_burn": -69600
+        },
+        {
+          "month": "May-26",
+          "forecast": 15200,
+          "forecast_burn": -84800
+        },
+        {
+          "month": "Jun-26",
+          "forecast": 17600,
+          "forecast_burn": -102400
+        }
+      ],
+      "total": 202400,
+      "days": 253,
+      "rate": 800,
+      "normPO": 125000,
+      "totalPOValue": 100000,
+      "currency": "GBP",
+      "normCurrency": "USD",
+      "status": "Approved",
+      "rolloverByYear": {
+        "2026": {
+          "poValue": 100000,
+          "carryIn": 0,
+          "available": 100000,
+          "spent": 99200,
+          "unused": 800,
+          "rollover_allowed": false
+        }
+      },
+      "posByYear": {
+        "2026": [
+          {
+            "PO_Team_Identifier": "111111_ProjectAlpha_AWS",
+            "PO_WO_value": 100000,
+            "PO_Currency_Code": "GBP",
+            "Normalized_Currency_Code": "USD",
+            "Normalized_Currency_RateMultiplier": 1.3,
+            "PO_Validity": "12-26",
+            "rollover_allowed": false,
+            "WO_StartDate": "2025-07-01",
+            "WO_Approval_Status": "Approved",
+            "PO_WO_Number": 100100100,
+            "ProjectID": 111111,
+            "program": "TestCo Program"
+          }
+        ]
+      }
+    },
+    "firstTeam": {
+      "team": "111111_ProjectAlpha_AWS",
+      "result": {
+        "monthly": {
+          "Jul-25": 18400,
+          "Aug-25": 16000,
+          "Sep-25": 17600,
+          "Oct-25": 18400,
+          "Nov-25": 16000,
+          "Dec-25": 16800,
+          "Jan-26": 16800,
+          "Feb-26": 16000,
+          "Mar-26": 17600,
+          "Apr-26": 16000,
+          "May-26": 15200,
+          "Jun-26": 17600
+        },
+        "burndown": [
+          {
+            "month": "Jul-25",
+            "forecast": 18400,
+            "forecast_burn": 81600
+          },
+          {
+            "month": "Aug-25",
+            "forecast": 16000,
+            "forecast_burn": 65600
+          },
+          {
+            "month": "Sep-25",
+            "forecast": 17600,
+            "forecast_burn": 48000
+          },
+          {
+            "month": "Oct-25",
+            "forecast": 18400,
+            "forecast_burn": 29600
+          },
+          {
+            "month": "Nov-25",
+            "forecast": 16000,
+            "forecast_burn": 13600
+          },
+          {
+            "month": "Dec-25",
+            "forecast": 16800,
+            "forecast_burn": -3200
+          },
+          {
+            "month": "Jan-26",
+            "forecast": 16800,
+            "forecast_burn": -20000
+          },
+          {
+            "month": "Feb-26",
+            "forecast": 16000,
+            "forecast_burn": -36000
+          },
+          {
+            "month": "Mar-26",
+            "forecast": 17600,
+            "forecast_burn": -53600
+          },
+          {
+            "month": "Apr-26",
+            "forecast": 16000,
+            "forecast_burn": -69600
+          },
+          {
+            "month": "May-26",
+            "forecast": 15200,
+            "forecast_burn": -84800
+          },
+          {
+            "month": "Jun-26",
+            "forecast": 17600,
+            "forecast_burn": -102400
+          }
+        ],
+        "total": 202400,
+        "days": 253,
+        "rate": 800,
+        "normPO": 125000,
+        "totalPOValue": 100000,
+        "currency": "GBP",
+        "normCurrency": "USD",
+        "status": "Approved",
+        "rolloverByYear": {
+          "2026": {
+            "poValue": 100000,
+            "carryIn": 0,
+            "available": 100000,
+            "spent": 99200,
+            "unused": 800,
+            "rollover_allowed": false
+          }
+        },
+        "posByYear": {
+          "2026": [
+            {
+              "PO_Team_Identifier": "111111_ProjectAlpha_AWS",
+              "PO_WO_value": 100000,
+              "PO_Currency_Code": "GBP",
+              "Normalized_Currency_Code": "USD",
+              "Normalized_Currency_RateMultiplier": 1.3,
+              "PO_Validity": "12-26",
+              "rollover_allowed": false,
+              "WO_StartDate": "2025-07-01",
+              "WO_Approval_Status": "Approved",
+              "PO_WO_Number": 100100100,
+              "ProjectID": 111111,
+              "program": "TestCo Program"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,185 @@
+{
+  "_what": "forecast-basic-now-2025-08-15",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "basic, now 2025-08-15",
+  "value": {
+    "monthly": {
+      "Feb-25": 1280,
+      "Mar-25": 28728,
+      "Apr-25": 66216,
+      "May-25": 90656,
+      "Jun-25": 87448,
+      "Jul-25": 148384,
+      "Aug-25": 157208,
+      "Sep-25": 187776,
+      "Oct-25": 194824,
+      "Nov-25": 159120,
+      "Dec-25": 162080,
+      "Jan-26": 64800,
+      "Feb-26": 60000,
+      "Mar-26": 38400
+    },
+    "burndown": [
+      {
+        "month": "Feb-25",
+        "forecast": 1280,
+        "forecast_burn": 1448720
+      },
+      {
+        "month": "Mar-25",
+        "forecast": 28728,
+        "forecast_burn": 1419992
+      },
+      {
+        "month": "Apr-25",
+        "forecast": 66216,
+        "forecast_burn": 1353776
+      },
+      {
+        "month": "May-25",
+        "forecast": 90656,
+        "forecast_burn": 1263120
+      },
+      {
+        "month": "Jun-25",
+        "forecast": 87448,
+        "forecast_burn": 1175672
+      },
+      {
+        "month": "Jul-25",
+        "forecast": 148384,
+        "forecast_burn": 1027288
+      },
+      {
+        "month": "Aug-25",
+        "forecast": 157208,
+        "forecast_burn": 870080
+      },
+      {
+        "month": "Sep-25",
+        "forecast": 187776,
+        "forecast_burn": 682304
+      },
+      {
+        "month": "Oct-25",
+        "forecast": 194824,
+        "forecast_burn": 487480
+      },
+      {
+        "month": "Nov-25",
+        "forecast": 159120,
+        "forecast_burn": 328360
+      },
+      {
+        "month": "Dec-25",
+        "forecast": 162080,
+        "forecast_burn": 166280
+      },
+      {
+        "month": "Jan-26",
+        "forecast": 64800,
+        "forecast_burn": 101480
+      },
+      {
+        "month": "Feb-26",
+        "forecast": 60000,
+        "forecast_burn": 41480
+      },
+      {
+        "month": "Mar-26",
+        "forecast": 38400,
+        "forecast_burn": 3080
+      }
+    ],
+    "total": 1446920,
+    "days": 280,
+    "rate": 5167.57,
+    "normPO": 1885000,
+    "totalPOValue": 1450000,
+    "currency": "GBP",
+    "normCurrency": "USD",
+    "status": "Approved",
+    "rolloverByYear": {
+      "2025": {
+        "poValue": 450000,
+        "carryIn": 0,
+        "available": 450000,
+        "spent": 1283720,
+        "unused": 0,
+        "rollover_allowed": false
+      },
+      "2026": {
+        "poValue": 1000000,
+        "carryIn": 0,
+        "available": 1000000,
+        "spent": 163200,
+        "unused": 836800,
+        "rollover_allowed": false
+      }
+    },
+    "posByYear": {
+      "2025": [
+        {
+          "PO_Team_Identifier": "111111_ProjectAlpha_AWS",
+          "PO_WO_value": 300000,
+          "PO_Currency_Code": "GBP",
+          "Normalized_Currency_Code": "USD",
+          "Normalized_Currency_RateMultiplier": 1.36,
+          "PO_Validity": "12-25",
+          "rollover_allowed": false,
+          "WO_StartDate": "2025-01-01",
+          "WO_Approval_Status": "Approved",
+          "PO_WO_Number": 100100100,
+          "ProjectID": 111111,
+          "program": "TestCo Program"
+        },
+        {
+          "PO_Team_Identifier": "222222_ProjectBeta_GCP",
+          "PO_WO_value": 150000,
+          "PO_Currency_Code": "GBP",
+          "Normalized_Currency_Code": "USD",
+          "Normalized_Currency_RateMultiplier": 1.36,
+          "PO_Validity": "12-25",
+          "rollover_allowed": false,
+          "WO_StartDate": "2025-03-01",
+          "WO_Approval_Status": "Approved",
+          "PO_WO_Number": 200200200,
+          "ProjectID": 222222,
+          "program": "TestCo Program"
+        }
+      ],
+      "2026": [
+        {
+          "PO_Team_Identifier": "111111_ProjectAlpha_AWS",
+          "PO_WO_value": 200000,
+          "PO_Currency_Code": "GBP",
+          "Normalized_Currency_Code": "USD",
+          "Normalized_Currency_RateMultiplier": 1.36,
+          "PO_Validity": "12-26",
+          "rollover_allowed": false,
+          "WO_StartDate": "2025-06-01",
+          "WO_Approval_Status": "Approved",
+          "PO_WO_Number": 100100101,
+          "ProjectID": 111111,
+          "program": "TestCo Program"
+        },
+        {
+          "PO_Team_Identifier": "333333_ProjectGamma_Azure",
+          "PO_WO_value": 800000,
+          "PO_Currency_Code": "GBP",
+          "Normalized_Currency_Code": "USD",
+          "Normalized_Currency_RateMultiplier": 1.36,
+          "PO_Validity": "12-26",
+          "rollover_allowed": false,
+          "WO_StartDate": "2025-04-01",
+          "WO_Approval_Status": "Approved",
+          "PO_WO_Number": 300300300,
+          "ProjectID": 333333,
+          "program": "TestCo Program"
+        }
+      ]
+    }
+  }
+}

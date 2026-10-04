@@ -1,0 +1,360 @@
+{
+  "_what": "forecast-y2027",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "y2027",
+  "value": {
+    "all": {
+      "monthly": {
+        "Jan-26": 43200,
+        "Feb-26": 43200,
+        "Mar-26": 57200,
+        "Apr-26": 54600,
+        "May-26": 54600,
+        "Jun-26": 54600,
+        "Jul-26": 59800,
+        "Aug-26": 54600,
+        "Sep-26": 57200,
+        "Oct-26": 57200,
+        "Nov-26": 54600,
+        "Dec-26": 55120,
+        "Jan-27": 65520,
+        "Feb-27": 62400,
+        "Mar-27": 71760,
+        "Apr-27": 68640,
+        "May-27": 65520,
+        "Jun-27": 65520
+      },
+      "burndown": [
+        {
+          "month": "Jan-26",
+          "forecast": 43200,
+          "forecast_burn": 606800
+        },
+        {
+          "month": "Feb-26",
+          "forecast": 43200,
+          "forecast_burn": 563600
+        },
+        {
+          "month": "Mar-26",
+          "forecast": 57200,
+          "forecast_burn": 506400
+        },
+        {
+          "month": "Apr-26",
+          "forecast": 54600,
+          "forecast_burn": 451800
+        },
+        {
+          "month": "May-26",
+          "forecast": 54600,
+          "forecast_burn": 397200
+        },
+        {
+          "month": "Jun-26",
+          "forecast": 54600,
+          "forecast_burn": 342600
+        },
+        {
+          "month": "Jul-26",
+          "forecast": 59800,
+          "forecast_burn": 282800
+        },
+        {
+          "month": "Aug-26",
+          "forecast": 54600,
+          "forecast_burn": 228200
+        },
+        {
+          "month": "Sep-26",
+          "forecast": 57200,
+          "forecast_burn": 171000
+        },
+        {
+          "month": "Oct-26",
+          "forecast": 57200,
+          "forecast_burn": 113800
+        },
+        {
+          "month": "Nov-26",
+          "forecast": 54600,
+          "forecast_burn": 59200
+        },
+        {
+          "month": "Dec-26",
+          "forecast": 55120,
+          "forecast_burn": 4080
+        },
+        {
+          "month": "Jan-27",
+          "forecast": 65520,
+          "forecast_burn": -61440
+        },
+        {
+          "month": "Feb-27",
+          "forecast": 62400,
+          "forecast_burn": -123840
+        },
+        {
+          "month": "Mar-27",
+          "forecast": 71760,
+          "forecast_burn": -195600
+        },
+        {
+          "month": "Apr-27",
+          "forecast": 68640,
+          "forecast_burn": -264240
+        },
+        {
+          "month": "May-27",
+          "forecast": 65520,
+          "forecast_burn": -329760
+        },
+        {
+          "month": "Jun-27",
+          "forecast": 65520,
+          "forecast_burn": -395280
+        }
+      ],
+      "total": 1045280,
+      "days": 383,
+      "rate": 2729.19,
+      "normPO": 812500,
+      "totalPOValue": 650000,
+      "currency": "GBP",
+      "normCurrency": "USD",
+      "status": "Approved",
+      "rolloverByYear": {
+        "2026": {
+          "poValue": 400000,
+          "carryIn": 0,
+          "available": 400000,
+          "spent": 642800,
+          "unused": 0,
+          "rollover_allowed": false
+        },
+        "2027": {
+          "poValue": 250000,
+          "carryIn": 0,
+          "available": 250000,
+          "spent": 402480,
+          "unused": 0,
+          "rollover_allowed": true
+        }
+      },
+      "posByYear": {
+        "2026": [
+          {
+            "PO_Team_Identifier": "444444_ProjectDelta_Data",
+            "PO_WO_value": 400000,
+            "PO_Currency_Code": "GBP",
+            "Normalized_Currency_Code": "USD",
+            "Normalized_Currency_RateMultiplier": 1.3,
+            "PO_Validity": "12-26",
+            "rollover_allowed": false,
+            "WO_StartDate": "2026-01-05",
+            "WO_Approval_Status": "Approved",
+            "PO_WO_Number": 400400400,
+            "ProjectID": 444444,
+            "program": "TestCo Program"
+          }
+        ],
+        "2027": [
+          {
+            "PO_Team_Identifier": "444444_ProjectDelta_Data",
+            "PO_WO_value": 250000,
+            "PO_Currency_Code": "GBP",
+            "Normalized_Currency_Code": "USD",
+            "Normalized_Currency_RateMultiplier": 1.3,
+            "PO_Validity": "06-27",
+            "rollover_allowed": true,
+            "WO_StartDate": "2027-01-04",
+            "WO_Approval_Status": "Pending",
+            "PO_WO_Number": 400400401,
+            "ProjectID": 444444,
+            "program": "TestCo Program"
+          }
+        ]
+      }
+    },
+    "firstTeam": {
+      "team": "444444_ProjectDelta_Data",
+      "result": {
+        "monthly": {
+          "Jan-26": 43200,
+          "Feb-26": 43200,
+          "Mar-26": 57200,
+          "Apr-26": 54600,
+          "May-26": 54600,
+          "Jun-26": 54600,
+          "Jul-26": 59800,
+          "Aug-26": 54600,
+          "Sep-26": 57200,
+          "Oct-26": 57200,
+          "Nov-26": 54600,
+          "Dec-26": 55120,
+          "Jan-27": 65520,
+          "Feb-27": 62400,
+          "Mar-27": 71760,
+          "Apr-27": 68640,
+          "May-27": 65520,
+          "Jun-27": 65520
+        },
+        "burndown": [
+          {
+            "month": "Jan-26",
+            "forecast": 43200,
+            "forecast_burn": 606800
+          },
+          {
+            "month": "Feb-26",
+            "forecast": 43200,
+            "forecast_burn": 563600
+          },
+          {
+            "month": "Mar-26",
+            "forecast": 57200,
+            "forecast_burn": 506400
+          },
+          {
+            "month": "Apr-26",
+            "forecast": 54600,
+            "forecast_burn": 451800
+          },
+          {
+            "month": "May-26",
+            "forecast": 54600,
+            "forecast_burn": 397200
+          },
+          {
+            "month": "Jun-26",
+            "forecast": 54600,
+            "forecast_burn": 342600
+          },
+          {
+            "month": "Jul-26",
+            "forecast": 59800,
+            "forecast_burn": 282800
+          },
+          {
+            "month": "Aug-26",
+            "forecast": 54600,
+            "forecast_burn": 228200
+          },
+          {
+            "month": "Sep-26",
+            "forecast": 57200,
+            "forecast_burn": 171000
+          },
+          {
+            "month": "Oct-26",
+            "forecast": 57200,
+            "forecast_burn": 113800
+          },
+          {
+            "month": "Nov-26",
+            "forecast": 54600,
+            "forecast_burn": 59200
+          },
+          {
+            "month": "Dec-26",
+            "forecast": 55120,
+            "forecast_burn": 4080
+          },
+          {
+            "month": "Jan-27",
+            "forecast": 65520,
+            "forecast_burn": -61440
+          },
+          {
+            "month": "Feb-27",
+            "forecast": 62400,
+            "forecast_burn": -123840
+          },
+          {
+            "month": "Mar-27",
+            "forecast": 71760,
+            "forecast_burn": -195600
+          },
+          {
+            "month": "Apr-27",
+            "forecast": 68640,
+            "forecast_burn": -264240
+          },
+          {
+            "month": "May-27",
+            "forecast": 65520,
+            "forecast_burn": -329760
+          },
+          {
+            "month": "Jun-27",
+            "forecast": 65520,
+            "forecast_burn": -395280
+          }
+        ],
+        "total": 1045280,
+        "days": 383,
+        "rate": 2729.19,
+        "normPO": 812500,
+        "totalPOValue": 650000,
+        "currency": "GBP",
+        "normCurrency": "USD",
+        "status": "Approved",
+        "rolloverByYear": {
+          "2026": {
+            "poValue": 400000,
+            "carryIn": 0,
+            "available": 400000,
+            "spent": 642800,
+            "unused": 0,
+            "rollover_allowed": false
+          },
+          "2027": {
+            "poValue": 250000,
+            "carryIn": 0,
+            "available": 250000,
+            "spent": 402480,
+            "unused": 0,
+            "rollover_allowed": true
+          }
+        },
+        "posByYear": {
+          "2026": [
+            {
+              "PO_Team_Identifier": "444444_ProjectDelta_Data",
+              "PO_WO_value": 400000,
+              "PO_Currency_Code": "GBP",
+              "Normalized_Currency_Code": "USD",
+              "Normalized_Currency_RateMultiplier": 1.3,
+              "PO_Validity": "12-26",
+              "rollover_allowed": false,
+              "WO_StartDate": "2026-01-05",
+              "WO_Approval_Status": "Approved",
+              "PO_WO_Number": 400400400,
+              "ProjectID": 444444,
+              "program": "TestCo Program"
+            }
+          ],
+          "2027": [
+            {
+              "PO_Team_Identifier": "444444_ProjectDelta_Data",
+              "PO_WO_value": 250000,
+              "PO_Currency_Code": "GBP",
+              "Normalized_Currency_Code": "USD",
+              "Normalized_Currency_RateMultiplier": 1.3,
+              "PO_Validity": "06-27",
+              "rollover_allowed": true,
+              "WO_StartDate": "2027-01-04",
+              "WO_Approval_Status": "Pending",
+              "PO_WO_Number": 400400401,
+              "ProjectID": 444444,
+              "program": "TestCo Program"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

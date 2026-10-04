@@ -1,0 +1,23 @@
+{
+  "_what": "builddata-basic",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Asia/Kolkata",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the Asia/Kolkata output; Europe/London is the reference.",
+  "_fixture": "basic",
+  "value": {
+    "tAct": 298066,
+    "tExp": 1900,
+    "rem": 1150034,
+    "fcTotal": 1436192,
+    "fcRate": 5129.26,
+    "allYears": [
+      2025,
+      2026
+    ],
+    "allPoTeams": [
+      "111111_ProjectAlpha_AWS",
+      "222222_ProjectBeta_GCP",
+      "333333_ProjectGamma_Azure"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "_what": "builddata-basic",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Europe/London",
+  "_fixture": "basic",
+  "value": {
+    "tAct": 298066,
+    "tExp": 1900,
+    "rem": 1150034,
+    "fcTotal": 1438000,
+    "fcRate": 5135.71,
+    "allYears": [
+      2025,
+      2026
+    ],
+    "allPoTeams": [
+      "111111_ProjectAlpha_AWS",
+      "222222_ProjectBeta_GCP",
+      "333333_ProjectGamma_Azure"
+    ]
+  }
+}

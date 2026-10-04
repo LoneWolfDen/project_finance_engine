@@ -1,0 +1,50 @@
+{
+  "_what": "actuals-monthly-defaults",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Europe/London",
+  "_fixture": "defaults",
+  "value": [
+    {
+      "month": "Jul-25",
+      "actuals": 29240.28,
+      "forecast": 40845.56,
+      "actuals_burn": 220349.72,
+      "forecast_burn": 208744.44
+    },
+    {
+      "month": "Aug-25",
+      "actuals": 52173.24,
+      "forecast": 67748.12,
+      "actuals_burn": 168176.48,
+      "forecast_burn": 140996.32
+    },
+    {
+      "month": "Sep-25",
+      "actuals": 60010.68,
+      "forecast": 68421.84,
+      "actuals_burn": 108165.8,
+      "forecast_burn": 72574.48
+    },
+    {
+      "month": "Oct-25",
+      "actuals": 55732.76,
+      "forecast": 68452.76,
+      "actuals_burn": 52433.04,
+      "forecast_burn": 4121.72
+    },
+    {
+      "month": "Nov-25",
+      "actuals": 16382.32,
+      "forecast": 6622.32,
+      "actuals_burn": 36050.72,
+      "forecast_burn": -2500.6
+    },
+    {
+      "month": "Dec-25",
+      "actuals": 4879.65,
+      "forecast": null,
+      "actuals_burn": 31171.07,
+      "forecast_burn": null
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "_what": "parse-validity-end",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "value": [
+    {
+      "input": "12-25",
+      "iso": "2025-12-31T05:00:00.000Z",
+      "local": "Wed Dec 31 2025"
+    },
+    {
+      "input": "06-27",
+      "iso": "2027-06-30T04:00:00.000Z",
+      "local": "Wed Jun 30 2027"
+    },
+    {
+      "input": "1-26",
+      "iso": "2026-01-31T05:00:00.000Z",
+      "local": "Sat Jan 31 2026"
+    },
+    {
+      "input": "12-2026",
+      "iso": "2026-12-31T05:00:00.000Z",
+      "local": "Thu Dec 31 2026"
+    },
+    {
+      "input": "02-24",
+      "iso": "2024-02-29T05:00:00.000Z",
+      "local": "Thu Feb 29 2024"
+    },
+    {
+      "input": 2025,
+      "iso": "2025-12-31T05:00:00.000Z",
+      "local": "Wed Dec 31 2025"
+    },
+    {
+      "input": "2026",
+      "iso": "2026-12-31T05:00:00.000Z",
+      "local": "Thu Dec 31 2026"
+    },
+    {
+      "input": "",
+      "iso": "2025-12-31T00:00:00.000Z",
+      "local": "Tue Dec 30 2025"
+    },
+    {
+      "input": null,
+      "iso": "2025-12-31T00:00:00.000Z",
+      "local": "Tue Dec 30 2025"
+    },
+    {
+      "input": "2026-12-31",
+      "iso": "2025-12-31T00:00:00.000Z",
+      "local": "Tue Dec 30 2025"
+    }
+  ]
+}

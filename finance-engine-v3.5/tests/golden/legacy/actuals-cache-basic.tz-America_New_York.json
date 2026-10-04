@@ -1,0 +1,97 @@
+{
+  "_what": "actuals-cache-basic",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "basic",
+  "value": {
+    "actuals_by_project": {
+      "111111": {
+        "Jun-25": 6152,
+        "Jul-25": 73404,
+        "Aug-25": 60854,
+        "Sep-25": 65478,
+        "Oct-25": 41490,
+        "Nov-25": 31392,
+        "Dec-25": 19296
+      }
+    },
+    "actuals_monthly": [
+      {
+        "month": "Jun-25",
+        "actuals": 6152,
+        "actuals_burn": 1443848
+      },
+      {
+        "month": "Jul-25",
+        "actuals": 73404,
+        "actuals_burn": 1370444
+      },
+      {
+        "month": "Aug-25",
+        "actuals": 60854,
+        "actuals_burn": 1309590
+      },
+      {
+        "month": "Sep-25",
+        "actuals": 65478,
+        "actuals_burn": 1244112
+      },
+      {
+        "month": "Oct-25",
+        "actuals": 41490,
+        "actuals_burn": 1202622
+      },
+      {
+        "month": "Nov-25",
+        "actuals": 31392,
+        "actuals_burn": 1171230
+      },
+      {
+        "month": "Dec-25",
+        "actuals": 19296,
+        "actuals_burn": 1151934
+      }
+    ],
+    "fromCache": [
+      {
+        "month": "Jun-25",
+        "actuals": 6152,
+        "actuals_burn": 1443848
+      },
+      {
+        "month": "Jul-25",
+        "actuals": 73404,
+        "actuals_burn": 1370444
+      },
+      {
+        "month": "Aug-25",
+        "actuals": 60854,
+        "actuals_burn": 1309590
+      },
+      {
+        "month": "Sep-25",
+        "actuals": 65478,
+        "actuals_burn": 1244112
+      },
+      {
+        "month": "Oct-25",
+        "actuals": 41490,
+        "actuals_burn": 1202622
+      },
+      {
+        "month": "Nov-25",
+        "actuals": 31392,
+        "actuals_burn": 1171230
+      },
+      {
+        "month": "Dec-25",
+        "actuals": 19296,
+        "actuals_burn": 1151934
+      }
+    ],
+    "toasts": [
+      "✓ 200 rows: 200 matched, 0 unmatched → 1 projects"
+    ]
+  }
+}

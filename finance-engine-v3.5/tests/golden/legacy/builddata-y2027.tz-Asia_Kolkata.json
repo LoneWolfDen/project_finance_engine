@@ -1,0 +1,21 @@
+{
+  "_what": "builddata-y2027",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Asia/Kolkata",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the Asia/Kolkata output; Europe/London is the reference.",
+  "_fixture": "y2027",
+  "value": {
+    "tAct": 0,
+    "tExp": 75,
+    "rem": 649925,
+    "fcTotal": 1039560,
+    "fcRate": 2728.5,
+    "allYears": [
+      2026,
+      2027
+    ],
+    "allPoTeams": [
+      "444444_ProjectDelta_Data"
+    ]
+  }
+}

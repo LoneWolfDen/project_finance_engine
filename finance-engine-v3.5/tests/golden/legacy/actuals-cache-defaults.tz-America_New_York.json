@@ -1,0 +1,15 @@
+{
+  "_what": "actuals-cache-defaults",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "defaults",
+  "value": {
+    "actuals_by_project": {},
+    "actuals_monthly": [],
+    "fromCache": [],
+    "toasts": [
+      "✓ 0 rows: 0 matched, 0 unmatched → 0 projects"
+    ]
+  }
+}

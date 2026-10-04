@@ -1,0 +1,8 @@
+{
+  "_what": "actuals-monthly-multicurrency",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Asia/Kolkata",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the Asia/Kolkata output; Europe/London is the reference.",
+  "_fixture": "multicurrency",
+  "value": []
+}

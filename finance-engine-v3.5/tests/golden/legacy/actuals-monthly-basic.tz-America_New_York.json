@@ -1,0 +1,58 @@
+{
+  "_what": "actuals-monthly-basic",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "basic",
+  "value": [
+    {
+      "month": "Jun-25",
+      "actuals": 6152,
+      "forecast": null,
+      "actuals_burn": 1443848,
+      "forecast_burn": null
+    },
+    {
+      "month": "Jul-25",
+      "actuals": 73404,
+      "forecast": null,
+      "actuals_burn": 1370444,
+      "forecast_burn": null
+    },
+    {
+      "month": "Aug-25",
+      "actuals": 60854,
+      "forecast": null,
+      "actuals_burn": 1309590,
+      "forecast_burn": null
+    },
+    {
+      "month": "Sep-25",
+      "actuals": 65478,
+      "forecast": null,
+      "actuals_burn": 1244112,
+      "forecast_burn": null
+    },
+    {
+      "month": "Oct-25",
+      "actuals": 41490,
+      "forecast": null,
+      "actuals_burn": 1202622,
+      "forecast_burn": null
+    },
+    {
+      "month": "Nov-25",
+      "actuals": 31392,
+      "forecast": null,
+      "actuals_burn": 1171230,
+      "forecast_burn": null
+    },
+    {
+      "month": "Dec-25",
+      "actuals": 19296,
+      "forecast": null,
+      "actuals_burn": 1151934,
+      "forecast_burn": null
+    }
+  ]
+}

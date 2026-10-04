@@ -1,0 +1,20 @@
+{
+  "_what": "builddata-defaults",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "defaults",
+  "value": {
+    "tAct": 218418.93,
+    "tExp": 368.2,
+    "rem": 30802.87,
+    "fcTotal": 251690.6,
+    "fcRate": 2649.37,
+    "allYears": [
+      2025
+    ],
+    "allPoTeams": [
+      "987654_SomeCompany_PO_Team_Identifier"
+    ]
+  }
+}

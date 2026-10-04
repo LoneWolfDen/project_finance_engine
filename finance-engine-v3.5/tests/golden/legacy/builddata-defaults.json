@@ -1,0 +1,19 @@
+{
+  "_what": "builddata-defaults",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Europe/London",
+  "_fixture": "defaults",
+  "value": {
+    "tAct": 218418.93,
+    "tExp": 368.2,
+    "rem": 30802.87,
+    "fcTotal": 249320.6,
+    "fcRate": 2624.43,
+    "allYears": [
+      2025
+    ],
+    "allPoTeams": [
+      "987654_SomeCompany_PO_Team_Identifier"
+    ]
+  }
+}

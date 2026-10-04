@@ -1,0 +1,20 @@
+{
+  "_what": "builddata-multicurrency",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "multicurrency",
+  "value": {
+    "tAct": 0,
+    "tExp": 21930,
+    "rem": 78070,
+    "fcTotal": 204800,
+    "fcRate": 800,
+    "allYears": [
+      2026
+    ],
+    "allPoTeams": [
+      "111111_ProjectAlpha_AWS"
+    ]
+  }
+}

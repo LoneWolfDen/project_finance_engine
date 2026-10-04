@@ -1,0 +1,168 @@
+{
+  "_what": "forecast-defaults",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "America/New_York",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the America/New_York output; Europe/London is the reference.",
+  "_fixture": "defaults",
+  "value": {
+    "all": {
+      "monthly": {
+        "Jun-25": 703.72,
+        "Jul-25": 42215.56000000002,
+        "Aug-25": 69148.12000000001,
+        "Sep-25": 68021.84000000001,
+        "Oct-25": 66082.76000000002,
+        "Nov-25": 5518.6
+      },
+      "burndown": [
+        {
+          "month": "Jun-25",
+          "forecast": 703.72,
+          "forecast_burn": 248886.28
+        },
+        {
+          "month": "Jul-25",
+          "forecast": 42215.56,
+          "forecast_burn": 206670.72
+        },
+        {
+          "month": "Aug-25",
+          "forecast": 69148.12,
+          "forecast_burn": 137522.6
+        },
+        {
+          "month": "Sep-25",
+          "forecast": 68021.84,
+          "forecast_burn": 69500.76
+        },
+        {
+          "month": "Oct-25",
+          "forecast": 66082.76,
+          "forecast_burn": 3418
+        },
+        {
+          "month": "Nov-25",
+          "forecast": 5518.6,
+          "forecast_burn": -2100.6
+        }
+      ],
+      "total": 251690.6,
+      "days": 95,
+      "rate": 2649.37,
+      "normPO": 386864.5,
+      "totalPOValue": 249590,
+      "currency": "GBP",
+      "normCurrency": "USD",
+      "status": "Approved",
+      "rolloverByYear": {
+        "2025": {
+          "poValue": 249590,
+          "carryIn": 0,
+          "available": 249590,
+          "spent": 251690.6,
+          "unused": 0,
+          "rollover_allowed": false
+        }
+      },
+      "posByYear": {
+        "2025": [
+          {
+            "PO_Team_Identifier": "987654_SomeCompany_PO_Team_Identifier",
+            "PO_WO_value": 249590,
+            "PO_Currency_Code": "GBP",
+            "Normalized_Currency_Code": "USD",
+            "Normalized_Currency_RateMultiplier": 1.36,
+            "PO_Validity": "12-25",
+            "rollover_allowed": false,
+            "WO_StartDate": "2025-06-30",
+            "WO_Approval_Status": "Approved",
+            "PO_WO_Number": 191919191,
+            "ProjectID": 987654,
+            "program": "Default Program"
+          }
+        ]
+      }
+    },
+    "firstTeam": {
+      "team": "987654_SomeCompany_PO_Team_Identifier",
+      "result": {
+        "monthly": {
+          "Jun-25": 703.72,
+          "Jul-25": 42215.56000000002,
+          "Aug-25": 69148.12000000001,
+          "Sep-25": 68021.84000000001,
+          "Oct-25": 66082.76000000002,
+          "Nov-25": 5518.6
+        },
+        "burndown": [
+          {
+            "month": "Jun-25",
+            "forecast": 703.72,
+            "forecast_burn": 248886.28
+          },
+          {
+            "month": "Jul-25",
+            "forecast": 42215.56,
+            "forecast_burn": 206670.72
+          },
+          {
+            "month": "Aug-25",
+            "forecast": 69148.12,
+            "forecast_burn": 137522.6
+          },
+          {
+            "month": "Sep-25",
+            "forecast": 68021.84,
+            "forecast_burn": 69500.76
+          },
+          {
+            "month": "Oct-25",
+            "forecast": 66082.76,
+            "forecast_burn": 3418
+          },
+          {
+            "month": "Nov-25",
+            "forecast": 5518.6,
+            "forecast_burn": -2100.6
+          }
+        ],
+        "total": 251690.6,
+        "days": 95,
+        "rate": 2649.37,
+        "normPO": 386864.5,
+        "totalPOValue": 249590,
+        "currency": "GBP",
+        "normCurrency": "USD",
+        "status": "Approved",
+        "rolloverByYear": {
+          "2025": {
+            "poValue": 249590,
+            "carryIn": 0,
+            "available": 249590,
+            "spent": 251690.6,
+            "unused": 0,
+            "rollover_allowed": false
+          }
+        },
+        "posByYear": {
+          "2025": [
+            {
+              "PO_Team_Identifier": "987654_SomeCompany_PO_Team_Identifier",
+              "PO_WO_value": 249590,
+              "PO_Currency_Code": "GBP",
+              "Normalized_Currency_Code": "USD",
+              "Normalized_Currency_RateMultiplier": 1.36,
+              "PO_Validity": "12-25",
+              "rollover_allowed": false,
+              "WO_StartDate": "2025-06-30",
+              "WO_Approval_Status": "Approved",
+              "PO_WO_Number": 191919191,
+              "ProjectID": 987654,
+              "program": "Default Program"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

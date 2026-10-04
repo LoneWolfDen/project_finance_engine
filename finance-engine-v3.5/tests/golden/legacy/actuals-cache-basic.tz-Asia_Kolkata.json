@@ -1,0 +1,86 @@
+{
+  "_what": "actuals-cache-basic",
+  "_now": "2026-10-01T12:00:00Z",
+  "_tz": "Asia/Kolkata",
+  "_note": "KNOWN DEFECT C-01: legacy results depend on the computer time zone. This file records the Asia/Kolkata output; Europe/London is the reference.",
+  "_fixture": "basic",
+  "value": {
+    "actuals_by_project": {
+      "111111": {
+        "Jul-25": 76660,
+        "Aug-25": 60586,
+        "Sep-25": 66230,
+        "Oct-25": 43902,
+        "Nov-25": 29952,
+        "Dec-25": 20736
+      }
+    },
+    "actuals_monthly": [
+      {
+        "month": "Jul-25",
+        "actuals": 76660,
+        "actuals_burn": 1373340
+      },
+      {
+        "month": "Aug-25",
+        "actuals": 60586,
+        "actuals_burn": 1312754
+      },
+      {
+        "month": "Sep-25",
+        "actuals": 66230,
+        "actuals_burn": 1246524
+      },
+      {
+        "month": "Oct-25",
+        "actuals": 43902,
+        "actuals_burn": 1202622
+      },
+      {
+        "month": "Nov-25",
+        "actuals": 29952,
+        "actuals_burn": 1172670
+      },
+      {
+        "month": "Dec-25",
+        "actuals": 20736,
+        "actuals_burn": 1151934
+      }
+    ],
+    "fromCache": [
+      {
+        "month": "Jul-25",
+        "actuals": 76660,
+        "actuals_burn": 1373340
+      },
+      {
+        "month": "Aug-25",
+        "actuals": 60586,
+        "actuals_burn": 1312754
+      },
+      {
+        "month": "Sep-25",
+        "actuals": 66230,
+        "actuals_burn": 1246524
+      },
+      {
+        "month": "Oct-25",
+        "actuals": 43902,
+        "actuals_burn": 1202622
+      },
+      {
+        "month": "Nov-25",
+        "actuals": 29952,
+        "actuals_burn": 1172670
+      },
+      {
+        "month": "Dec-25",
+        "actuals": 20736,
+        "actuals_burn": 1151934
+      }
+    ],
+    "toasts": [
+      "✓ 200 rows: 200 matched, 0 unmatched → 1 projects"
+    ]
+  }
+}

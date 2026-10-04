@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (overnight run: after TST-002)
+Last updated: 2026-10-04 (overnight run: after TST-003)
 
 ## Repository
 
@@ -88,6 +88,7 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | 2026-10-04 | TST-001 | Done | New `tests/harness.js`, `tests/run-node.js`, `tests/index.html` (styles inline: no CSS file is listed), `tests/browser-suites.js`, `tests/unit/harness.test.js`, `tests/README.md`. Sandbox and smoke test moved to TST-004 (V-03) | `node tests/run-node.js` → 10 passed, 0 failed, All suites passed (exit 0). `--suite` and `--tz` work. A temporary failing test made it exit 1 (removed). `tests/index.html` via file:// in headless Chrome → "All suites passed (10 tests)" | Owner: open `tests/index.html` from Finder/Explorer in Edge and see "All suites passed" |
 | 2026-10-04 | TST-004 | Done | New `tests/support/legacy-sandbox.js` (`loadLegacy`), `tests/characterisation/legacy-smoke.test.js` | `node tests/run-node.js` → 15 passed, 0 failed (also with `--tz=America/New_York`). Smoke: computeForecast is a function; DEFAULTS.po_details.length = 1; fixed clock; two loads independent; toasts, protocol and confirm configurable | None |
 | 2026-10-04 | TST-002 | Done | New `tests/fixtures/`: 3 legacy configs (basic, multicurrency, 2027), 4 CSVs (quoted+BOM+CRLF, duplicates, ambiguous dates, UK-date resources), `xlsx/timesheet-basic.xlsx`, `README.md`; new `tests/support/make-xlsx-fixtures.js` (generator; also exports `listFiles`/`readBytes` used by the fixture test); new `tests/unit/fixtures.test.js` (Node only). `test_*` files unchanged | `node tests/run-node.js` → 22 passed, 0 failed (7 fixture checks: parse, headers, BOM/CRLF, duplicates, xlsx signature, no @ or undocumented 7+ digit numbers, every file documented) | None |
+| 2026-10-04 | TST-003 | Done | New `tests/characterisation/legacy-calc.test.js`; 60 golden files in `tests/golden/legacy/` (London reference + `.tz-America_New_York` and `.tz-Asia_Kolkata` variants for time-zone-dependent results); `tests/README.md` gains the "Golden files" section (criterion 4). One extra case beyond the item: basic forecast with the clock at 2025-08-15 (otherwise all fixture POs have ended) | Generated once per zone with `--update-golden=legacy`. Then 3 clean runs × 3 zones all pass (criterion 2). NY differs from London (criterion 3): DEFAULTS forecast £249,320.60 London vs £251,690.60 NY; y2027 £1,039,560 vs £1,045,280. London DEFAULTS total matches the £249,321 Total Forecast card seen in the BLD-004 screenshot. Default `node tests/run-node.js` → 44 passed | None (manual spot-check removed by amendment V-20) |
 <!-- overnight-rows -->
 
 Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
@@ -97,6 +98,7 @@ Everything else is **Not started**.
 **Findings during execution** (not in the assessment; not fixed, because outside the item that found them):
 * **L-01 (2026-10-04, found during BLD-004):** when served by `server.py`, the legacy app throws `Uncaught Error: Canvas is already in use. Chart with ID '0' must be destroyed before the canvas with ID 'c1' can be reused.` on every load (headless Chrome). It also happens with the original pre-SEC-001 server (`5d453d1`), so it is pre-existing. It does not occur when the app is opened from `file://`. Likely cause: the overview renders twice (initial render plus the server config load) without destroying chart c1. The dashboard still renders. Candidate for a FIX item or TST-003 golden note
 * **BLD-001 result (2026-10-04):** the legacy app works without any CDN. All six libraries load from `vendor/` (byte-identical, same versions)
+* **C-01 measured (TST-003):** the same legacy data gives different forecast totals by computer time zone: DEFAULTS £249,320.60 (London) vs £251,690.60 (New York); basic fixture at 2025-08-15: £1,438,000 (London), £1,446,920 (New York), £1,436,192 (Kolkata). Recorded in `tests/golden/legacy/*.tz-*.json` for FIX-001
 <!-- findings -->
 
 ## Test commands (from `finance-engine-v3.5/`)
