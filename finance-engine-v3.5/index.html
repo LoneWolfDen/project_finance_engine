@@ -155,9 +155,19 @@ let selectedYear=''; // empty = all years
 const K_WORK='pf_working',K_MASTER='pf_master';
 let _cache={work:null,master:null};
 
+// Sample-data flag (MIG-001): a config built from DEFAULTS lists its still-sample sections in
+// _sample_sections. Replacing a section removes it. Configs without the field are real data.
+function sampleConfig(){const c=JSON.parse(JSON.stringify(DEFAULTS));c._sample_sections=Object.keys(DEFAULTS);return c;}
+function sampleSections(cfg){return cfg&&Array.isArray(cfg._sample_sections)?cfg._sample_sections:[];}
+function markReal(cfg,key){
+  if(!cfg||!Array.isArray(cfg._sample_sections))return cfg;
+  cfg._sample_sections=cfg._sample_sections.filter(k=>k!==key);
+  if(!cfg._sample_sections.length)delete cfg._sample_sections;
+  return cfg;
+}
 function loadWork(){
   if(_cache.work)return JSON.parse(JSON.stringify(_cache.work));
-  try{const s=localStorage.getItem(K_WORK);return s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULTS));}catch(e){return JSON.parse(JSON.stringify(DEFAULTS));}
+  try{const s=localStorage.getItem(K_WORK);return s?JSON.parse(s):sampleConfig();}catch(e){return sampleConfig();}
 }
 function saveWork(cfg){
   _cache.work=cfg;
@@ -167,7 +177,7 @@ function saveWork(cfg){
 }
 function loadMaster(){
   if(_cache.master)return JSON.parse(JSON.stringify(_cache.master));
-  try{const s=localStorage.getItem(K_MASTER);return s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULTS));}catch(e){return JSON.parse(JSON.stringify(DEFAULTS));}
+  try{const s=localStorage.getItem(K_MASTER);return s?JSON.parse(s):sampleConfig();}catch(e){return sampleConfig();}
 }
 function saveMaster(cfg){
   _cache.master=cfg;
@@ -455,7 +465,9 @@ function render(){charts.forEach(c=>c.destroy());charts=[];const D=buildData();
   if(D.allYears.length>0)navH+=`</div>`;
   navH+='<label style="margin-left:8px;font-size:.72rem;cursor:pointer;white-space:nowrap"><input type="checkbox" '+(showDataLabels?'checked':'')+' onchange="showDataLabels=this.checked;render()"> Show Data Labels</label>';
   document.getElementById('nav').innerHTML=navH;
-  document.getElementById('app').innerHTML=`<div class="tab active">${rTab(tab,D)}</div>`;
+  const sampleSecs=sampleSections(D.cfg);
+  const sampleBanner=sampleSecs.length?`<div class="sample-banner" style="padding:.7rem 1rem;background:#fff3cd;border:1px solid #f0ad4e;border-radius:8px;margin-bottom:1rem;font-size:.8rem;color:#664d03"><strong>⚠️ Contains SAMPLE data (not real):</strong> ${sampleSecs.join(', ')}. Replace it on the 📤 Data &amp; Reports tab.</div>`:'';
+  document.getElementById('app').innerHTML=`<div class="tab active">${sampleBanner}${rTab(tab,D)}</div>`;
   setTimeout(()=>drawCharts(tab,D),60);
 }
 function setYear(y){selectedYear=y;selectedPoTeams=[];render();}
@@ -1492,7 +1504,7 @@ function processUpload(data,type){
       const existingPOs=new Set((cfg.po_details||[]).map(p=>(p.PO_Team_Identifier||'').replace(/\s+/g,'')));
       const orphanTeams=new Set(resources.map(r=>r.po_team).filter(t=>t&&!existingPOs.has(t)));
       if(cfg.resources.length&&!confirm('⚠️ This will replace '+cfg.resources.length+' existing resource rules with '+resources.length+' new ones. Continue?'))return;
-      cfg.resources=resources;saveWork(cfg);
+      cfg.resources=resources;markReal(cfg,'resources');saveWork(cfg);
       // Validation warnings
       const warnings=[];
       const poTeams=new Set((cfg.po_details||[]).map(p=>(p.PO_Team_Identifier||'').replace(/\s+/g,'')));
@@ -1567,6 +1579,7 @@ function processUpload(data,type){
       }else{
         cfg.raw_actuals=data;
       }
+      markReal(cfg,'actuals_monthly');
       saveWork(cfg);
       aggregateActuals(cfg.raw_actuals);
       // Quality report for actuals
@@ -1676,7 +1689,7 @@ function applySolutionResources(){
   const cfg=loadWork();
   const existing=cfg.resources.length;
   if(existing&&!confirm(`Replace ${existing} existing resources with ${resources.length} parsed ones?`))return;
-  cfg.resources=resources;saveWork(cfg);
+  cfg.resources=resources;markReal(cfg,'resources');saveWork(cfg);
   toast(`✓ ${resources.length} resources applied from Solution Excel`);
   setTimeout(render,400);
 }
@@ -1711,6 +1724,7 @@ function aggregateActuals(data){
   });
   cfg.actuals_by_project=byProject;
   cfg.actuals_monthly=computeActualsFromCache(cfg,null,projToTeam);
+  markReal(cfg,'actuals_monthly');
   saveWork(cfg);
   toast(`✓ ${data.length} rows: ${matched} matched, ${unmatched} unmatched → ${Object.keys(byProject).length} projects`);
   setTimeout(render,400);
@@ -1770,9 +1784,10 @@ function exportExcel(){
   const wb=XLSX.utils.book_new();
   const sig=[[''],['Crafted by Vamsi Yedlapalli | github.com/LoneWolfDen']];
   if(sel.summary){
-    const summary=[['Project Finance Engine — Export Report'],['Generated',new Date().toISOString().slice(0,16)],['Filter',selectedPoTeams.length?selectedPoTeams.join(', '):'All Projects'],[],['Metric','Value'],['PO Value ('+D.fc.currency+')',D.fc.totalPOValue],['PO Value ('+D.fc.normCurrency+')',D.fc.normPO],['Total Forecast',D.fc.total],['Total Actuals',D.tAct],['Total Expenses',D.tExp],['Remaining Budget',D.rem],['Burn Rate/Day',D.fc.rate],...sig];
+    const summary=[[(sampleSections(D.cfg).length?'SAMPLE DATA – ':'')+'Project Finance Engine — Export Report'],['Generated',new Date().toISOString().slice(0,16)],['Filter',selectedPoTeams.length?selectedPoTeams.join(', '):'All Projects'],[],['Metric','Value'],['PO Value ('+D.fc.currency+')',D.fc.totalPOValue],['PO Value ('+D.fc.normCurrency+')',D.fc.normPO],['Total Forecast',D.fc.total],['Total Actuals',D.tAct],['Total Expenses',D.tExp],['Remaining Budget',D.rem],['Burn Rate/Day',D.fc.rate],...sig];
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summary),'Summary');
   }
+  if(sampleSections(D.cfg).length)XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['SAMPLE DATA – not real'],['This export contains sample data in: '+sampleSections(D.cfg).join(', ')]]),'SAMPLE DATA');
   if(sel.monthly)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(monthly),'Monthly Burndown');
   if(sel.invoices&&invs.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(invs.map(i=>({PO_Team:i.po_team,Invoice:i.invoice_number,From:i.period_from,To:i.period_to,Amount:i.amount,Status:i.status,Paid_Date:i.paid_date||'',Notes:i.notes||''}))),'Invoices');
   if(sel.resources)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(res.map(r=>({Name:r.name,EmplID:r.empl_id,Role:r.role,Location:r.location,PO_Team:r.po_team,Start:r.start,End:r.end,BillRate:r.bill_rate,Alloc:r.alloc,'Forecast/Day':r.bill_rate*r.alloc*8}))),'Resources');
@@ -1790,7 +1805,9 @@ function exportPDF(){
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF();
   const sig='Crafted by Vamsi Yedlapalli | github.com/LoneWolfDen';
-  doc.setFontSize(16);doc.text('Project Finance Report',14,18);
+  const pdfSample=sampleSections(D.cfg);
+  doc.setFontSize(16);doc.text((pdfSample.length?'SAMPLE DATA – ':'')+'Project Finance Report',14,18);
+  if(pdfSample.length){doc.setFontSize(8);doc.setTextColor(180,90,0);doc.text('Contains sample data (not real): '+pdfSample.join(', '),14,30);doc.setTextColor(0);}
   doc.setFontSize(9);doc.text('Generated: '+new Date().toISOString().slice(0,16)+'  |  Filter: '+(selectedPoTeams.length?selectedPoTeams.join(', '):'All'),14,25);
   if(sel.summary){
     doc.setFontSize(12);doc.text('Summary',14,34);
@@ -1842,7 +1859,8 @@ function exportPPTX(){
 
   if(sel.summary){
   let slide=pptx.addSlide();
-  slide.addText('Project Finance Summary',{x:0.5,y:0.2,fontSize:22,bold:true,color:titleColor});
+  slide.addText((sampleSections(D.cfg).length?'SAMPLE DATA – ':'')+'Project Finance Summary',{x:0.5,y:0.2,fontSize:22,bold:true,color:titleColor});
+  if(sampleSections(D.cfg).length)slide.addNotes('SAMPLE DATA – not real. Sample sections: '+sampleSections(D.cfg).join(', '));
   slide.addText('Generated: '+new Date().toISOString().slice(0,16)+'  |  Filter: '+(selectedPoTeams.length?selectedPoTeams.join(', '):'All Projects'),{x:0.5,y:0.6,fontSize:10,color:'666666'});
   const summaryRows=[['PO Value ('+D.fc.currency+')',f(D.fc.totalPOValue)],['PO Value ('+D.fc.normCurrency+')',f(D.fc.normPO,'$')],['Total Forecast',f(D.fc.total)],['Total Actuals',f(D.tAct)],['Expenses',f(D.tExp)],['Remaining Budget',f(D.rem)],['Burn Rate/Day',f(D.fc.rate)]];
   slide.addTable([[{text:'Metric',options:hdrOpts},{text:'Value',options:hdrOpts}],...summaryRows.map(r=>[{text:r[0],options:cellOpts},{text:r[1],options:{...cellOpts,bold:true}}])],{x:0.5,y:1.0,w:5,border:{type:'solid',pt:0.5,color:'CCCCCC'},colW:[2.5,2.5]});
@@ -1963,7 +1981,7 @@ function doSave(key){
   if(errs.length){toast('✗ Validation failed — see errors below',false);document.getElementById('cfg_'+key).insertAdjacentHTML('afterend','<div class="val-err"><strong>⚠️ Validation Errors:</strong><ul>'+errs.map(e=>'<li>'+e+'</li>').join('')+'</ul></div>');return;}
   // Clear previous errors
   const prev=document.getElementById('cfg_'+key).parentElement.querySelector('.val-err');if(prev)prev.remove();
-  const cfg=loadWork();cfg[key]=val;saveWork(cfg);toast('✓ Saved '+key);setTimeout(render,400);
+  const cfg=loadWork();cfg[key]=val;markReal(cfg,key);saveWork(cfg);toast('✓ Saved '+key);setTimeout(render,400);
 }
 
 // ─── BACKUP (BAK-001) ───────────────────────────────────────────────────────
@@ -2044,7 +2062,7 @@ async function importFullConfig(){
     keys.forEach(k=>{if(data[k]&&Array.isArray(data[k])&&cfg[k]&&cfg[k].length)existing.push(k+' ('+cfg[k].length+' rows)');});
     if(existing.length&&!confirm('⚠️ This will OVERWRITE existing data in:\n\n• '+existing.join('\n• ')+'\n\nContinue?'))return;
     next=cfg;
-    keys.forEach(k=>{if(data[k]&&Array.isArray(data[k])){next[k]=data[k];loaded.push(k+' ('+data[k].length+')');}});
+    keys.forEach(k=>{if(data[k]&&Array.isArray(data[k])){next[k]=data[k];markReal(next,k);loaded.push(k+' ('+data[k].length+')');}});
     if(!loaded.length){fail('❌ No recognized sections found. Expected: '+keys.join(', '));return;}
     // Imported monthly actuals would be hidden by older per-project actuals; remove those after confirmation.
     if(Array.isArray(data.actuals_monthly)&&!data.actuals_by_project&&!data.raw_actuals){
