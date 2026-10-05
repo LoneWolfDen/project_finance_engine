@@ -1,5 +1,4 @@
-// REL-001: About page (CFE.views.about), the export-attribution preference, LICENSE and the
-// web-address allowlist. The preference runs in Node and in the browser; render needs a DOM
+// REL-001: About page (CFE.views.about), the export-attribution preference and LICENSE. The preference runs in Node and in the browser; render needs a DOM
 // (browser only); the file checks read from disk (Node only).
 (function () {
   if (typeof Continuum === 'undefined' || !Continuum.storage) {
@@ -94,19 +93,6 @@
       });
       assert.deepEqual(A.thirdParty, rows);
     });
-
-    T.test('web addresses in index.html and app/** appear only where tests/security/allowlist.json allows', function () {
-      var allow = JSON.parse(CFE_NODE.readFile('tests/security/allowlist.json')).entries;
-      var files = ['index.html'].concat(CFE_NODE.support('files.js').list('app', /\.(js|css|html)$/));
-      var found = [];
-      files.forEach(function (f) {
-        (CFE_NODE.readFile(f).match(/https?:\/\/[^\s'"`<>)]+/g) || []).forEach(function (url) {
-          var ok = allow.some(function (e) { return e.url === url && e.files.indexOf(f) >= 0; });
-          if (!ok) found.push(f + ': ' + url);
-        });
-      });
-      assert.deepEqual(found, []);
-      assert.ok(CFE_NODE.readFile('app/views/about.js').indexOf('https://github.com/LoneWolfDen') >= 0, 'the allowed link is used');
-    });
+    // Web addresses are checked by tests/security/static-scan.test.js (SEC-005), using the allowlist.
   });
 })();

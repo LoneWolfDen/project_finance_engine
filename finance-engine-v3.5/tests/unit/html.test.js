@@ -36,6 +36,16 @@
       assert.equal(el.textContent, '');
     });
 
+    T.test('setHtml() writes only markup built with t`` or raw() (SEC-005)', function () {
+      var el = {};
+      H.setHtml(el, H.t`<b>${'<i>'}</b>`);
+      assert.equal(el.innerHTML, '<b>&lt;i&gt;</b>');
+      H.setHtml(el, H.raw('<br>'));
+      assert.equal(el.innerHTML, '<br>');
+      assert.throws(function () { H.setHtml(el, '<img src=x onerror=1>'); }, 'Continuum.html.setHtml needs markup built with t`` (or raw()), not a plain string');
+      assert.equal(el.innerHTML, '<br>', 'unchanged after a refused string');
+    });
+
     T.test('core version is declared when CORE_VERSION.js is loaded', function () {
       if (typeof Continuum.coreVersion === 'undefined') (0, eval)(CFE_NODE.readFile('app/continuum-core/CORE_VERSION.js'));
       assert.equal(Continuum.coreVersion, '0.1.0');

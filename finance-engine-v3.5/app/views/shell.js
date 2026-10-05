@@ -34,7 +34,7 @@
   function mount(doc, navigate) {
     var t = H().t;
     var nav = doc.getElementById('nav');
-    nav.innerHTML = String(t`<ul class="nav-list">${H().raw(NAV.map(function (n) {
+    H().setHtml(nav, t`<ul class="nav-list">${H().raw(NAV.map(function (n) {
       return String(t`<li><a href="#/${n.route}" data-action="navigate" data-route="${n.route}">${n.label}</a></li>`);
     }).join(''))}</ul>`);
     nav.addEventListener('click', function (e) {
@@ -65,7 +65,7 @@
       doc.title = own.title + ' – Finance Engine';
     } else {
       var c = content(route, doc);
-      doc.getElementById('main').innerHTML = String(c.html);
+      H().setHtml(doc.getElementById('main'), c.html);
       doc.title = c.title + ' – Finance Engine';
     }
     var current = route.name === 'ref' ? null : route.name;
@@ -82,7 +82,7 @@
     var files = options && options.offerFiles
       ? t` <label class="btn btn-small">Open dataset.json…<input type="file" accept=".json" multiple class="visually-hidden" data-action="open-dataset-files" aria-label="Open dataset.json and manifest.json"></label>`
       : '';
-    el.innerHTML = String(t`<span class="banner-icon" aria-hidden="true">${lv.icon}</span> <strong>${lv.label}:</strong> ${status.title} <a href="#/diagnostics">Details</a>${files}`);
+    H().setHtml(el, t`<span class="banner-icon" aria-hidden="true">${lv.icon}</span> <strong>${lv.label}:</strong> ${status.title} <a href="#/diagnostics">Details</a>${files}`);
   }
 
   // "Loaded: 2 references, 4 purchase orders, …" for the placeholders (views arrive in UI-001).

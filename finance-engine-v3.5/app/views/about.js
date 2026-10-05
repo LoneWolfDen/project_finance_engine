@@ -34,7 +34,7 @@
     var H = Continuum.html, t = H.t, v = CFE.version || {};
     var main = doc.getElementById('main');
     var rows = H.raw(THIRD_PARTY.map(function (r) { return String(t`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`); }).join(''));
-    main.innerHTML = String(t`<h1>About</h1>
+    H.setHtml(main, t`<h1>About</h1>
 <p><strong>Continuum Finance Engine</strong> ${v.app}</p>
 <p>Crafted by Vamsi Yedlapalli · <a href="${GITHUB}" target="_blank" rel="noopener noreferrer">github.com/LoneWolfDen</a></p>
 <h2>Licence</h2>

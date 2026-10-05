@@ -76,7 +76,7 @@ load(path.join(TESTS_DIR, 'harness.js'));
 const harness = vm.runInContext('CFE_TEST', context);
 harness.io = io;
 
-const files = [...findTests(path.join(TESTS_DIR, 'unit')), ...findTests(path.join(TESTS_DIR, 'characterisation'))];
+const files = ['unit', 'characterisation', 'security'].flatMap(dir => findTests(path.join(TESTS_DIR, dir)));
 for (const file of files) {
   try {
     load(file);

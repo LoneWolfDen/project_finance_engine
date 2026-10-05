@@ -21,6 +21,7 @@ The Node runner prints each test with ✓ or ✗, then `All suites passed`, and 
 |---|---|---|
 | `unit/` | Tests of small modules and of the harness itself | Node; browser if listed in `browser-suites.js` |
 | `characterisation/` | Tests that pin down what the legacy app does today (they may read files from disk) | Node only |
+| `security/` | Static scan of the new app: CSP, no inline scripts or handlers, `innerHTML` only through `Continuum.html.setHtml`, no network APIs, web addresses only from `allowlist.json` (SEC-005) | Node only |
 | `support/` | Node-only helpers (e.g. the legacy sandbox) | — |
 | `golden/` | Expected outputs written with `--update-golden`. Change them only when a backlog item names them | — |
 | `fixtures/` | Synthetic input files. **Never real data** | — |

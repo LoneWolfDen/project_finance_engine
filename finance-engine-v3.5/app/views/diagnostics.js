@@ -92,7 +92,7 @@
       return String(t`<h2>${s.heading}</h2><dl class="facts">${H.raw(s.rows.map(function (r) { return String(t`<dt>${r[0]}</dt><dd>${r[1]}</dd>`); }).join(''))}</dl>`);
     });
     parts.push(String(t`<h2>Log (last ${SHOWN_LOG} entries)</h2><pre class="log">${logLines(env).join('\n')}</pre>`));
-    return String(t`<h1>Diagnostics</h1><p><button type="button" class="btn" data-action="copy-diagnostics">Copy diagnostics</button> <span class="copy-result" role="status"></span></p>`) + parts.join('');
+    return t`<h1>Diagnostics</h1><p><button type="button" class="btn" data-action="copy-diagnostics">Copy diagnostics</button> <span class="copy-result" role="status"></span></p>${H.raw(parts.join(''))}`;
   }
 
   function copy(doc, value) {
@@ -115,7 +115,7 @@
   function render(doc, env) {
     var main = doc.getElementById('main');
     env = env || environment(doc.defaultView || window);
-    main.innerHTML = html(env);
+    Continuum.html.setHtml(main, html(env));
     main.querySelector('[data-action="copy-diagnostics"]').addEventListener('click', function () {
       var result = main.querySelector('.copy-result');
       copy(doc, text(env)).then(function (ok) {
