@@ -7,6 +7,7 @@
     (0, eval)(CFE_NODE.readFile('app/continuum-core/CORE_VERSION.js'));
     (0, eval)(CFE_NODE.readFile('app/continuum-core/html.js'));
     (0, eval)(CFE_NODE.readFile('app/continuum-core/ref.js'));
+    (0, eval)(CFE_NODE.readFile('app/continuum-core/status.js'));
   }
   if (typeof CFE === 'undefined' || !CFE.version) {
     (0, eval)(CFE_NODE.readFile('app/VERSION.js'));
@@ -54,9 +55,10 @@
     });
 
     T.test('start() renders the current route and follows hash changes', function () {
-      var shown = [], navigate = null, listeners = {};
+      var shown = [], navigate = null, listeners = {}, banner = null;
       var saved = CFE.views.shell;
-      CFE.views.shell = { mount: function (doc, nav) { navigate = nav; }, render: function (route) { shown.push(route.name); } };
+      CFE.views.shell = { mount: function (doc, nav) { navigate = nav; }, render: function (route) { shown.push(route.name); },
+        renderBanner: function (status) { banner = status; } };
       var win = { location: { hash: '#/about' }, addEventListener: function (type, fn) { listeners[type] = fn; } };
       try {
         assert.equal(A.start(win, {}).name, 'about');
@@ -66,6 +68,9 @@
         navigate('#/diagnostics');
         assert.deepEqual(shown, ['about', 'publish', 'diagnostics'], 'the same hash re-renders directly');
         assert.equal(A.route.name, 'diagnostics');
+        assert.equal(banner.level, 'not-ready', 'no data is loaded yet (STO-004)');
+        assert.ok(/^No published data found/.test(banner.title));
+        assert.equal(A.status, banner);
       } finally { CFE.views.shell = saved; }
     });
   });
@@ -99,6 +104,22 @@
         assert.ok(doc.getElementById('main').textContent.indexOf('4.0.0-alpha.1') >= 0);
         assert.ok(doc.getElementById('main').textContent.indexOf('05-10-2026') >= 0, 'release date shown DD-MM-YYYY');
         assert.equal(doc.querySelector('#nav [aria-current="page"]').dataset.route, 'diagnostics');
+      });
+
+      T.test('renderBanner: icon plus words, a Details link, escaped text, one class per level', function () {
+        var doc = page();
+        [['ready', 'Ready:'], ['attention', 'Needs attention:'], ['not-ready', 'Not ready:']].forEach(function (c) {
+          CFE.views.shell.renderBanner({ level: c[0], title: 'Title <b>x</b>', details: [] }, doc);
+          var el = doc.getElementById('banner');
+          assert.equal(el.className, 'banner banner-' + c[0]);
+          assert.equal(el.querySelector('strong').textContent, c[1]);
+          assert.equal(el.querySelector('.banner-icon').getAttribute('aria-hidden'), 'true');
+          assert.equal(el.querySelector('a').getAttribute('href'), '#/diagnostics');
+          assert.equal(el.querySelector('b'), null, 'title is text');
+          assert.ok(el.textContent.indexOf('Title <b>x</b>') >= 0);
+        });
+        CFE.views.shell.renderBanner({ level: 'weird', title: 't' }, doc);
+        assert.equal(doc.getElementById('banner').className, 'banner banner-not-ready', 'unknown level shows as not ready');
       });
 
       T.test('a reference is shown as text, never as markup', function () {

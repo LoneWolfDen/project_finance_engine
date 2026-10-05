@@ -44,10 +44,13 @@
       if (win.location.hash === hash) show(win, doc); else win.location.hash = hash;
     });
     win.addEventListener('hashchange', function () { show(win, doc); });
+    // Nothing loads published data yet (STO-004), so the banner reports that no data was found.
+    CFE.app.status = Continuum.status.compute({ datasetLoaded: false, nowUtc: new Date(), staleAfterDays: CFE.config.staleAfterDays });
+    CFE.require('views.shell').renderBanner(CFE.app.status, doc);
     return show(win, doc);
   }
 
-  CFE.app = { routes: ROUTES.slice(), parse: parse, start: start, route: null };
+  CFE.app = { routes: ROUTES.slice(), parse: parse, start: start, route: null, status: null };
 
   if (typeof document !== 'undefined' && document.getElementById('main')) start();
 })(CFE);

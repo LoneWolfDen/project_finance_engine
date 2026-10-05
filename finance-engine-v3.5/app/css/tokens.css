@@ -14,6 +14,13 @@
   --radius: 8px;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-size: 1rem;
+  /* Banner levels (SHL-002): text on background ≥ 4.5:1 (WCAG AA); see docs/continuity/PROJECT_STATE.md. */
+  --ready-bg: #e6f4ea;
+  --ready-text: #0d5223;
+  --attention-bg: #fff4e5;
+  --attention-text: #6b3500;
+  --not-ready-bg: #fdecea;
+  --not-ready-text: #8a1c13;
   color-scheme: light dark;
 }
 
@@ -25,5 +32,11 @@
     --muted: #a3a7b8;
     --accent: #7fb3ff;
     --border: #33364a;
+    --ready-bg: #10301b;
+    --ready-text: #b6f0c6;
+    --attention-bg: #3a2600;
+    --attention-text: #ffd699;
+    --not-ready-bg: #3d1210;
+    --not-ready-text: #ffc2bc;
   }
 }

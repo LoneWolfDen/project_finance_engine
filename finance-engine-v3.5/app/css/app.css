@@ -4,6 +4,14 @@ body { margin: 0; background: var(--bg); color: var(--text); font: var(--font-si
 a { color: var(--accent); }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
+.banner { padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); }
+.banner:empty { display: none; }
+.banner a { color: inherit; font-weight: 700; }
+.banner-icon { display: inline-block; width: 1.2em; text-align: center; }
+.banner-ready { background: var(--ready-bg); color: var(--ready-text); }
+.banner-attention { background: var(--attention-bg); color: var(--attention-text); }
+.banner-not-ready { background: var(--not-ready-bg); color: var(--not-ready-text); }
+
 header { background: var(--surface); border-bottom: 1px solid var(--border); padding: var(--space-2) var(--space-3); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .app-name { font-weight: 700; margin: 0; font-size: 1.1rem; }
 .nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
