@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-05 (end of overnight run, after BLD-002)
+Last updated: 2026-10-05 (daytime session, after DAT-006; Phase 0 code complete)
 
 ## Repository
 
@@ -9,7 +9,7 @@ Last updated: 2026-10-05 (end of overnight run, after BLD-002)
 | Repository | `LoneWolfDen/project_finance_engine` (GitHub; private, to become public). Local: `/Users/wolf/Developer/project_finance_engine` |
 | App root | `finance-engine-v3.5/` (all backlog paths are relative to it; DEC-008) |
 | Branch | `assessment/pwa-readiness-2026-10` (tracks `origin/assessment/pwa-readiness-2026-10`) |
-| Commit | HEAD `ea12a3a` (BLD-002). Overnight run (DEC-034): 15 local commits after `60ea319`, **not pushed**. Note: `d96c227` is labelled "SEC-001" but contains only the DEC-034 row in DECISIONS.md; SEC-001 itself is the owner's commit `a9b34df` (history not rewritten) |
+| Commit | Overnight run (DEC-034): 15 local commits after `60ea319`. Daytime session 2026-10-05 (DEC-037): continuity commit `b400648`, then DAT-001…DAT-006, one commit each. **Nothing pushed** (`git log --oneline origin/assessment/pwa-readiness-2026-10..HEAD`). Note: `d96c227` is labelled "SEC-001" but contains only the DEC-034 row in DECISIONS.md; SEC-001 itself is the owner's commit `a9b34df` (history not rewritten) |
 | Uncommitted | Nothing |
 | Related repository | Continuum: `LoneWolfDen/project_onion` (public; separate; not assessed) |
 
@@ -60,8 +60,7 @@ Full detail: `docs/architecture/TARGET_ARCHITECTURE.md` (as amended by DOC-001 o
 
 | Blocker | Blocks | Resolution |
 |---|---|---|
-| Probe results missing (OV-1…OV-6, CSP, storage origin, save picker) | DEC-020, DEC-023, DEC-026 → SEC-005, PUB-001, ODI-002, SPO-001 | BAS-002 is built; the owner runs it from the synced folder (`tools/probe/README.md`) |
-| No tests or goldens | All refactors (SRC-*), upgrades (BLD-002/003), DAT-006, FIX-* | TST-001 → TST-004 → TST-002 → TST-003 |
+| Probe results missing (OV-1…OV-6, CSP, storage origin, save picker) | DEC-020, DEC-023, DEC-026 → SEC-005, PUB-001, ODI-002, SPO-001 | BAS-002 is built; the owner runs it from the synced folder (`tools/probe/README.md`) once the work laptop is available (deferred, DEC-038) |
 
 ## Backlog status
 
@@ -175,9 +174,8 @@ Not decided by these runs (needs the managed laptop): DEC-020, DEC-023, DEC-026,
 
 ## Next task
 
-Owner (in order):
-1. Review the overnight commits (`git log --oneline 60ea319..HEAD`), run the app once (`python3 server.py` → http://localhost:3005), then push when happy.
-2. **Back up every origin** with Export Full Config (BAK-001 checkpoint): `http://localhost:3005`, each `file://` copy, any Codespaces URL. This unblocks DAT-001…006.
-3. On the work laptop: run the BAS-002 probe from the synced Teams channel folder; open the app and confirm no CDN requests (BLD-001 criterion 4); open an Excel export in Excel (BLD-002 criterion 2).
+Owner:
+1. Review the commits (`git log --oneline origin/assessment/pwa-readiness-2026-10..HEAD`), run the app once (`python3 server.py` → http://localhost:3005), then push when happy.
+2. Later, on the work laptop (DEC-038): run the BAS-002 probe from the synced Teams channel folder; confirm no CDN requests (BLD-001 criterion 4). The Excel check (BLD-002 criterion 2) can be done on the Mac if Excel is installed.
 
-Model: after step 2, DAT-001 → DAT-006 (F0.7). Phase 0 is otherwise complete.
+Model: Phase 0 code is complete. Next is Phase 1, F1.1: SEC-003 → SEC-004, then F1.2 SRC-001…004. First owner checkpoint in Phase 1: F1.5 (confirm the resource-rule date order on one live file).
