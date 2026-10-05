@@ -31,6 +31,14 @@ main h2 { font-size: 1.05rem; margin: var(--space-4) 0 var(--space-2); }
 .btn-small { font-size: 0.85rem; padding: 0 var(--space-2); margin-left: var(--space-2); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
+.dropzone { border: 2px dashed var(--border); border-radius: var(--radius); padding: var(--space-3); text-align: center; }
+.card { border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3); margin-top: var(--space-3); }
+.card h2 { margin-top: 0; overflow-wrap: anywhere; }
+.card select { font: inherit; margin-right: var(--space-3); }
+.tw { overflow-x: auto; }
+.preview { font-size: 0.8rem; }
+.errors { color: var(--not-ready-text); }
+.warnings { background: var(--attention-bg); color: var(--attention-text); padding: var(--space-2); border-radius: var(--radius); }
 .offscreen { position: fixed; left: -9999px; top: 0; }
 
 @media (max-width: 40rem) {

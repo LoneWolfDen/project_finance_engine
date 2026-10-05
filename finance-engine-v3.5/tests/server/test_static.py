@@ -131,7 +131,8 @@ class VendoredLibraryTests(ServerTestCase):
         files = re.findall(r'<script src="([^"]+)"', html) + re.findall(r'<link rel="stylesheet" href="([^"]+)"', html)
         self.assertGreater(len(files), 20)
         for src in files:
-            self.assertTrue(src.startswith('app/'), src)
+            # app/ files, and vendored libraries (SheetJS for the import page, IMP-004)
+            self.assertTrue(src.startswith(('app/', 'vendor/')), src)
             status, headers, _ = self.request('GET', '/' + src)
             self.assertEqual(status, 200, src)
             self.assertIn(headers.get('content-type'), ('text/javascript', 'text/css'), src)

@@ -26,7 +26,8 @@
   // Routes drawn by their own view file instead of a placeholder.
   var OWN_VIEWS = {
     diagnostics: { module: 'views.diagnostics', title: 'Diagnostics' },   // SHL-003
-    about: { module: 'views.about', title: 'About' }                      // REL-001
+    about: { module: 'views.about', title: 'About' },                     // REL-001
+    publish: { module: 'views.publish', title: 'Publish' }                // IMP-004
   };
 
   function H() { return Continuum.html; }
@@ -51,14 +52,14 @@
       case 'ref':
         if (!route.ref) return { title: 'Project not found', html: t`<h1>Project reference not recognised</h1><p>${route.error}</p><p><a href="#/portfolio" data-action="navigate" data-route="portfolio">Back to the portfolio</a></p>` };
         return { title: route.ref, html: t`<h1>Project ${route.ref}</h1><p>${refLine(route.ref)}</p>` };
-      case 'publish':
-        return { title: 'Publish', html: t`<h1>Publish</h1><p>Importing and publishing data will appear here (IMP-004).</p>` };
       default:
         return { title: 'Portfolio', html: t`<h1>Portfolio</h1><p>Views arrive in UI-001.</p>${H().raw(countsLine() ? String(t`<p class="counts">${countsLine()}</p>`) : '')}<p>The current app is still available: <a href="legacy/index.html">open the Finance Engine (current app)</a>.</p>` };
     }
   }
 
   function render(route, doc) {
+    // Leaving Publish drops its in-memory preview (IMP-004: nothing is kept without "Keep in draft").
+    if (route.name !== 'publish' && CFE.views.publish) CFE.views.publish.discard();
     var own = OWN_VIEWS[route.name];
     if (own) {   // routes with their own view file
       CFE.require(own.module).render(doc);

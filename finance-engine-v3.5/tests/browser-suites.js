@@ -6,6 +6,7 @@
 
   // app/** scripts the browser suites need, in load order.
   var APP_SCRIPTS = [
+    'vendor/xlsx-0.20.3/xlsx.full.min.js',
     'app/VERSION.js',
     'app/config.js',
     'app/continuum-core/CORE_VERSION.js',
@@ -40,6 +41,7 @@
     'app/views/shell.js',
     'app/views/diagnostics.js',
     'app/views/about.js',
+    'app/views/publish.js',
     'app/app.js'
   ];
 
@@ -65,7 +67,8 @@
     'unit/data-mapping.test.js',
     'unit/app-router.test.js',
     'unit/about-view.test.js',
-    'unit/store-loader.test.js'
+    'unit/store-loader.test.js',
+    'unit/views-publish.test.js'
   ];
 
   function loadScript(src) {

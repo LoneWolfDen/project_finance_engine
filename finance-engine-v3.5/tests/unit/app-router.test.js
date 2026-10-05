@@ -174,8 +174,9 @@
       ['banner', 'nav', 'main', 'dialogs'].forEach(function (id) { assert.ok(html.indexOf('id="' + id + '"') >= 0, id); });
     });
 
-    T.test('loads VERSION, config, cfe, continuum-core, data, calc, store, views (shell first), app in order; all files exist', function () {
+    T.test('loads vendor libraries, VERSION, config, cfe, continuum-core, data, calc, store, views (shell first), app in order; all files exist', function () {
       function group(s) {
+        if (/^vendor\//.test(s)) return -0.5;
         if (s === 'app/VERSION.js') return 0; if (s === 'app/config.js') return 1; if (s === 'app/cfe.js') return 2;
         if (/^app\/continuum-core\//.test(s)) return 3; if (/^app\/data\//.test(s)) return 4; if (/^app\/calc\//.test(s)) return 5;
         if (/^app\/store\//.test(s)) return 6; if (s === 'app/views/shell.js') return 7; if (/^app\/views\//.test(s)) return 8; if (s === 'app/app.js') return 9;
