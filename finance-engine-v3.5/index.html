@@ -2273,7 +2273,20 @@ function checkPin(action){
     toast('✓ Master saved!'+(removed?` (${removed} duplicates removed)`:''));
     if(removed)setTimeout(render,400);
   }
-  if(action==='reset'){localStorage.removeItem(K_WORK);localStorage.removeItem(K_MASTER);toast('✓ Factory reset complete!');setTimeout(render,400);}
+  if(action==='reset')return factoryReset();
+}
+// DAT-005: back up, then clear working and master everywhere they live (cache, browser, server),
+// so a reload does not bring them back. Scenarios, chat preferences and the PIN are kept.
+async function factoryReset(){
+  await downloadBackup('pre-factory-reset');
+  _cache.work=_cache.master=null;
+  localStorage.removeItem(K_WORK);localStorage.removeItem(K_MASTER);
+  if(location.protocol==='file:'){toast('✓ Browser data reset (no server in use)');render();return;}
+  const post=url=>fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:'null'}).then(r=>r.ok).catch(()=>false);
+  const [w,m]=await Promise.all([post('/api/config'),post('/api/config/master')]);
+  if(w&&m)toast('✓ Working and master data reset. Scenarios were kept.');
+  else toast('⚠ Browser data reset, but the server copy was not cleared. It will come back when the page reloads. Start the server and reset again.',false);
+  render();
 }
 
 // ─── CHARTS ─────────────────────────────────────────────────────────────────
