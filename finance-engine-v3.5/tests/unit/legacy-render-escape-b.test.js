@@ -44,7 +44,8 @@
   }
 
   T.suite('Legacy render escaping B (SEC-004)', function () {
-    ['rRes', 'rUtil', 'rScen', 'rActData', 'rActDataInline', 'rFX', 'rUpload', 'rCfg', 'rTL'].forEach(function (fn) {
+    // rActData, rFX and rTL were removed by REP-001.
+    ['rRes', 'rUtil', 'rScen', 'rActDataInline', 'rUpload', 'rCfg'].forEach(function (fn) {
       T.test(fn + ' escapes data', function () {
         var a = sandbox();
         clean(fn, a.L.get(fn)(a.D()));

@@ -273,17 +273,7 @@ async function initFromServer(){
 initFromServer();
 
 // ─── FORECAST ENGINE ────────────────────────────────────────────────────────
-// Effective-dated rate lookup for a resource: find the rule where start<=date<=end
-function findResourceRule(resources,emplId,poTeam,asOfDate){
-  // Find the rule with latest start date that is <= asOfDate and end >= asOfDate
-  let best=null;
-  resources.forEach(r=>{
-    if(r.empl_id===emplId&&(r.po_team||'')===(poTeam||'')&&r.start<=asOfDate&&r.end>=asOfDate){
-      if(!best||r.start>best.start)best=r;
-    }
-  });
-  return best;
-}
+// The forecast, actuals, date, calendar and FX code is in app/calc/ (SRC-001…SRC-003).
 
 // ─── SLICER STATE ───────────────────────────────────────────────────────────
 let selectedPoTeams=[]; // empty = all
@@ -332,7 +322,6 @@ Chart.register(ChartDataLabels);Chart.defaults.plugins.datalabels={display:false
 function render(){charts.forEach(c=>c.destroy());charts=[];const D=buildData();
   // Nav with Year filter (primary) + PO_Team slicer (secondary)
   // Group tabs: Analysis | Planning | Data | Admin
-  const tabGroups=[[0,3],[3,5],[5,8],[8,11]];
   let navH='';
   TABS.forEach((t,i)=>{
     if(i===3||i===5||i===8)navH+='<span class="sep"></span>';
@@ -618,7 +607,6 @@ function addResRowTo(tid,team){
   tr.dataset.poTeam=team;
   tbody.appendChild(tr);tr.scrollIntoView({behavior:'smooth'});
 }
-function addResRow(){/* legacy fallback */const tables=document.querySelectorAll('.resGrpTable');if(tables.length)addResRowTo(tables[0].id.replace('res_',''),'');}
 function delResRow(btn){btn.closest('tr').classList.toggle('row-del');}
 function saveResTable(){
   const resources=[];
@@ -906,53 +894,6 @@ function compareScenarios(){
   document.getElementById('scenCompare').innerHTML=h;
 }
 
-function rTL(D){
-  // Filter resources by year (PO_Teams in filtered po_details) and PO_Team slicer
-  const validTeams=new Set((D.cfg.po_details||[]).map(p=>(p.PO_Team_Identifier||'').replace(/\s+/g,'')));
-  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
-  const fullCfg=loadWork();
-  const res=(fullCfg.resources||[]).filter(r=>{
-    const t=(r.po_team||'').replace(/\s+/g,'');
-    if(!validTeams.has(t))return false;
-    return normFilter?normFilter.includes(t):true;
-  });
-  // Determine date range from resources
-  const allStarts=res.map(r=>new Date(r.start)).filter(d=>!isNaN(d));
-  const allEnds=res.map(r=>new Date(r.end)).filter(d=>!isNaN(d));
-  const start=allStarts.length?new Date(Math.min(...allStarts)):new Date('2025-01-01');
-  const end=allEnds.length?new Date(Math.max(...allEnds)):new Date('2026-12-31');
-  const span=end-start||1;
-  const colors=['#5c6bc0','#26a69a','#e65100','#8e24aa','#2e7d32','#c62828','#1565c0','#4e342e','#00838f'];
-  // Group by PO_Team
-  const groups={};res.forEach(r=>{const t=r.po_team||'Unknown';if(!groups[t])groups[t]=[];groups[t].push(r);});
-  let h='<div class="box" id="resTimeline"><h2>Resource Timeline <button class="btn btn-blue" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'resTimeline\',true)">Expand All</button> <button class="btn btn-orange" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'resTimeline\',false)">Collapse All</button></h2><div class="tl-scroll"><div class="tl-inner">';
-  // Month markers
-  h+='<div style="margin-left:140px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
-  let md=new Date(start.getFullYear(),start.getMonth(),1);
-  while(md<=end){const l=((md-start)/span*100);if(l>=0&&l<=100)h+=`<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString('en',{month:'short',year:'2-digit'})}</span>`;md=new Date(md.getFullYear(),md.getMonth()+1,1);}
-  h+='</div>';
-  Object.entries(groups).forEach(([team,members])=>{
-    const byPerson={};
-    members.forEach(r=>{const key=`${r.empl_id}|${r.name}`;if(!byPerson[key])byPerson[key]=[];byPerson[key].push(r);});
-    h+=`<div class="grp-hdr" onclick="toggleGrp(this)">${esc(team)} (${Object.keys(byPerson).length} people)</div><div class="grp-rows">`;
-    let pi=0;
-    Object.entries(byPerson).forEach(([key,rules])=>{
-      const [eid,name]=key.split('|');
-      h+=`<div class="tl-row"><span class="nm">${esc(name)} (${esc(eid)})</span><div class="ba">`;
-      rules.forEach(r=>{
-        const rs=new Date(r.start),re=new Date(r.end);
-        if(isNaN(rs)||isNaN(re)||rs>re)return;
-        const left=Math.max(0,(rs-start)/span*100).toFixed(1);
-        const width=Math.max(1,(re-rs)/span*100).toFixed(1);
-        h+=`<div class="br" style="left:${left}%;width:${width}%;background:${colors[pi%colors.length]};opacity:${0.6+r.alloc*0.4}">${r.alloc*100}% £${(r.bill_rate*r.alloc*8).toFixed(0)}/d</div>`;
-      });
-      h+=`</div></div>`;pi++;
-    });
-    h+='</div>';
-  });
-  if(!res.length)h+='<p style="color:#888;font-size:.8rem">No resources for selected filter</p>';
-  h+='</div></div></div>';return h;
-}
 function rTLInline(D){
   const validTeams=new Set((D.cfg.po_details||[]).map(p=>(p.PO_Team_Identifier||'').replace(/\s+/g,'')));
   const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
@@ -994,96 +935,6 @@ function rTLInline(D){
   });
   if(!res.length)h+='<p style="color:#888;font-size:.8rem">No resources for selected filter</p>';
   h+='</div></div>';
-  return h;
-}
-function rActData(D){
-  const cfg=D.cfg;
-  const fullCfg=loadWork();
-  const rawCount=fullCfg.raw_actuals?fullCfg.raw_actuals.length:0;
-  const normFilter=selectedPoTeams.length?selectedPoTeams.map(t=>t.replace(/\s+/g,'')):null;
-  const validTeamsAct=new Set((cfg.po_details||[]).map(p=>(p.PO_Team_Identifier||'').replace(/\s+/g,'')));
-  // Build projToTeam from full config
-  const projToTeam={};
-  (fullCfg.resources||[]).forEach(r=>{const t=(r.po_team||'').replace(/\s+/g,'');if(r.projectID&&t)projToTeam[r.projectID]=t;});
-  (fullCfg.po_details||[]).forEach(p=>{const t=(p.PO_Team_Identifier||'').replace(/\s+/g,'');if(p.ProjectID&&t)projToTeam[p.ProjectID]=t;});
-
-  // Filter raw actuals by year-valid teams AND PO_Team slicer
-  const filtered=(fullCfg.raw_actuals||[]).filter(row=>{
-    const projId=parseInt(row['Project ID']||0);
-    const team=projToTeam[projId]||'';
-    if(!validTeamsAct.has(team))return false;
-    return normFilter?normFilter.includes(team):true;
-  });
-
-  // Compute date ranges per project (UNFILTERED - all raw actuals)
-  const projDates={};
-  (fullCfg.raw_actuals||[]).forEach(row=>{
-    const projId=row['Project ID']||'';
-    const dt=parseDate(row['Reported Dt']||'','us');if(!dt)return;
-    if(!projDates[projId])projDates[projId]={min:dt,max:dt,count:0,team:projToTeam[parseInt(projId)]||''};
-    if(dt<projDates[projId].min)projDates[projId].min=dt;
-    if(dt>projDates[projId].max)projDates[projId].max=dt;
-    projDates[projId].count++;
-  });
-
-  // Show metrics
-  let h='<div class="cards">';
-  h+=`<div class="card b"><h3>Total Raw Rows</h3><div class="v">${rawCount.toLocaleString()}</div></div>`;
-  h+=`<div class="card g"><h3>Filtered Rows</h3><div class="v">${filtered.length.toLocaleString()}</div></div>`;
-  h+=`<div class="card o"><h3>Matched to Resources</h3><div class="v">${filtered.filter(r=>{const eid=parseInt(r['Empl ID']||0);return cfg.resources.some(res=>res.empl_id===eid);}).length.toLocaleString()}</div></div>`;
-  h+=`<div class="card r"><h3>Unmatched</h3><div class="v">${filtered.filter(r=>{const eid=parseInt(r['Empl ID']||0);return!cfg.resources.some(res=>res.empl_id===eid);}).length.toLocaleString()}</div></div>`;
-  h+='</div>';
-
-  // Date range per project (UNFILTERED - shows all projects)
-  if(Object.keys(projDates).length){
-    h+='<div class="box"><h2>📊 Actuals Date Range by Project <span style="font-size:.7rem;font-weight:400;color:#888">(All projects — no filter impact)</span></h2><div class="tw"><table id="tblDates"><thead><tr><th data-sort="0" style="cursor:pointer">Project ID ⇅</th><th>PO_Team</th><th data-sort="2" style="cursor:pointer">Start Date ⇅</th><th data-sort="3" style="cursor:pointer">End Date ⇅</th><th data-sort="4" style="cursor:pointer"># Rows ⇅</th><th data-sort="5" style="cursor:pointer">Duration (days) ⇅</th><th>Avg Rows/Week</th></tr></thead><tbody>';
-    Object.entries(projDates).sort((a,b)=>a[0]-b[0]).forEach(([pid,d])=>{
-      const days=Math.max(1,Math.round((new Date(d.max)-new Date(d.min))/86400000));
-      const weeks=Math.max(1,Math.ceil(days/7));
-      const avgPerWeek=Math.round(d.count/weeks*10)/10;
-      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(d.min)}</td><td>${esc(d.max)}</td><td>${d.count.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
-    });
-    h+='</tbody></table></div></div>';
-  }
-
-  // Show monthly actuals breakdown (collapsible)
-  h+='<div class="box">';
-  h+='<div class="collapsible-hdr" onclick="this.classList.toggle(\'collapsed\');this.nextElementSibling.classList.toggle(\'hidden\')">📈 Monthly Actuals (Filtered by Slicer)</div>';
-  h+='<div class="collapsible-body">';
-  h+='<div class="tw"><table><thead><tr><th>Month</th><th>Actuals Cost</th><th>Rows</th><th>Actuals Burn (PO remaining)</th></tr></thead><tbody>';
-  const poVal=D.fc.totalPOValue;let cum=0;
-  const monthBuckets={};
-  filtered.forEach(row=>{
-    const dt=parseDate(row['Reported Dt']||'','us');if(!dt)return;
-    const d=new Date(dt);const key=d.toLocaleString('en',{month:'short'})+'-'+String(d.getFullYear()).slice(2);
-    if(!monthBuckets[key])monthBuckets[key]={cost:0,rows:0};
-    const eid=parseInt(row['Empl ID']||0);
-    const rule=cfg.resources.find(r=>r.empl_id===eid&&r.start<=dt&&r.end>=dt)||cfg.resources.find(r=>r.empl_id===eid);
-    const rate=rule?rule.bill_rate:0;const hm=rule?rule.hour_mult:1;
-    const reg=parseFloat(row['Regular Hours']||0);const ot=parseFloat(row['Overtime Hours']||0);
-    monthBuckets[key].cost+=(reg*hm*rate)+(ot*hm*rate);
-    monthBuckets[key].rows++;
-  });
-  Object.entries(monthBuckets).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).forEach(([m,v])=>{
-    cum+=v.cost;
-    h+=`<tr><td><strong>${esc(m)}</strong></td><td>${f(v.cost)}</td><td>${v.rows}</td><td>${f(poVal-cum)}</td></tr>`;
-  });
-  h+='</tbody></table></div></div></div>';
-
-  // Show first 20 raw rows
-  if(filtered.length){
-    h+='<div class="box"><h2>Sample Raw Data (first 20 filtered rows)</h2><div class="tw"><table><thead><tr><th>Name</th><th>Empl ID</th><th>Date</th><th>Project</th><th>Reg Hrs</th><th>OT Hrs</th><th>Matched Rate</th><th>Cost</th></tr></thead><tbody>';
-    filtered.slice(0,20).forEach(row=>{
-      const eid=parseInt(row['Empl ID']||0);
-      const dt=parseDate(row['Reported Dt']||'','us');
-      const rule=cfg.resources.find(r=>r.empl_id===eid&&r.start<=dt&&r.end>=dt)||cfg.resources.find(r=>r.empl_id===eid);
-      const rate=rule?rule.bill_rate:0;const hm=rule?rule.hour_mult:1;
-      const reg=parseFloat(row['Regular Hours']||0);const ot=parseFloat(row['Overtime Hours']||0);
-      const cost=(reg*hm*rate)+(ot*hm*rate);
-      h+=`<tr><td>${esc(row['Empl Name']||'')}</td><td>${esc(eid)}</td><td>${esc(dt)}</td><td>${esc(row['Project ID']||'')}</td><td>${esc(reg)}</td><td>${esc(ot)}</td><td>£${esc(rate)}×${esc(hm)}</td><td>${f(cost)}</td></tr>`;
-    });
-    h+='</tbody></table></div></div>';
-  }
   return h;
 }
 
@@ -1228,14 +1079,6 @@ function rPO(D){
   });
   h+='</tbody></table></div></div>';
   return h;
-}
-function rFX(D){
-  let h='<div class="box"><h2>💱 FX Rates</h2><div class="tw"><table><thead><tr><th>Currency</th><th>Effective</th><th>Rate</th></tr></thead><tbody>';
-  D.cfg.fx_rates.forEach(r=>{h+=`<tr><td>${esc(r.code)}</td><td>${esc(r.effective)}</td><td>${esc(r.rate)}</td></tr>`;});
-  h+='</tbody></table></div></div>';
-  h+='<div class="box"><h2>⏱️ OT Params</h2><div class="tw"><table><thead><tr><th>Type</th><th>Effective</th><th>Multiplier</th><th>TRC</th></tr></thead><tbody>';
-  D.cfg.ot_params.forEach(r=>{h+=`<tr><td>${esc(r.type)}</td><td>${esc(r.effective)}</td><td><strong>${esc(r.multiplier)}x</strong></td><td>${esc(r.trc||'—')}</td></tr>`;});
-  h+='</tbody></table></div></div>';return h;
 }
 
 // ─── FILE UPLOAD TAB ────────────────────────────────────────────────────────
@@ -1619,20 +1462,6 @@ function aggregateActuals(data){
 }
 
 // ─── EXPORT TAB ─────────────────────────────────────────────────────────────
-function rExport(D){
-  let h='<div class="box"><h2>📥 Export Reports</h2><p style="font-size:.8rem;color:#666;margin-bottom:1rem">Export current dashboard data (respects PO_Team slicer selection).</p>';
-  h+='<div style="display:grid;gap:1rem;grid-template-columns:1fr 1fr">';
-  h+='<div class="cfg-section"><summary style="padding:.8rem 1rem;background:#e8f5e9;font-weight:700;font-size:.9rem">📊 Excel Export</summary><div class="inner">';
-  h+='<p style="font-size:.78rem;margin-bottom:.8rem">Multi-sheet workbook with burndown, monthly detail, invoices, resources, and expenses.</p>';
-  h+='<button class="btn btn-green" onclick="exportExcel()">⬇️ Download Excel (.xlsx)</button>';
-  h+='</div></div>';
-  h+='<div class="cfg-section"><summary style="padding:.8rem 1rem;background:#fce4ec;font-weight:700;font-size:.9rem">📄 PDF Export</summary><div class="inner">';
-  h+='<p style="font-size:.78rem;margin-bottom:.8rem">Summary report with burndown table, monthly variance, and invoice status.</p>';
-  h+='<button class="btn btn-red" onclick="exportPDF()">⬇️ Download PDF</button>';
-  h+='</div></div>';
-  h+='</div></div>';
-  return h;
-}
 
 function expSel(id){const el=document.getElementById(id);return el?el.checked:true;}
 function getExportData(){
