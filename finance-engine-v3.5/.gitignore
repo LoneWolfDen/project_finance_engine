@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 *.db
 *.xlsx
+# Exception: synthetic test fixtures only (TST-002, never real data).
+!tests/fixtures/xlsx/*.xlsx
