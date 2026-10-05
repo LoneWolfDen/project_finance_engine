@@ -1,6 +1,6 @@
 // Mapping profile po-details-v1 (IMP-003). Engine and rules: app/data/mapping.js; list: docs/schema/MAPPING_PROFILES.md.
 // Purchase orders. Validity is either mm-yy text (PO_Validity) or a year (PO_Validity_Year); the importer turns it into
-// validity_end. Start dates are YYYY-MM-DD.
+// validity_end. Start dates are day first (DD-MM-YYYY or DD/MM/YYYY) or YYYY-MM-DD, the form the app saves (DEC-041).
 CFE.data.mapping.register({
   id: 'po-details-v1',
   version: 1,
@@ -16,7 +16,7 @@ CFE.data.mapping.register({
     normalized_currency: { aliases: ['Normalized_Currency_Code'], type: 'string', required: false },
     validity:            { aliases: ['PO_Validity'], type: 'string', required: false },
     validity_year:       { aliases: ['PO_Validity_Year'], type: 'int', required: false },
-    start:               { aliases: ['WO_StartDate', 'Start'], type: 'date', required: true, dateFormat: 'YYYY-MM-DD' },
+    start:               { aliases: ['WO_StartDate', 'Start'], type: 'date', required: true, dateFormat: ['D/M/YYYY', 'YYYY-MM-DD'] },
     approval_status:     { aliases: ['WO_Approval_Status', 'Approval Status'], type: 'string', required: true },
     rollover_allowed:    { aliases: ['rollover_allowed', 'Rollover'], type: 'bool', required: false }
   }

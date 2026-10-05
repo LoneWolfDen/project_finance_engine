@@ -17,6 +17,8 @@ A profile says, for one kind of source file:
   * `M/D/YYYY`: month/day/year, 1–2 digit day and month, for example `7/1/2025` is 1 July 2025;
   * `D/M/YYYY`: day/month/year, for example `1/7/2025` is 1 July 2025;
   * `YYYY-MM-DD`.
+
+  In `M/D/YYYY` and `D/M/YYYY` the separator may be `/` or `-` (the same one twice), so `31-12-2025` and `31/12/2025` are both read day first. A field may accept more than one format only when they cannot be confused: day-first and month-first are never allowed together.
   
   Any other form is refused, including 2-digit years and impossible dates such as 30 February.
 
@@ -28,7 +30,7 @@ A profile says, for one kind of source file:
 
 The column names below are the live PeopleSoft names, as you confirmed on 2026-10-04 (DEC-018-R1). On 2026-10-05 you checked this document against the real exports: the column names match and resource-rule dates are day first (DEC-039).
 
-Still open: where real PO details come from and how their start dates are written (DEC-041). `po-details-v1` currently expects `YYYY-MM-DD`, the form the app saves PO data in.
+PO start dates are day first, like the rest of the app (DEC-041). `po-details-v1` also accepts `YYYY-MM-DD`, the form the app saves PO data in.
 
 ## peoplesoft-timesheet-v1
 
@@ -70,7 +72,7 @@ Source: Resource rules (rate card export). Entity: `resource_rules`. Columns not
 
 ## po-details-v1
 
-Purchase orders. Validity is either mm-yy text (PO_Validity) or a year (PO_Validity_Year); the importer turns it into validity_end. Start dates are YYYY-MM-DD (open: DEC-041).
+Purchase orders. Validity is either mm-yy text (PO_Validity) or a year (PO_Validity_Year); the importer turns it into validity_end. Start dates are day first (`31-12-2025` or `31/12/2025`) or `YYYY-MM-DD` (DEC-041).
 
 Source: PO details (legacy test_PO_Details.json fields). Entity: `purchase_orders`. Columns not listed are dropped at import.
 
@@ -84,7 +86,7 @@ Source: PO details (legacy test_PO_Details.json fields). Entity: `purchase_order
 | `normalized_currency` | `Normalized_Currency_Code` | string | no |
 | `validity` | `PO_Validity` | string | no |
 | `validity_year` | `PO_Validity_Year` | int | no |
-| `start` | `WO_StartDate`, `Start` | date (YYYY-MM-DD) | yes |
+| `start` | `WO_StartDate`, `Start` | date (D/M/YYYY or YYYY-MM-DD) | yes |
 | `approval_status` | `WO_Approval_Status`, `Approval Status` | string | yes |
 | `rollover_allowed` | `rollover_allowed`, `Rollover` | bool | no |
 

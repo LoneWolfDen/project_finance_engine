@@ -10,16 +10,18 @@
 //
 // Profile: {id, version, sourceSystem, entity, dropUnmapped, columns: {<field>: {aliases:[…], type, required,
 //   dateFormat?, separator?}}}. Types: 'string', 'int', 'number', 'date', 'bool', 'list' (text split on
-//   `separator`). Date formats: 'M/D/YYYY', 'D/M/YYYY' (1–2 digit day and month) and 'YYYY-MM-DD'.
-// Dates are never guessed: a value that does not match the profile's format is an error for that row.
+//   `separator`). Date formats: 'M/D/YYYY', 'D/M/YYYY' (1–2 digit day and month, separated by '/' or '-')
+//   and 'YYYY-MM-DD'. dateFormat may list several formats only if they cannot be confused, so a list never
+//   holds both 'M/D/YYYY' and 'D/M/YYYY' (DEC-041).
+// Dates are never guessed: a value that does not match the profile's format(s) is an error for that row.
 // `row` in errors is the row number in the file (the header is row 1). Rows with errors are left out.
 (function (CFE) {
   'use strict';
 
   var TYPES = ['string', 'int', 'number', 'date', 'bool', 'list'];
   var DATE_FORMATS = {
-    'M/D/YYYY': { re: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, m: 1, d: 2, y: 3 },
-    'D/M/YYYY': { re: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, m: 2, d: 1, y: 3 },
+    'M/D/YYYY': { re: /^(\d{1,2})([\/-])(\d{1,2})\2(\d{4})$/, m: 1, d: 3, y: 4 },
+    'D/M/YYYY': { re: /^(\d{1,2})([\/-])(\d{1,2})\2(\d{4})$/, m: 3, d: 1, y: 4 },
     'YYYY-MM-DD': { re: /^(\d{4})-(\d{2})-(\d{2})$/, m: 2, d: 3, y: 1 }
   };
 
@@ -28,10 +30,13 @@
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
+  function formatList(format) { return Array.isArray(format) ? format : [format]; }
+
   function toDate(text, format) {
-    var f = DATE_FORMATS[format];
-    var m = f.re.exec(text);
-    if (!m) return { error: 'expected a date as ' + format };
+    var list = formatList(format), f, m;
+    for (var i = 0; i < list.length && !m; i++) { f = DATE_FORMATS[list[i]]; m = f.re.exec(text); }
+    if (!m) return { error: 'expected a date as ' + list.join(' or ') };
+    format = list[i - 1];
     var y = +m[f.y], mo = +m[f.m], d = +m[f.d];
     var days = new Date(Date.UTC(y, mo, 0)).getUTCDate();
     if (mo < 1 || mo > 12 || d < 1 || d > days) return { error: 'not a real date as ' + format };
@@ -72,7 +77,11 @@
       var c = p.columns[f];
       if (!Array.isArray(c.aliases) || !c.aliases.length) problems.push(f + '.aliases');
       if (TYPES.indexOf(c.type) < 0) problems.push(f + '.type');
-      if (c.type === 'date' && !DATE_FORMATS[c.dateFormat]) problems.push(f + '.dateFormat');
+      if (c.type === 'date') {
+        var list = formatList(c.dateFormat);
+        if (!list.length || list.some(function (x) { return !DATE_FORMATS[x]; }) ||
+            (list.indexOf('M/D/YYYY') >= 0 && list.indexOf('D/M/YYYY') >= 0)) problems.push(f + '.dateFormat');
+      }
     });
     if (problems.length) throw new Error('Invalid mapping profile ' + (p && p.id) + ': ' + problems.join(', '));
   }

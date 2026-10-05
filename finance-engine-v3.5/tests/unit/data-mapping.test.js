@@ -42,6 +42,18 @@
       assert.equal(r.records.length, 1, 'rows with errors are left out');
     });
 
+    T.test('PO start dates: day first (- or /) or YYYY-MM-DD; month-first lists are refused (DEC-041)', function () {
+      var h = 'PO_WO_Number,PO_Team_Identifier,PO_WO_value,PO_Currency_Code,WO_StartDate,WO_Approval_Status\n';
+      var r = map('po-details-v1', h + '1,T1,10,GBP,31-12-2025,Approved\n2,T1,10,GBP,05/06/2025,Approved\n3,T1,10,GBP,2025-01-01,Approved\n' +
+        '4,T1,10,GBP,12/31/2025,Approved\n5,T1,10,GBP,05-06/2025,Approved\n6,T1,10,GBP,31-12-25,Approved\n');
+      assert.deepEqual(r.records.map(function (x) { return x.start; }), ['2025-12-31', '2025-06-05', '2025-01-01']);
+      assert.deepEqual(r.errors.map(function (e) { return e.row; }), [5, 6, 7]);
+      assert.ok(/not a real date as D\/M\/YYYY/.test(r.errors[0].message), r.errors[0].message);
+      assert.ok(/expected a date as D\/M\/YYYY or YYYY-MM-DD/.test(r.errors[1].message), r.errors[1].message);
+      assert.throws(function () { M.register({ id: 'x', version: 1, columns: { a: { aliases: ['a'], type: 'date', dateFormat: ['M/D/YYYY', 'D/M/YYYY'] } } }); }, 'a.dateFormat');
+      assert.throws(function () { M.register({ id: 'x', version: 1, columns: { a: { aliases: ['a'], type: 'date', dateFormat: [] } } }); }, 'a.dateFormat');
+    });
+
     T.test('a missing required column blocks the whole file', function () {
       var r = map('peoplesoft-timesheet-v1', 'Empl Name,Empl ID,Project ID,Regular Hours\nR1,1001,1,8\n');
       assert.deepEqual(r.records, []);
