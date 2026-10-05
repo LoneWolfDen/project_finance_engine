@@ -184,7 +184,18 @@ function saveMaster(cfg){
   localStorage.setItem(K_MASTER,JSON.stringify(cfg));
   fetch('/api/config/master',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).catch(()=>{});
 }
-function restoreFromMaster(){const m=loadMaster();saveWork(JSON.parse(JSON.stringify(m)));toast('✓ Restored from Master');}
+// DAT-001: replacing the working copy needs a saved master (no silent fall-back to sample data),
+// a confirmation and a backup download first.
+function workingSummary(){const w=loadWork();return (w.resources||[]).length+' resources, '+(w.raw_actuals||[]).length+' timesheet rows';}
+async function restoreFromMaster(){
+  if(!hasMaster()){toast('No master has been saved yet. Nothing was changed.',false);return false;}
+  const m=loadMaster();
+  const when=m._meta&&m._meta.saved_utc?' saved '+m._meta.saved_utc:'';
+  if(!confirm('Replace the working copy ('+workingSummary()+') with the master'+when+'?\n\nA backup will be downloaded first.'))return false;
+  await downloadBackup('pre-restore');
+  saveWork(JSON.parse(JSON.stringify(m)));toast('✓ Restored from Master');render();
+  return true;
+}
 
 // Load from server on startup (async, updates cache + localStorage)
 async function initFromServer(){
@@ -965,14 +976,18 @@ function saveScenario(){
   toast('✓ Scenario "'+name+'" saved');
   render();
 }
-function loadScenario(name){
+async function loadScenario(name){
   const scenarios=JSON.parse(localStorage.getItem('pf_scenarios')||'{}');
-  if(!scenarios[name])return;
+  if(!scenarios[name])return false;
   const cfg=scenarios[name];
+  const when=cfg._saved?' saved '+cfg._saved:'';
+  if(!confirm('Replace the working copy ('+workingSummary()+') with scenario "'+name+'"'+when+'?\n\nA backup will be downloaded first.'))return false;
+  await downloadBackup('pre-scenario-load');
   delete cfg._forecast;delete cfg._saved;
   saveWork(cfg);
   toast('✓ Loaded scenario "'+name+'"');
   render();
+  return true;
 }
 function deleteScenario(name){
   const scenarios=JSON.parse(localStorage.getItem('pf_scenarios')||'{}');
