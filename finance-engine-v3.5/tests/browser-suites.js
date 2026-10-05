@@ -35,6 +35,8 @@
     'app/data/mappings/fx-rates-v1.js',
     'app/data/mappings/ot-rules-v1.js',
     'app/data/mappings/references-crosswalk-v1.js',
+    'app/store/state.js',
+    'app/store/dataset-loader.js',
     'app/views/shell.js',
     'app/views/diagnostics.js',
     'app/views/about.js',
@@ -62,7 +64,8 @@
     'unit/data-migrate.test.js',
     'unit/data-mapping.test.js',
     'unit/app-router.test.js',
-    'unit/about-view.test.js'
+    'unit/about-view.test.js',
+    'unit/store-loader.test.js'
   ];
 
   function loadScript(src) {

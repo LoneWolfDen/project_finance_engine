@@ -61,6 +61,15 @@
       assert.deepEqual(S.compute().level, 'not-ready', 'no input at all');
     });
 
+    T.test('a sample publication skips the age check and says so', function () {
+      var m = JSON.parse(JSON.stringify(M)); m.data_as_of = '2025-12-19';
+      assert.equal(S.compute(good({ manifest: m })).level, 'attention', 'not a sample: stale');
+      var r = S.compute(good({ manifest: m, sample: true }));
+      assert.equal(r.level, 'ready');
+      assert.equal(r.title, 'Sample data (not real) · Data as of 19-12-2025 · published 02-10-2026 09:10 UTC by V. Y.');
+      assert.equal(S.compute(good({ manifest: m, sample: true, hashOk: false })).level, 'not-ready', 'other checks still apply');
+    });
+
     T.test('missing manifest fields do not crash', function () {
       var r = S.compute({ datasetLoaded: true, manifest: {}, nowUtc: NOW });
       assert.equal(r.level, 'ready');

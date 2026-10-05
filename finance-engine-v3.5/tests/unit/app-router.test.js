@@ -15,6 +15,7 @@
     (0, eval)(CFE_NODE.readFile('app/config.js'));
   }
   if (!CFE.require) (0, eval)(CFE_NODE.readFile('app/cfe.js'));
+  if (!CFE.actions) (0, eval)(CFE_NODE.readFile('app/store/state.js'));
   if (!CFE.app) (0, eval)(CFE_NODE.readFile('app/app.js'));
   var T = CFE_TEST, assert = T.assert, A = CFE.app;
 
@@ -55,23 +56,32 @@
       assert.equal(A.parse('#/ref/%E0%A4%A').name, 'ref', 'broken % encoding is read as text');
     });
 
-    T.test('start() renders the current route and follows hash changes', function () {
-      var shown = [], navigate = null, listeners = {}, banner = null;
-      var saved = CFE.views.shell;
+    T.test('start() renders the route, loads published data, shows the banner, follows hash changes', function () {
+      var shown = [], navigate = null, listeners = {}, banner = null, bannerOptions = null;
+      var savedShell = CFE.views.shell, savedLoad = CFE.store.loadPublished;
       CFE.views.shell = { mount: function (doc, nav) { navigate = nav; }, render: function (route) { shown.push(route.name); },
-        renderBanner: function (status) { banner = status; } };
+        renderBanner: function (status, doc, options) { banner = status; bannerOptions = options; } };
+      CFE.store.loadPublished = function () { return Promise.resolve({ ok: false, manifest: null, dataset: null, statusInput: { datasetLoaded: false, errors: [] }, problems: [] }); };
       var win = { location: { hash: '#/about' }, addEventListener: function (type, fn) { listeners[type] = fn; } };
+      var doc = { getElementById: function () { return { addEventListener: function () {} }; } };
+      function restore() { CFE.views.shell = savedShell; CFE.store.loadPublished = savedLoad; }
       try {
-        assert.equal(A.start(win, {}).name, 'about');
+        assert.equal(A.start(win, doc).name, 'about');
+        assert.equal(CFE.state.session.route.name, 'about', 'the route is in CFE.state');
+      } catch (e) { restore(); throw e; }
+      return A.ready.then(function () {
+        assert.deepEqual(shown, ['about', 'about'], 'drawn, then redrawn after loading');
         win.location.hash = '#/publish'; listeners.hashchange();
         navigate('#/diagnostics');
         assert.equal(win.location.hash, '#/diagnostics', 'navigate sets the hash');
         navigate('#/diagnostics');
-        assert.deepEqual(shown, ['about', 'publish', 'diagnostics'], 'the same hash re-renders directly');
+        assert.deepEqual(shown, ['about', 'about', 'publish', 'diagnostics'], 'the same hash re-renders directly');
         assert.equal(A.route.name, 'diagnostics');
-        assert.equal(banner.level, 'not-ready', 'no data is loaded yet (STO-004)');
+        assert.equal(banner.level, 'not-ready', 'no published data');
         assert.ok(/^No published data found/.test(banner.title));
+        assert.deepEqual(bannerOptions, { offerFiles: true }, 'offers Open dataset.json…');
         assert.equal(A.status, banner);
+        assert.equal(CFE.state.published, null);
         listeners.error({ error: new TypeError('secret value Alice 180'), filename: 'file:///x/app/views/shell.js', lineno: 12 });
         assert.equal(banner.level, 'not-ready');
         assert.equal(banner.title, 'Unexpected error – see Diagnostics');
@@ -80,7 +90,7 @@
         assert.ok(JSON.stringify(Continuum.log.entries()).indexOf('Alice') < 0, 'the error message (may hold data) is not logged');
         listeners.unhandledrejection({ reason: new RangeError('x') });
         assert.deepEqual(Continuum.log.entries().pop().meta, { type: 'RangeError', kind: 'unhandled promise' });
-      } finally { CFE.views.shell = saved; }
+      }).then(restore, function (e) { restore(); throw e; });
     });
   });
 

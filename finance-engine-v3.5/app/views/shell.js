@@ -4,7 +4,8 @@
 //
 //   CFE.views.shell.mount(document, navigate)  // draws #nav once; navigate(hash) is called on clicks
 //   CFE.views.shell.render(route, document)    // fills #main for a route from CFE.app.parse
-//   CFE.views.shell.renderBanner(status, document)  // fills #banner from Continuum.status.compute (SHL-002)
+//   CFE.views.shell.renderBanner(status, document, {offerFiles})  // fills #banner from Continuum.status.compute
+//     (SHL-002); offerFiles adds "Open dataset.json…" (a file input; app.js listens for its change, STO-004)
 (function (CFE) {
   'use strict';
 
@@ -49,11 +50,11 @@
     switch (route.name) {
       case 'ref':
         if (!route.ref) return { title: 'Project not found', html: t`<h1>Project reference not recognised</h1><p>${route.error}</p><p><a href="#/portfolio" data-action="navigate" data-route="portfolio">Back to the portfolio</a></p>` };
-        return { title: route.ref, html: t`<h1>Project ${route.ref}</h1><p>Project pages arrive in UI-001.</p>` };
+        return { title: route.ref, html: t`<h1>Project ${route.ref}</h1><p>${refLine(route.ref)}</p>` };
       case 'publish':
         return { title: 'Publish', html: t`<h1>Publish</h1><p>Importing and publishing data will appear here (IMP-004).</p>` };
       default:
-        return { title: 'Portfolio', html: t`<h1>Portfolio</h1><p>Views arrive in UI-001.</p><p>The current app is still available: <a href="legacy/index.html">open the Finance Engine (current app)</a>.</p>` };
+        return { title: 'Portfolio', html: t`<h1>Portfolio</h1><p>Views arrive in UI-001.</p>${H().raw(countsLine() ? String(t`<p class="counts">${countsLine()}</p>`) : '')}<p>The current app is still available: <a href="legacy/index.html">open the Finance Engine (current app)</a>.</p>` };
     }
   }
 
@@ -74,11 +75,35 @@
   }
 
   // #banner is a polite live region (role="status" in index.html), so screen readers announce changes.
-  function renderBanner(status, doc) {
+  function renderBanner(status, doc, options) {
     var t = H().t, lv = LEVELS[status.level] || LEVELS['not-ready'];
     var el = doc.getElementById('banner');
     el.className = 'banner banner-' + (LEVELS[status.level] ? status.level : 'not-ready');
-    el.innerHTML = String(t`<span class="banner-icon" aria-hidden="true">${lv.icon}</span> <strong>${lv.label}:</strong> ${status.title} <a href="#/diagnostics">Details</a>`);
+    var files = options && options.offerFiles
+      ? t` <label class="btn btn-small">Open dataset.json…<input type="file" accept=".json" multiple class="visually-hidden" data-action="open-dataset-files" aria-label="Open dataset.json and manifest.json"></label>`
+      : '';
+    el.innerHTML = String(t`<span class="banner-icon" aria-hidden="true">${lv.icon}</span> <strong>${lv.label}:</strong> ${status.title} <a href="#/diagnostics">Details</a>${files}`);
+  }
+
+  // "Loaded: 2 references, 4 purchase orders, …" for the placeholders (views arrive in UI-001).
+  function countsLine() {
+    var p = CFE.state && CFE.state.published;
+    if (!p) return '';
+    var d = p.dataset;
+    return 'Loaded: ' + [[d.references, 'reference', 'references'], [d.purchase_orders, 'purchase order', 'purchase orders'],
+      [d.resource_rules, 'resource rule', 'resource rules'], [d.people, 'person', 'people'], [d.actuals, 'actuals month', 'actuals months'],
+      [d.invoices, 'invoice', 'invoices'], [d.expenses, 'expense', 'expenses']].map(function (c) {
+      return c[0].length + ' ' + (c[0].length === 1 ? c[1] : c[2]);
+    }).join(', ') + '.';
+  }
+
+  function refLine(ref) {
+    var p = CFE.state && CFE.state.published;
+    if (!p) return 'Project pages arrive in UI-001.';
+    var r = Continuum.ref.resolve(ref, p.dataset.references);
+    if (r.status === 'not-found') return 'This project is not in the published data.';
+    if (r.status === 'conflict') return 'This reference matches more than one project.';
+    return (r.record.name || r.record.ref) + (r.status === 'superseded' ? ' (now ' + r.record.ref + ')' : '') + '. Project pages arrive in UI-001.';
   }
 
   CFE.views.shell = { mount: mount, render: render, renderBanner: renderBanner, levels: Object.keys(LEVELS), nav: NAV.map(function (n) { return n.route; }) };

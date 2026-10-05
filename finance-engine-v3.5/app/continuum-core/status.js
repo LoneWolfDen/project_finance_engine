@@ -15,6 +15,8 @@
 //   warnings        list of messages (or a number) → attention; manifest.validation.warnings also count
 //   manifest        {data_as_of:'YYYY-MM-DD', published_utc, publisher, …}
 //   nowUtc          Date or ISO time; with staleAfterDays, data older than that many days → attention
+//   sample          true for a publication marked "sample" (synthetic demo data): the age check is
+//                   skipped (its date is fixed) and the summary starts with "Sample data (not real)"
 // The worst level wins. title is the message of the first rule at that level; details lists every
 // message, then the data summary. Dates are shown DD-MM-YYYY, times in UTC.
 (function (root) {
@@ -45,8 +47,8 @@
     return Math.floor((t - Date.UTC(+m[1], +m[2] - 1, +m[3])) / DAY);
   }
 
-  function summary(manifest, warnings) {
-    var parts = [];
+  function summary(manifest, warnings, sample) {
+    var parts = sample ? ['Sample data (not real)'] : [];
     if (manifest.data_as_of) parts.push('Data as of ' + showDate(manifest.data_as_of));
     var when = showTime(manifest.published_utc);
     if (when) parts.push('published ' + when + (manifest.publisher ? ' by ' + manifest.publisher : ''));
@@ -74,13 +76,13 @@
     if (input.datasetLoaded) {
       var age = ageDays(manifest.data_as_of, input.nowUtc);
       var limit = typeof input.staleAfterDays === 'number' ? input.staleAfterDays : 7;
-      if (age !== null && age > limit) attention.push('Data is ' + age + ' days old. Ask the publisher to refresh.');
+      if (!input.sample && age !== null && age > limit) attention.push('Data is ' + age + ' days old. Ask the publisher to refresh.');
       if (input.schemaMigrated) attention.push('This data was published by an older version of the app; it was upgraded for display.');
       if (warnings) attention.push('The data has ' + warnings + (warnings === 1 ? ' warning' : ' warnings') + '. See Details.');
     }
     if (input.refState === 'partial') attention.push('Project reference' + refText + ' matched only partly. Check that this is the right project.');
 
-    var line = input.datasetLoaded ? summary(manifest, warnings) : '';
+    var line = input.datasetLoaded ? summary(manifest, warnings, input.sample) : '';
     var level = notReady.length ? 'not-ready' : attention.length ? 'attention' : 'ready';
     var messages = notReady.concat(attention);
     return {

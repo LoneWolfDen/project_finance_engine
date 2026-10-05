@@ -28,6 +28,9 @@ main h2 { font-size: 1.05rem; margin: var(--space-4) 0 var(--space-2); }
 .log { background: var(--bg); padding: var(--space-2); border-radius: var(--radius); overflow-x: auto; font-size: 0.8rem; max-height: 20rem; }
 .simple { border-collapse: collapse; }
 .simple th, .simple td { text-align: left; padding: var(--space-1) var(--space-3) var(--space-1) 0; border-bottom: 1px solid var(--border); }
+.btn-small { font-size: 0.85rem; padding: 0 var(--space-2); margin-left: var(--space-2); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
 .offscreen { position: fixed; left: -9999px; top: 0; }
 
 @media (max-width: 40rem) {
