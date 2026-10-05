@@ -1471,7 +1471,24 @@ function handleUpload(input,type){
   };
   reader.readAsText(file);
 }
-function processUpload(data,type){
+// DAT-002: Append/Replace choice for a timesheet upload when rows already exist.
+// Resolves 'append', 'replace' (after a second confirmation) or null (Cancel, Escape, click outside).
+function chooseActualsMode(existingCount){
+  return new Promise(resolve=>{
+    const d=document.createElement('div');d.className='modal-bg';
+    d.innerHTML='<div class="modal"><h3>📥 Timesheet upload</h3><p style="font-size:.82rem;margin-bottom:.8rem">'+existingCount+' timesheet rows are already stored. What should this upload do?</p><div style="display:flex;flex-direction:column;gap:.4rem"><button class="btn btn-green" data-mode="append">Append and remove exact duplicates</button><button class="btn btn-red" data-mode="replace">Replace all '+existingCount+' rows</button><button class="btn btn-blue" data-mode="cancel">Cancel</button></div></div>';
+    function done(mode){
+      document.removeEventListener('keydown',onKey);d.remove();
+      if(mode==='replace'&&!confirm('Replace all '+existingCount+' existing timesheet rows with this file?\n\nA backup will be downloaded first.'))mode=null;
+      resolve(mode==='append'||mode==='replace'?mode:null);
+    }
+    function onKey(e){if(e.key==='Escape')done(null);}
+    d.addEventListener('click',e=>{if(e.target===d)return done(null);const b=e.target.closest('button[data-mode]');if(b)done(b.dataset.mode);});
+    document.addEventListener('keydown',onKey);
+    document.body.appendChild(d);
+  });
+}
+async function processUpload(data,type){
     if(type==='resources'){
       // Validate upload
       const uploadErrs=[];
@@ -1583,9 +1600,10 @@ function processUpload(data,type){
       const cfg=loadWork();
       let mode='replace';
       if((cfg.raw_actuals||[]).length){
-        const choice=prompt('Existing '+cfg.raw_actuals.length+' rows found.\n\nType:\n  A = Append & Deduplicate (recommended for weekly adds)\n  R = Replace all\n  Cancel = abort','A');
+        const choice=await chooseActualsMode(cfg.raw_actuals.length);
         if(!choice)return;
-        mode=choice.trim().toUpperCase()==='A'?'append':'replace';
+        mode=choice;
+        if(mode==='replace')await downloadBackup('pre-replace');
       }
       if(mode==='append'){
         cfg.raw_actuals=(cfg.raw_actuals||[]).concat(data);
