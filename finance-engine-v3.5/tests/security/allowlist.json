@@ -1,0 +1,10 @@
+{
+  "description": "Web addresses (http:// or https://) allowed in index.html and app/**. Each address is allowed only in the files listed. The static scanner (SEC-005) reads this file; REL-001 added the first entry.",
+  "entries": [
+    {
+      "url": "https://github.com/LoneWolfDen",
+      "files": ["app/views/about.js"],
+      "reason": "Author's GitHub link on the About page (REL-001, SEC-18). Opens only when the user clicks it."
+    }
+  ]
+}

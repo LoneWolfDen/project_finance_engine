@@ -4,7 +4,7 @@
 //   CFE.app.parse('#/nowhere')        // → {name:'portfolio', hash:'#/portfolio'}  (unknown → portfolio)
 //   CFE.app.route                     // the route currently shown (after start)
 //
-// Routes: #/portfolio (default), #/ref/<ref>, #/publish, #/diagnostics, #/about.
+// Routes: #/portfolio (default), #/ref/<ref>, #/publish, #/diagnostics (views/diagnostics.js), #/about (views/about.js).
 // A reference is normalised by Continuum.ref; an invalid one gives {name:'ref', ref:null, error}.
 // parse is pure, so it also runs in Node. start() wires the page and runs only when #main exists.
 (function (CFE) {

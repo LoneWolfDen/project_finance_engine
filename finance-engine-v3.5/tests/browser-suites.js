@@ -37,6 +37,7 @@
     'app/data/mappings/references-crosswalk-v1.js',
     'app/views/shell.js',
     'app/views/diagnostics.js',
+    'app/views/about.js',
     'app/app.js'
   ];
 
@@ -60,7 +61,8 @@
     'unit/data-schema.test.js',
     'unit/data-migrate.test.js',
     'unit/data-mapping.test.js',
-    'unit/app-router.test.js'
+    'unit/app-router.test.js',
+    'unit/about-view.test.js'
   ];
 
   function loadScript(src) {

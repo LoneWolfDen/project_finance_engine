@@ -22,6 +22,12 @@
     'not-ready': { icon: '\u2716', label: 'Not ready' }
   };
 
+  // Routes drawn by their own view file instead of a placeholder.
+  var OWN_VIEWS = {
+    diagnostics: { module: 'views.diagnostics', title: 'Diagnostics' },   // SHL-003
+    about: { module: 'views.about', title: 'About' }                      // REL-001
+  };
+
   function H() { return Continuum.html; }
 
   function mount(doc, navigate) {
@@ -39,24 +45,23 @@
   }
 
   function content(route, doc) {
-    var t = H().t, v = CFE.version || {};
+    var t = H().t;
     switch (route.name) {
       case 'ref':
         if (!route.ref) return { title: 'Project not found', html: t`<h1>Project reference not recognised</h1><p>${route.error}</p><p><a href="#/portfolio" data-action="navigate" data-route="portfolio">Back to the portfolio</a></p>` };
         return { title: route.ref, html: t`<h1>Project ${route.ref}</h1><p>Project pages arrive in UI-001.</p>` };
       case 'publish':
         return { title: 'Publish', html: t`<h1>Publish</h1><p>Importing and publishing data will appear here (IMP-004).</p>` };
-      case 'about':
-        return { title: 'About', html: t`<h1>About</h1><p>Continuum Finance Engine ${v.app}.</p><p>Built by Vamsi Yedlapalli.</p>` };
       default:
         return { title: 'Portfolio', html: t`<h1>Portfolio</h1><p>Views arrive in UI-001.</p><p>The current app is still available: <a href="legacy/index.html">open the Finance Engine (current app)</a>.</p>` };
     }
   }
 
   function render(route, doc) {
-    if (route.name === 'diagnostics') {   // its own view (SHL-003)
-      CFE.require('views.diagnostics').render(doc);
-      doc.title = 'Diagnostics – Finance Engine';
+    var own = OWN_VIEWS[route.name];
+    if (own) {   // routes with their own view file
+      CFE.require(own.module).render(doc);
+      doc.title = own.title + ' – Finance Engine';
     } else {
       var c = content(route, doc);
       doc.getElementById('main').innerHTML = String(c.html);
