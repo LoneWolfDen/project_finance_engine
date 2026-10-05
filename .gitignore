@@ -3,3 +3,6 @@
 *.db
 *.xlsx
 dashboard_config.json
+# Published data and the import drop folder hold real data: never commit them (STO-003, ADR-017).
+finance-engine-v3.5/published/
+Finance-Drop/
