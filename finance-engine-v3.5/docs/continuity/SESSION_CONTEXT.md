@@ -20,7 +20,7 @@ For a model starting with no conversation history. Last updated 2026-10-05.
 6. `finance-engine-v3.5/docs/continuity/DECISIONS.md` (latest decisions; "-R1" rows supersede the originals)
 7. Only as cited by the item: `docs/architecture/*`, `docs/assessment/*`
 
-**Next action.** The first Model row of `NEXT_ACTIONS.md` whose owner prerequisites are done (Phase 1 F1.4: STO-002, IMP-001, IMP-002, REF-001). Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
+**Next action.** The first Model row of `NEXT_ACTIONS.md` whose owner prerequisites are done (Phase 1 F1.6: SHL-004, after the owner's F1.5 date-order check and fresh backups). Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
 
 **Key decisions to keep in mind.**
 * Reference ID = the first opportunity number entered, trimmed, whitespace removed, upper-cased, permanent. **No regex, no suffix.**
