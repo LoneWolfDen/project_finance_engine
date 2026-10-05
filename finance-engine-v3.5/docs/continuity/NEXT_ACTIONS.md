@@ -1,6 +1,6 @@
 # Next Actions
 
-Last updated: 2026-10-05 (after DAT-006; Phase 0 code complete; managed-laptop checks deferred, DEC-038). Maximum 15 entries. Ordered. Source order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execute coding items with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`.
+Last updated: 2026-10-05 (after REP-001; F1.1–F1.3 done). Maximum 15 entries. Ordered. Source order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execute coding items with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`.
 
 | # | Backlog ID | Action | Who |
 |---|---|---|---|
@@ -11,3 +11,7 @@ Last updated: 2026-10-05 (after DAT-006; Phase 0 code complete; managed-laptop c
 | 5 | BAS-002 | Record the probe results; append DEC-020/023/026 outcomes as Proposed | Model |
 | 6 | STO-002 | Phase 1 (F1.4) | Model |
 | 7 | IMP-001 | Phase 1 (F1.4) | Model |
+| 8 | IMP-002 | Phase 1 (F1.4) | Model |
+| 9 | REF-001 | Phase 1 (F1.4) | Model |
+| 10 | STO-001 | Phase 1 (F1.5; owner checkpoint: resource-rule date order on one live file) | Model |
+| 11 | IMP-003 | Phase 1 (F1.5) | Model |

@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-05 (daytime session, after DAT-006; Phase 0 code complete)
+Last updated: 2026-10-05 (daytime session, after REP-001; Phase 1 steps F1.1–F1.3 done)
 
 ## Repository
 
@@ -195,4 +195,6 @@ Owner:
 1. Review the commits (`git log --oneline origin/assessment/pwa-readiness-2026-10..HEAD`), run the app once (`python3 server.py` → http://localhost:3005), then push when happy.
 2. Later, on the work laptop (DEC-038): run the BAS-002 probe from the synced Teams channel folder; confirm no CDN requests (BLD-001 criterion 4). The Excel check (BLD-002 criterion 2) can be done on the Mac if Excel is installed.
 
-Model: Phase 0 code is complete. Next is Phase 1, F1.1: SEC-003 → SEC-004, then F1.2 SRC-001…004. First owner checkpoint in Phase 1: F1.5 (confirm the resource-rule date order on one live file).
+Model: Phase 0 code and Phase 1 steps F1.1 (SEC-003/004), F1.2 (SRC-001…004) and F1.3 (BLD-003, REP-001) are done. Next is F1.4: STO-002 ∥ IMP-001 ∥ IMP-002 ∥ REF-001. First owner checkpoint in Phase 1: F1.5 (confirm the resource-rule date order on one live file).
+
+Owner, also: export a PDF and open it in Edge and Acrobat (BLD-003).
