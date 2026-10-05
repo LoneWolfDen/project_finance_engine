@@ -4,18 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Finance Engine</title>
-<style>
-  body { margin: 0; padding: 3rem 1rem; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: #f5f6fa; color: #1a1a2e; }
-  main { max-width: 36rem; margin: 0 auto; background: #fff; border-radius: 8px; padding: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-  h1 { font-size: 1.3rem; margin: 0 0 1rem; }
-  a { color: #1565c0; font-weight: 600; }
-</style>
+<link rel="stylesheet" href="app/css/tokens.css">
+<link rel="stylesheet" href="app/css/app.css">
 </head>
 <body>
-<main>
-  <h1>Finance Engine – new app under construction</h1>
-  <p>The current app has moved. Open it here:</p>
-  <p><a href="legacy/index.html">Open the Finance Engine (current app)</a></p>
+<div id="banner" role="status" aria-live="polite"></div>
+<header>
+<p class="app-name">Finance Engine</p>
+<nav id="nav" aria-label="Main"></nav>
+</header>
+<main id="main" tabindex="-1">
+<h1>Finance Engine</h1>
+<p>Loading… If this message stays, the app's files are missing next to this page. The current app is still available: <a href="legacy/index.html">open the Finance Engine (current app)</a>.</p>
 </main>
+<div id="dialogs"></div>
+<script src="app/VERSION.js"></script>
+<script src="app/config.js"></script>
+<script src="app/cfe.js"></script>
+<script src="app/continuum-core/CORE_VERSION.js"></script>
+<script src="app/continuum-core/html.js"></script>
+<script src="app/continuum-core/storage.js"></script>
+<script src="app/continuum-core/csv.js"></script>
+<script src="app/continuum-core/hash.js"></script>
+<script src="app/continuum-core/provenance.js"></script>
+<script src="app/continuum-core/ref.js"></script>
+<script src="app/data/calendars.js"></script>
+<script src="app/data/schema.js"></script>
+<script src="app/data/migrate.js"></script>
+<script src="app/data/mapping.js"></script>
+<script src="app/data/mappings/expenses-v1.js"></script>
+<script src="app/data/mappings/fx-rates-v1.js"></script>
+<script src="app/data/mappings/invoices-v1.js"></script>
+<script src="app/data/mappings/ot-rules-v1.js"></script>
+<script src="app/data/mappings/peoplesoft-timesheet-v1.js"></script>
+<script src="app/data/mappings/po-details-v1.js"></script>
+<script src="app/data/mappings/references-crosswalk-v1.js"></script>
+<script src="app/data/mappings/resource-rules-v1.js"></script>
+<script src="app/calc/dates.js"></script>
+<script src="app/calc/calendar.js"></script>
+<script src="app/calc/fx.js"></script>
+<script src="app/calc/forecast.js"></script>
+<script src="app/calc/actuals.js"></script>
+<script src="app/views/shell.js"></script>
+<script src="app/app.js"></script>
 </body>
 </html>

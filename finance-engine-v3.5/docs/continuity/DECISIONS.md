@@ -134,4 +134,5 @@ Full text in `docs/architecture/ADR_REGISTER.md`. All were written on 2026-10-04
 | OneDrive "Sync" and "Always keep on this device" | 2026-10-04 | Both available | Owner |
 | `file://` page in managed Edge (from Downloads) | 2026-10-04 | Opens and works, including CDN libraries | Owner |
 | Edge "Ask where to save each file" | 2026-10-04 | Off and disabled (policy); default folder can be changed | Owner |
+| F1.6 legacy data after SHL-004 | 2026-10-05 | **PASS**: after `git push`, restarting `server.py` and refreshing, the existing data is all there | Owner |
 | OV-1…OV-6, CSP under `file://`, storage origin, save picker, from a **synced** folder | — | **Not yet run** (needs BAS-002) | — |

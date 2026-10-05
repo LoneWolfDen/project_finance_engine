@@ -6,6 +6,8 @@
 
   // app/** scripts the browser suites need, in load order.
   var APP_SCRIPTS = [
+    'app/VERSION.js',
+    'app/config.js',
     'app/continuum-core/CORE_VERSION.js',
     'app/continuum-core/html.js',
     'app/continuum-core/storage.js',
@@ -30,7 +32,9 @@
     'app/data/mappings/expenses-v1.js',
     'app/data/mappings/fx-rates-v1.js',
     'app/data/mappings/ot-rules-v1.js',
-    'app/data/mappings/references-crosswalk-v1.js'
+    'app/data/mappings/references-crosswalk-v1.js',
+    'app/views/shell.js',
+    'app/app.js'
   ];
 
   // Browser-safe test files.
@@ -50,7 +54,8 @@
     'unit/calc-actuals.test.js',
     'unit/data-schema.test.js',
     'unit/data-migrate.test.js',
-    'unit/data-mapping.test.js'
+    'unit/data-mapping.test.js',
+    'unit/app-router.test.js'
   ];
 
   function loadScript(src) {

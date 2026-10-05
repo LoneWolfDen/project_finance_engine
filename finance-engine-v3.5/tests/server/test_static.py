@@ -122,11 +122,19 @@ class VendoredLibraryTests(ServerTestCase):
         self.assertEqual(body, (server.BASE_DIR / 'legacy' / 'index.html').read_bytes())
         self.assertIn(b'<title>Project Finance Portfolio Engine</title>', body)
 
-    def test_root_index_html_is_a_static_placeholder(self):
+    def test_new_shell_files_are_served(self):
+        # SHL-001: the root index.html is the new shell (SHL-004's placeholder is gone). It is static
+        # markup that loads only local app/ files, and it still links to the current app.
         html = (server.BASE_DIR / 'index.html').read_text(encoding='utf-8')
-        self.assertNotIn('<script', html)
-        self.assertIn('Finance Engine – new app under construction', html)
         self.assertIn('href="legacy/index.html"', html)
+        self.assertIsNone(re.search(r'<script(?![^>]*\bsrc=)[^>]*>', html), 'inline script')
+        files = re.findall(r'<script src="([^"]+)"', html) + re.findall(r'<link rel="stylesheet" href="([^"]+)"', html)
+        self.assertGreater(len(files), 20)
+        for src in files:
+            self.assertTrue(src.startswith('app/'), src)
+            status, headers, _ = self.request('GET', '/' + src)
+            self.assertEqual(status, 200, src)
+            self.assertIn(headers.get('content-type'), ('text/javascript', 'text/css'), src)
 
 
 if __name__ == '__main__':

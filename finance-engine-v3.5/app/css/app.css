@@ -1,0 +1,23 @@
+/* Basic layout of the new Finance Engine app (SHL-001). Uses app/css/tokens.css. */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: var(--font-size)/1.5 var(--font); }
+a { color: var(--accent); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: var(--space-2) var(--space-3); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.app-name { font-weight: 700; margin: 0; font-size: 1.1rem; }
+.nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); }
+.nav-list a { text-decoration: none; padding: var(--space-1) var(--space-2); border-radius: var(--radius); }
+.nav-list a[aria-current="page"] { background: var(--bg); font-weight: 700; }
+
+main { max-width: 60rem; margin: var(--space-4) auto; padding: var(--space-4); background: var(--surface); border-radius: var(--radius); }
+main h1 { font-size: 1.4rem; margin-top: 0; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+
+@media (max-width: 40rem) {
+  main { margin: var(--space-3); padding: var(--space-3); }
+  .facts { grid-template-columns: 1fr; }
+  .facts dd { margin-bottom: var(--space-2); }
+}

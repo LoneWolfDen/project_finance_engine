@@ -1,0 +1,157 @@
+// SHL-001: the new app's hash router (CFE.app), page frame (CFE.views.shell) and root index.html.
+// The router runs in Node and in the browser; the shell needs a DOM (browser only); the index.html
+// checks read files from disk (Node only).
+(function () {
+  // In Node the app scripts are not preloaded: evaluate the modules in this context.
+  if (typeof Continuum === 'undefined' || !Continuum.ref) {
+    (0, eval)(CFE_NODE.readFile('app/continuum-core/CORE_VERSION.js'));
+    (0, eval)(CFE_NODE.readFile('app/continuum-core/html.js'));
+    (0, eval)(CFE_NODE.readFile('app/continuum-core/ref.js'));
+  }
+  if (typeof CFE === 'undefined' || !CFE.version) {
+    (0, eval)(CFE_NODE.readFile('app/VERSION.js'));
+    (0, eval)(CFE_NODE.readFile('app/config.js'));
+  }
+  if (!CFE.require) (0, eval)(CFE_NODE.readFile('app/cfe.js'));
+  if (!CFE.app) (0, eval)(CFE_NODE.readFile('app/app.js'));
+  var T = CFE_TEST, assert = T.assert, A = CFE.app;
+
+  T.suite('CFE.app router', function () {
+    T.test('version and config', function () {
+      assert.deepEqual(CFE.version, { app: '4.0.0-alpha.1', supportsSchema: [1, 1], date: '2026-10-05' });
+      assert.deepEqual(CFE.config, { staleAfterDays: 7, enabledProviders: ['none'], appKey: 'finance', historyKeep: 60 });
+    });
+
+    T.test('known routes', function () {
+      ['portfolio', 'publish', 'diagnostics', 'about'].forEach(function (n) {
+        assert.deepEqual(A.parse('#/' + n), { name: n, hash: '#/' + n });
+      });
+      assert.deepEqual(A.routes, ['portfolio', 'ref', 'publish', 'diagnostics', 'about']);
+    });
+
+    T.test('empty and unknown hashes go to the portfolio', function () {
+      ['', '#', '#/', null, undefined, '#/nowhere', '#/publish/extra', '#/PUBLISH', 'publish?x'].forEach(function (h) {
+        assert.equal(A.parse(h).name, h === 'publish' ? 'publish' : 'portfolio', String(h));
+      });
+      assert.equal(A.parse('publish').name, 'publish', 'a hash without # or / is read too');
+    });
+
+    T.test('#/ref/<ref> normalises the reference like Continuum.ref', function () {
+      assert.deepEqual(A.parse('#/ref/o-5030460'), { name: 'ref', ref: 'O-5030460', hash: '#/ref/O-5030460' });
+      assert.deepEqual(A.parse('#/ref/%20o%20008891%20'), { name: 'ref', ref: 'O008891', hash: '#/ref/O008891' });
+      assert.deepEqual(A.parse('#/ref/A%2FB'), { name: 'ref', ref: 'A/B', hash: '#/ref/A%2FB' });
+      assert.equal(A.parse('#/ref/a/b').ref, 'A/B', 'an unencoded slash stays part of the reference');
+      assert.equal(A.parse(Continuum.ref.toLink('index.html', 'O-1').replace('index.html', '')).ref, 'O-1', 'toLink and parse agree');
+    });
+
+    T.test('an invalid reference gives an error message, not a crash', function () {
+      var r = A.parse('#/ref/');
+      assert.equal(r.name, 'ref');
+      assert.equal(r.ref, null);
+      assert.ok(r.error && r.error.length > 5, r.error);
+      assert.equal(A.parse('#/ref/' + new Array(66).join('X')).ref, null, 'too long');
+      assert.equal(A.parse('#/ref/%E0%A4%A').name, 'ref', 'broken % encoding is read as text');
+    });
+
+    T.test('start() renders the current route and follows hash changes', function () {
+      var shown = [], navigate = null, listeners = {};
+      var saved = CFE.views.shell;
+      CFE.views.shell = { mount: function (doc, nav) { navigate = nav; }, render: function (route) { shown.push(route.name); } };
+      var win = { location: { hash: '#/about' }, addEventListener: function (type, fn) { listeners[type] = fn; } };
+      try {
+        assert.equal(A.start(win, {}).name, 'about');
+        win.location.hash = '#/publish'; listeners.hashchange();
+        navigate('#/diagnostics');
+        assert.equal(win.location.hash, '#/diagnostics', 'navigate sets the hash');
+        navigate('#/diagnostics');
+        assert.deepEqual(shown, ['about', 'publish', 'diagnostics'], 'the same hash re-renders directly');
+        assert.equal(A.route.name, 'diagnostics');
+      } finally { CFE.views.shell = saved; }
+    });
+  });
+
+  if (typeof document !== 'undefined' && CFE.views.shell) {
+    T.suite('CFE.views.shell (browser)', function () {
+      function page() {
+        var doc = document.implementation.createHTMLDocument('t');
+        doc.body.innerHTML = '<div id="banner"></div><nav id="nav"></nav><main id="main"></main><div id="dialogs"></div>';
+        return doc;
+      }
+
+      T.test('mount draws the navigation; clicks call navigate', function () {
+        var doc = page(), went = [];
+        CFE.views.shell.mount(doc, function (h) { went.push(h); });
+        var links = doc.querySelectorAll('#nav a[data-action="navigate"]');
+        assert.deepEqual(Array.prototype.map.call(links, function (a) { return a.textContent; }), ['Portfolio', 'Publish', 'Diagnostics', 'About']);
+        links[2].dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        assert.deepEqual(went, ['#/diagnostics']);
+      });
+
+      T.test('render fills #main, sets the title and marks the current link', function () {
+        var doc = page();
+        CFE.views.shell.mount(doc, function () {});
+        CFE.views.shell.render(CFE.app.parse('#/portfolio'), doc);
+        assert.ok(/Views arrive in UI-001/.test(doc.getElementById('main').textContent));
+        assert.ok(doc.querySelector('#main a[href="legacy/index.html"]'), 'link to the current app');
+        assert.equal(doc.title, 'Portfolio – Finance Engine');
+        assert.equal(doc.querySelector('#nav [aria-current="page"]').dataset.route, 'portfolio');
+        CFE.views.shell.render(CFE.app.parse('#/diagnostics'), doc);
+        assert.ok(doc.getElementById('main').textContent.indexOf('4.0.0-alpha.1') >= 0);
+        assert.ok(doc.getElementById('main').textContent.indexOf('05-10-2026') >= 0, 'release date shown DD-MM-YYYY');
+        assert.equal(doc.querySelector('#nav [aria-current="page"]').dataset.route, 'diagnostics');
+      });
+
+      T.test('a reference is shown as text, never as markup', function () {
+        var doc = page();
+        CFE.views.shell.mount(doc, function () {});
+        CFE.views.shell.render(CFE.app.parse('#/ref/' + encodeURIComponent('<img src=x onerror=alert(1)>')), doc);
+        assert.equal(doc.querySelector('#main img'), null);
+        assert.ok(doc.getElementById('main').textContent.indexOf('<IMGSRC=XONERROR=ALERT(1)>') >= 0);
+        assert.equal(doc.querySelector('#nav [aria-current]'), null, 'no nav item is current on a project page');
+        CFE.views.shell.render(CFE.app.parse('#/ref/'), doc);
+        assert.ok(/not recognised/.test(doc.getElementById('main').textContent));
+      });
+    });
+  }
+
+  if (typeof CFE_NODE === 'undefined') return;
+
+  T.suite('Root index.html (Node)', function () {
+    var html = CFE_NODE.readFile('index.html');
+    var srcs = (html.match(/<script\b[^>]*>/g) || []).map(function (tag) { var m = /src="([^"]+)"/.exec(tag); return m ? m[1] : null; });
+
+    T.test('static markup only: no inline script or style, no on* attributes', function () {
+      assert.ok(srcs.length > 0 && srcs.every(Boolean), 'every script has src');
+      assert.ok(!/<script\b[^>]*>[^<]+<\/script>/.test(html), 'no inline script body');
+      assert.ok(!/<style\b/i.test(html), 'no <style>');
+      assert.ok(!/\sstyle\s*=/i.test(html), 'no style attributes');
+      assert.ok(!/\son[a-z]+\s*=/i.test(html), 'no on* attributes');
+      assert.ok(!/https?:\/\//.test(html), 'no network addresses');
+    });
+
+    T.test('has the regions #banner, #nav, #main, #dialogs', function () {
+      ['banner', 'nav', 'main', 'dialogs'].forEach(function (id) { assert.ok(html.indexOf('id="' + id + '"') >= 0, id); });
+    });
+
+    T.test('loads VERSION, config, cfe, continuum-core, data, calc, store, shell, app in order; all files exist', function () {
+      function group(s) {
+        if (s === 'app/VERSION.js') return 0; if (s === 'app/config.js') return 1; if (s === 'app/cfe.js') return 2;
+        if (/^app\/continuum-core\//.test(s)) return 3; if (/^app\/data\//.test(s)) return 4; if (/^app\/calc\//.test(s)) return 5;
+        if (/^app\/store\//.test(s)) return 6; if (s === 'app/views/shell.js') return 7; if (s === 'app/app.js') return 8;
+        return -1;
+      }
+      var groups = srcs.map(group);
+      assert.ok(groups.indexOf(-1) < 0, 'unexpected script: ' + srcs[groups.indexOf(-1)]);
+      assert.deepEqual(groups.slice().sort(function (a, b) { return a - b; }), groups, 'groups in order');
+      srcs.forEach(function (s) { CFE_NODE.readFile(s); });
+      assert.ok(srcs.indexOf('app/data/mapping.js') < srcs.indexOf('app/data/mappings/po-details-v1.js'));
+      assert.ok(srcs.indexOf('app/data/calendars.js') < srcs.indexOf('app/calc/calendar.js'));
+      ['app/css/tokens.css', 'app/css/app.css'].forEach(function (c) { assert.ok(html.indexOf('href="' + c + '"') >= 0, c); CFE_NODE.readFile(c); });
+    });
+
+    T.test('every script it loads is also loaded by the browser tests', function () {
+      var listed = CFE_NODE.readFile('tests/browser-suites.js');
+      srcs.forEach(function (s) { assert.ok(listed.indexOf("'" + s + "'") >= 0, s + ' is also in tests/browser-suites.js'); });
+    });
+  });
+})();
