@@ -22,7 +22,11 @@ main { max-width: 60rem; margin: var(--space-4) auto; padding: var(--space-4); b
 main h1 { font-size: 1.4rem; margin-top: 0; }
 .facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); }
 .facts dt { color: var(--muted); }
-.facts dd { margin: 0; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+main h2 { font-size: 1.05rem; margin: var(--space-4) 0 var(--space-2); }
+.btn { font: inherit; padding: var(--space-1) var(--space-3); border: 1px solid var(--accent); border-radius: var(--radius); background: var(--surface); color: var(--accent); cursor: pointer; }
+.log { background: var(--bg); padding: var(--space-2); border-radius: var(--radius); overflow-x: auto; font-size: 0.8rem; max-height: 20rem; }
+.offscreen { position: fixed; left: -9999px; top: 0; }
 
 @media (max-width: 40rem) {
   main { margin: var(--space-3); padding: var(--space-3); }

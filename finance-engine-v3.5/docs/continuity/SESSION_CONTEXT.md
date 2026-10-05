@@ -20,7 +20,7 @@ For a model starting with no conversation history. Last updated 2026-10-05.
 6. `finance-engine-v3.5/docs/continuity/DECISIONS.md` (latest decisions; "-R1" rows supersede the originals)
 7. Only as cited by the item: `docs/architecture/*`, `docs/assessment/*`
 
-**Next action.** The first Model row of `NEXT_ACTIONS.md` whose owner prerequisites are done (Phase 1 F1.7: SHL-002, SHL-003, then REL-001 after the owner approves the LICENSE text). Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
+**Next action.** The first Model row of `NEXT_ACTIONS.md` whose owner prerequisites are done (Phase 1 F1.7: REL-001, after the owner approves the LICENSE text). Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
 
 **Key decisions to keep in mind.**
 * Reference ID = the first opportunity number entered, trimmed, whitespace removed, upper-cased, permanent. **No regex, no suffix.** A Continuum-generated project ID is parked until integration (DEC-042).

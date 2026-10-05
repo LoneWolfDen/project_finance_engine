@@ -8,6 +8,7 @@
     (0, eval)(CFE_NODE.readFile('app/continuum-core/html.js'));
     (0, eval)(CFE_NODE.readFile('app/continuum-core/ref.js'));
     (0, eval)(CFE_NODE.readFile('app/continuum-core/status.js'));
+    (0, eval)(CFE_NODE.readFile('app/continuum-core/log.js'));
   }
   if (typeof CFE === 'undefined' || !CFE.version) {
     (0, eval)(CFE_NODE.readFile('app/VERSION.js'));
@@ -71,6 +72,14 @@
         assert.equal(banner.level, 'not-ready', 'no data is loaded yet (STO-004)');
         assert.ok(/^No published data found/.test(banner.title));
         assert.equal(A.status, banner);
+        listeners.error({ error: new TypeError('secret value Alice 180'), filename: 'file:///x/app/views/shell.js', lineno: 12 });
+        assert.equal(banner.level, 'not-ready');
+        assert.equal(banner.title, 'Unexpected error – see Diagnostics');
+        var last = Continuum.log.entries().pop();
+        assert.deepEqual([last.level, last.message, last.meta], ['error', 'Unexpected error', { type: 'TypeError', file: 'shell.js', line: 12 }]);
+        assert.ok(JSON.stringify(Continuum.log.entries()).indexOf('Alice') < 0, 'the error message (may hold data) is not logged');
+        listeners.unhandledrejection({ reason: new RangeError('x') });
+        assert.deepEqual(Continuum.log.entries().pop().meta, { type: 'RangeError', kind: 'unhandled promise' });
       } finally { CFE.views.shell = saved; }
     });
   });
@@ -101,6 +110,7 @@
         assert.equal(doc.title, 'Portfolio – Finance Engine');
         assert.equal(doc.querySelector('#nav [aria-current="page"]').dataset.route, 'portfolio');
         CFE.views.shell.render(CFE.app.parse('#/diagnostics'), doc);
+        assert.ok(doc.querySelector('#main [data-action="copy-diagnostics"]'), 'the Diagnostics view (SHL-003) is used');
         assert.ok(doc.getElementById('main').textContent.indexOf('4.0.0-alpha.1') >= 0);
         assert.ok(doc.getElementById('main').textContent.indexOf('05-10-2026') >= 0, 'release date shown DD-MM-YYYY');
         assert.equal(doc.querySelector('#nav [aria-current="page"]').dataset.route, 'diagnostics');
@@ -154,11 +164,11 @@
       ['banner', 'nav', 'main', 'dialogs'].forEach(function (id) { assert.ok(html.indexOf('id="' + id + '"') >= 0, id); });
     });
 
-    T.test('loads VERSION, config, cfe, continuum-core, data, calc, store, shell, app in order; all files exist', function () {
+    T.test('loads VERSION, config, cfe, continuum-core, data, calc, store, views (shell first), app in order; all files exist', function () {
       function group(s) {
         if (s === 'app/VERSION.js') return 0; if (s === 'app/config.js') return 1; if (s === 'app/cfe.js') return 2;
         if (/^app\/continuum-core\//.test(s)) return 3; if (/^app\/data\//.test(s)) return 4; if (/^app\/calc\//.test(s)) return 5;
-        if (/^app\/store\//.test(s)) return 6; if (s === 'app/views/shell.js') return 7; if (s === 'app/app.js') return 8;
+        if (/^app\/store\//.test(s)) return 6; if (s === 'app/views/shell.js') return 7; if (/^app\/views\//.test(s)) return 8; if (s === 'app/app.js') return 9;
         return -1;
       }
       var groups = srcs.map(group);

@@ -38,28 +38,14 @@
     });
   }
 
-  function rows(list) {
-    var t = H().t;
-    return H().raw(list.map(function (r) { return String(t`<dt>${r[0]}</dt><dd>${r[1]}</dd>`); }).join(''));
-  }
-
   function content(route, doc) {
-    var t = H().t, v = CFE.version || {}, loc = doc.defaultView && doc.defaultView.location;
+    var t = H().t, v = CFE.version || {};
     switch (route.name) {
       case 'ref':
         if (!route.ref) return { title: 'Project not found', html: t`<h1>Project reference not recognised</h1><p>${route.error}</p><p><a href="#/portfolio" data-action="navigate" data-route="portfolio">Back to the portfolio</a></p>` };
         return { title: route.ref, html: t`<h1>Project ${route.ref}</h1><p>Project pages arrive in UI-001.</p>` };
       case 'publish':
         return { title: 'Publish', html: t`<h1>Publish</h1><p>Importing and publishing data will appear here (IMP-004).</p>` };
-      case 'diagnostics':
-        return { title: 'Diagnostics', html: t`<h1>Diagnostics</h1><dl class="facts">${rows([
-          ['App version', v.app],
-          ['Release date', CFE.calc.dates ? CFE.calc.dates.toDisplayDate(v.date) : v.date],
-          ['Dataset schema versions supported', v.supportsSchema ? v.supportsSchema.join(' to ') : ''],
-          ['Continuum core version', Continuum.coreVersion],
-          ['Opened from', loc ? (loc.protocol === 'file:' ? 'a file on this computer' : loc.origin) : ''],
-          ['Storage key', CFE.config && CFE.config.appKey]
-        ])}</dl>` };
       case 'about':
         return { title: 'About', html: t`<h1>About</h1><p>Continuum Finance Engine ${v.app}.</p><p>Built by Vamsi Yedlapalli.</p>` };
       default:
@@ -68,9 +54,14 @@
   }
 
   function render(route, doc) {
-    var c = content(route, doc);
-    doc.getElementById('main').innerHTML = String(c.html);
-    doc.title = c.title + ' – Finance Engine';
+    if (route.name === 'diagnostics') {   // its own view (SHL-003)
+      CFE.require('views.diagnostics').render(doc);
+      doc.title = 'Diagnostics – Finance Engine';
+    } else {
+      var c = content(route, doc);
+      doc.getElementById('main').innerHTML = String(c.html);
+      doc.title = c.title + ' – Finance Engine';
+    }
     var current = route.name === 'ref' ? null : route.name;
     Array.prototype.forEach.call(doc.querySelectorAll('#nav [data-route]'), function (a) {
       if (a.dataset.route === current) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');

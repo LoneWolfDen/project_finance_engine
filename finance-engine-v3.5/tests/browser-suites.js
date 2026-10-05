@@ -16,6 +16,7 @@
     'app/continuum-core/provenance.js',
     'app/continuum-core/ref.js',
     'app/continuum-core/status.js',
+    'app/continuum-core/log.js',
     'app/cfe.js',
     'app/calc/dates.js',
     'app/data/calendars.js',
@@ -35,6 +36,7 @@
     'app/data/mappings/ot-rules-v1.js',
     'app/data/mappings/references-crosswalk-v1.js',
     'app/views/shell.js',
+    'app/views/diagnostics.js',
     'app/app.js'
   ];
 
@@ -48,6 +50,7 @@
     'unit/core-provenance.test.js',
     'unit/core-ref.test.js',
     'unit/core-status.test.js',
+    'unit/core-log.test.js',
     'unit/calc-dates.test.js',
     'unit/data-calendars.test.js',
     'unit/calc-calendar.test.js',

@@ -34,9 +34,20 @@
   function show(win, doc) {
     var route = parse(win.location.hash);
     CFE.app.route = route;
+    Continuum.log.info('app', 'Route shown', { route: route.name });
     CFE.require('views.shell').render(route, doc);
     return route;
   }
+
+  // Unexpected errors: logged (error type, file and line only; never the message, which may hold
+  // data) and shown in the banner as not ready (SHL-003).
+  function onUnexpected(doc, meta) {
+    Continuum.log.error('app', 'Unexpected error', meta);
+    CFE.app.status = { level: 'not-ready', title: 'Unexpected error – see Diagnostics', details: ['Unexpected error – see Diagnostics'] };
+    try { CFE.require('views.shell').renderBanner(CFE.app.status, doc); } catch (e) { /* the banner itself failed; the log has it */ }
+  }
+
+  function fileName(path) { return String(path || '').split(/[\\/]/).pop().slice(0, 80); }
 
   function start(win, doc) {
     win = win || window; doc = doc || document;
@@ -44,6 +55,13 @@
       if (win.location.hash === hash) show(win, doc); else win.location.hash = hash;
     });
     win.addEventListener('hashchange', function () { show(win, doc); });
+    win.addEventListener('error', function (e) {
+      onUnexpected(doc, { type: (e.error && e.error.name) || 'Error', file: fileName(e.filename), line: e.lineno || 0 });
+    });
+    win.addEventListener('unhandledrejection', function (e) {
+      onUnexpected(doc, { type: (e.reason && e.reason.name) || typeof e.reason, kind: 'unhandled promise' });
+    });
+    Continuum.log.info('app', 'Started', { version: CFE.version.app, protocol: String(win.location.protocol || '') });
     // Nothing loads published data yet (STO-004), so the banner reports that no data was found.
     CFE.app.status = Continuum.status.compute({ datasetLoaded: false, nowUtc: new Date(), staleAfterDays: CFE.config.staleAfterDays });
     CFE.require('views.shell').renderBanner(CFE.app.status, doc);
