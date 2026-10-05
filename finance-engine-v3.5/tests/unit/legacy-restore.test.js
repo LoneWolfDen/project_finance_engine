@@ -22,7 +22,8 @@
     return {
       L: L, confirms: confirms, downloads: downloads, saves: saves,
       seed: function (key, value) { ls.setItem(key, JSON.stringify(value)); },
-      read: function (key) { var v = ls.getItem(key); return v === null ? null : JSON.parse(v); }
+      // Saves stamp _meta.saved_utc (DAT-004); compare the data without it.
+      read: function (key) { var v = ls.getItem(key); v = v === null ? null : JSON.parse(v); if (v && v._meta) delete v._meta; return v; }
     };
   }
 

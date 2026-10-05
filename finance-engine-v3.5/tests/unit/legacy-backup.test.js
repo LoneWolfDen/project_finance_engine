@@ -35,7 +35,8 @@
         if (master) ls.setItem('pf_master', JSON.stringify(master));
         if (scenarios) ls.setItem('pf_scenarios', JSON.stringify(scenarios));
       },
-      read: function (key) { var v = ls.getItem(key); return v === null ? null : JSON.parse(v); },
+      // Saves stamp _meta.saved_utc (DAT-004); compare the data without it.
+      read: function (key) { var v = ls.getItem(key); v = v === null ? null : JSON.parse(v); if (v && v._meta) delete v._meta; return v; },
       exportBackup: function () { return L.get('exportFullConfig')().then(function () { return JSON.parse(downloads[downloads.length - 1]); }); },
       importText: function (text) { ui.file = text; return L.get('importFullConfig')(); }
     };

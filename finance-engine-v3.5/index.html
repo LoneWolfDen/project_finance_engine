@@ -199,8 +199,10 @@ function persistConfig(key,url,cfg){
       else setSaveStatus('saved');
     });
 }
+// DAT-004: every save stamps cfg._meta.saved_utc so startup can tell which copy is newer.
+function stampMeta(cfg){cfg._meta=Object.assign({},cfg._meta,{saved_utc:new Date().toISOString()});return cfg;}
 function saveWork(cfg){
-  _cache.work=cfg;
+  _cache.work=stampMeta(cfg);
   return persistConfig(K_WORK,'/api/config',cfg);
 }
 function loadMaster(){
@@ -208,7 +210,7 @@ function loadMaster(){
   try{const s=localStorage.getItem(K_MASTER);return s?JSON.parse(s):sampleConfig();}catch(e){return sampleConfig();}
 }
 function saveMaster(cfg){
-  _cache.master=cfg;
+  _cache.master=stampMeta(cfg);
   return persistConfig(K_MASTER,'/api/config/master',cfg);
 }
 // DAT-001: replacing the working copy needs a saved master (no silent fall-back to sample data),
@@ -224,12 +226,44 @@ async function restoreFromMaster(){
   return true;
 }
 
-// Load from server on startup (async, updates cache + localStorage)
+// Load from server on startup (async, updates cache + localStorage).
+// DAT-004: the newer copy wins (a missing saved_utc counts as oldest; on a tie the server wins, as
+// before). A winning browser copy is re-POSTed. The losing copy is kept in one slot per store.
+function savedUtc(cfg){return cfg&&cfg._meta&&typeof cfg._meta.saved_utc==='string'?cfg._meta.saved_utc:'';}
+function pickNewer(local,server){
+  if(!server)return local?'local':null;
+  if(!local)return 'server';
+  if(JSON.stringify(local)===JSON.stringify(server))return 'same';
+  return savedUtc(local)>savedUtc(server)?'local':'server';
+}
+function readStored(key){try{const s=localStorage.getItem(key);return s?JSON.parse(s):null;}catch(e){return null;}}
+function offerSupersededDownload(label,key){
+  const d=document.createElement('div');d.className='toast ok';
+  d.textContent='The '+label+' copy in this browser and the one on the server differed; the newer one is in use. ';
+  const b=document.createElement('button');b.className='btn btn-blue';b.style.cssText='font-size:.7rem;margin-left:.4rem';b.textContent='Download the older copy';
+  b.onclick=()=>{const s=localStorage.getItem(key);if(!s)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:'application/json'}));a.download='finance_older_'+label+'_'+new Date().toISOString().slice(0,16).replace('T','_').replace(':','')+'.json';a.click();};
+  d.appendChild(b);document.body.appendChild(d);setTimeout(()=>d.remove(),15000);
+}
+async function syncOne(res,key,url,cacheKey,label){
+  if(!res.ok)return;
+  const server=await res.json();
+  const local=readStored(key);
+  const pick=pickNewer(local,server||null);
+  if(pick==='server'){
+    _cache[cacheKey]=server;localStorage.setItem(key,JSON.stringify(server));
+    if(local){try{localStorage.setItem(key+'_superseded',JSON.stringify(local));}catch(e){}offerSupersededDownload(label,key+'_superseded');}
+  }else if(pick==='local'){
+    _cache[cacheKey]=local;
+    if(server){try{localStorage.setItem(key+'_superseded',JSON.stringify(server));}catch(e){}offerSupersededDownload(label,key+'_superseded');}
+    await persistConfig(key,url,local);
+  }else if(pick==='same'){_cache[cacheKey]=server;}
+}
 async function initFromServer(){
+  if(location.protocol==='file:')return;
   try{
     const [wRes,mRes]=await Promise.all([fetch('/api/config'),fetch('/api/config/master')]);
-    if(wRes.ok){const d=await wRes.json();if(d){_cache.work=d;localStorage.setItem(K_WORK,JSON.stringify(d));}}
-    if(mRes.ok){const d=await mRes.json();if(d){_cache.master=d;localStorage.setItem(K_MASTER,JSON.stringify(d));}}
+    await syncOne(wRes,K_WORK,'/api/config','work','working');
+    await syncOne(mRes,K_MASTER,'/api/config/master','master','master');
     render();
   }catch(e){/* server unavailable, use localStorage */}
 }
