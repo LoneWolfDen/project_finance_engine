@@ -102,7 +102,7 @@ td[contenteditable]:focus{border-color:#2196f3;outline:none;background:#e3f2fd}
 .chat-input button{margin-left:.3rem;padding:.4rem .8rem;background:#1a1a2e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.75rem}
 </style></head>
 <body>
-<div class="hdr"><h1>💰 Project Finance Portfolio Engine</h1><span style="font-size:.75rem;opacity:.7">v3.5</span><span style="font-size:.6rem;opacity:.35;margin-left:auto;font-style:italic" title="github.com/LoneWolfDen">🐺 VY</span></div>
+<div class="hdr"><h1>💰 Project Finance Portfolio Engine</h1><span style="font-size:.75rem;opacity:.7">v3.5</span><span style="font-size:.6rem;opacity:.35;margin-left:auto;font-style:italic" title="github.com/LoneWolfDen">🐺 VY</span><span id="saveStatus" style="font-size:.72rem;margin-left:1rem;white-space:nowrap"></span></div>
 <div class="nav" id="nav"></div>
 <div class="content" id="app"></div>
 <script>
@@ -169,11 +169,39 @@ function loadWork(){
   if(_cache.work)return JSON.parse(JSON.stringify(_cache.work));
   try{const s=localStorage.getItem(K_WORK);return s?JSON.parse(s):sampleConfig();}catch(e){return sampleConfig();}
 }
+// DAT-003: save to browser storage and the server independently; show the outcome in the header
+// chip (#saveStatus) and raise an error toast on any failure. From file:// there is no server.
+let saveStatus={kind:null,detail:''};
+const SAVE_STATUS_TEXT={saved:'Saved ✓','local-only':'Saved in this browser only (no server)','storage-full':'Browser storage full ⚠','server-failed':'Server not reachable ⚠'};
+function setSaveStatus(kind,detail){
+  saveStatus={kind,detail:detail||''};
+  const failed=kind==='storage-full'||kind==='server-failed';
+  const el=document.getElementById('saveStatus');
+  if(el){
+    el.textContent=SAVE_STATUS_TEXT[kind]+(kind==='saved'?' '+new Date().toTimeString().slice(0,5):'');
+    el.title=saveStatus.detail;
+    el.style.color=failed?'#ffb4a8':'';
+    if(failed){const b=document.createElement('button');b.className='btn btn-orange';b.style.cssText='font-size:.65rem;margin-left:.4rem;padding:.15rem .5rem';b.textContent='Export a backup now';b.onclick=exportFullConfig;el.appendChild(b);}
+  }
+  if(failed)toast(SAVE_STATUS_TEXT[kind]+' '+saveStatus.detail+' Export a backup now (Settings → Export Full Config).',false);
+}
+function persistConfig(key,url,cfg){
+  let localOk=true,localErr='';
+  try{localStorage.setItem(key,JSON.stringify(cfg));}catch(e){localOk=false;localErr=e&&e.name||'error';}
+  const localDetail='This browser could not store the data ('+localErr+').';
+  if(location.protocol==='file:'){setSaveStatus(localOk?'local-only':'storage-full',localOk?'':localDetail);return Promise.resolve();}
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return true;})
+    .catch(e=>'The server did not save it ('+(e&&e.message||'no response')+').')
+    .then(res=>{
+      if(!localOk)setSaveStatus('storage-full',localDetail+(res===true?' The server copy was saved.':' '+res));
+      else if(res!==true)setSaveStatus('server-failed',res+' It is saved in this browser only.');
+      else setSaveStatus('saved');
+    });
+}
 function saveWork(cfg){
   _cache.work=cfg;
-  localStorage.setItem(K_WORK,JSON.stringify(cfg));
-  // Async save to server
-  fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).catch(()=>{});
+  return persistConfig(K_WORK,'/api/config',cfg);
 }
 function loadMaster(){
   if(_cache.master)return JSON.parse(JSON.stringify(_cache.master));
@@ -181,8 +209,7 @@ function loadMaster(){
 }
 function saveMaster(cfg){
   _cache.master=cfg;
-  localStorage.setItem(K_MASTER,JSON.stringify(cfg));
-  fetch('/api/config/master',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)}).catch(()=>{});
+  return persistConfig(K_MASTER,'/api/config/master',cfg);
 }
 // DAT-001: replacing the working copy needs a saved master (no silent fall-back to sample data),
 // a confirmation and a backup download first.
