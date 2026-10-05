@@ -56,9 +56,9 @@ Run: `node tests/run-node.js --suite=legacy-calc --tz=Europe/London` (also `--tz
 | `actuals-cache-basic.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | `tests/fixtures/legacy-config-basic.json` | Europe/London (reference) |
 | `actuals-cache-basic.tz-America_New_York.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | `tests/fixtures/legacy-config-basic.json` | America/New_York (KNOWN DEFECT C-01) |
 | `actuals-cache-basic.tz-Asia_Kolkata.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | `tests/fixtures/legacy-config-basic.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
-| `actuals-cache-defaults.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | legacy `DEFAULTS` (sample data in `index.html`) | Europe/London (reference) |
-| `actuals-cache-defaults.tz-America_New_York.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | legacy `DEFAULTS` (sample data in `index.html`) | America/New_York (KNOWN DEFECT C-01) |
-| `actuals-cache-defaults.tz-Asia_Kolkata.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | legacy `DEFAULTS` (sample data in `index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
+| `actuals-cache-defaults.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Europe/London (reference) |
+| `actuals-cache-defaults.tz-America_New_York.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | legacy `DEFAULTS` (sample data in `legacy/index.html`) | America/New_York (KNOWN DEFECT C-01) |
+| `actuals-cache-defaults.tz-Asia_Kolkata.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
 | `actuals-cache-multicurrency.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | `tests/fixtures/legacy-config-multicurrency.json` | Europe/London (reference) |
 | `actuals-cache-multicurrency.tz-America_New_York.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | `tests/fixtures/legacy-config-multicurrency.json` | America/New_York (KNOWN DEFECT C-01) |
 | `actuals-cache-multicurrency.tz-Asia_Kolkata.json` | `aggregateActuals` → stored `actuals_by_project` / `actuals_monthly`, `computeActualsFromCache`, toasts | `tests/fixtures/legacy-config-multicurrency.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
@@ -68,9 +68,9 @@ Run: `node tests/run-node.js --suite=legacy-calc --tz=Europe/London` (also `--tz
 | `actuals-monthly-basic.json` | `computeActualsMonthly(cfg, null, projToTeam)` | `tests/fixtures/legacy-config-basic.json` | Europe/London (reference) |
 | `actuals-monthly-basic.tz-America_New_York.json` | `computeActualsMonthly(cfg, null, projToTeam)` | `tests/fixtures/legacy-config-basic.json` | America/New_York (KNOWN DEFECT C-01) |
 | `actuals-monthly-basic.tz-Asia_Kolkata.json` | `computeActualsMonthly(cfg, null, projToTeam)` | `tests/fixtures/legacy-config-basic.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
-| `actuals-monthly-defaults.json` | `computeActualsMonthly(cfg, null, projToTeam)` | legacy `DEFAULTS` (sample data in `index.html`) | Europe/London (reference) |
-| `actuals-monthly-defaults.tz-America_New_York.json` | `computeActualsMonthly(cfg, null, projToTeam)` | legacy `DEFAULTS` (sample data in `index.html`) | America/New_York (KNOWN DEFECT C-01) |
-| `actuals-monthly-defaults.tz-Asia_Kolkata.json` | `computeActualsMonthly(cfg, null, projToTeam)` | legacy `DEFAULTS` (sample data in `index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
+| `actuals-monthly-defaults.json` | `computeActualsMonthly(cfg, null, projToTeam)` | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Europe/London (reference) |
+| `actuals-monthly-defaults.tz-America_New_York.json` | `computeActualsMonthly(cfg, null, projToTeam)` | legacy `DEFAULTS` (sample data in `legacy/index.html`) | America/New_York (KNOWN DEFECT C-01) |
+| `actuals-monthly-defaults.tz-Asia_Kolkata.json` | `computeActualsMonthly(cfg, null, projToTeam)` | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
 | `actuals-monthly-multicurrency.json` | `computeActualsMonthly(cfg, null, projToTeam)` | `tests/fixtures/legacy-config-multicurrency.json` | Europe/London (reference) |
 | `actuals-monthly-multicurrency.tz-America_New_York.json` | `computeActualsMonthly(cfg, null, projToTeam)` | `tests/fixtures/legacy-config-multicurrency.json` | America/New_York (KNOWN DEFECT C-01) |
 | `actuals-monthly-multicurrency.tz-Asia_Kolkata.json` | `computeActualsMonthly(cfg, null, projToTeam)` | `tests/fixtures/legacy-config-multicurrency.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
@@ -80,9 +80,9 @@ Run: `node tests/run-node.js --suite=legacy-calc --tz=Europe/London` (also `--tz
 | `builddata-basic.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-basic.json` | Europe/London (reference) |
 | `builddata-basic.tz-America_New_York.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-basic.json` | America/New_York (KNOWN DEFECT C-01) |
 | `builddata-basic.tz-Asia_Kolkata.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-basic.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
-| `builddata-defaults.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | legacy `DEFAULTS` (sample data in `index.html`) | Europe/London (reference) |
-| `builddata-defaults.tz-America_New_York.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | legacy `DEFAULTS` (sample data in `index.html`) | America/New_York (KNOWN DEFECT C-01) |
-| `builddata-defaults.tz-Asia_Kolkata.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | legacy `DEFAULTS` (sample data in `index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
+| `builddata-defaults.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Europe/London (reference) |
+| `builddata-defaults.tz-America_New_York.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | legacy `DEFAULTS` (sample data in `legacy/index.html`) | America/New_York (KNOWN DEFECT C-01) |
+| `builddata-defaults.tz-Asia_Kolkata.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
 | `builddata-multicurrency.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-multicurrency.json` | Europe/London (reference) |
 | `builddata-multicurrency.tz-America_New_York.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-multicurrency.json` | America/New_York (KNOWN DEFECT C-01) |
 | `builddata-multicurrency.tz-Asia_Kolkata.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-multicurrency.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
@@ -97,9 +97,9 @@ Run: `node tests/run-node.js --suite=legacy-calc --tz=Europe/London` (also `--tz
 | `forecast-basic.json` | `computeForecast(cfg, [])` and for the first PO team | `tests/fixtures/legacy-config-basic.json` | Europe/London (reference) |
 | `forecast-basic.tz-America_New_York.json` | `computeForecast(cfg, [])` and for the first PO team | `tests/fixtures/legacy-config-basic.json` | America/New_York (KNOWN DEFECT C-01) |
 | `forecast-basic.tz-Asia_Kolkata.json` | `computeForecast(cfg, [])` and for the first PO team | `tests/fixtures/legacy-config-basic.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
-| `forecast-defaults.json` | `computeForecast(cfg, [])` and for the first PO team | legacy `DEFAULTS` (sample data in `index.html`) | Europe/London (reference) |
-| `forecast-defaults.tz-America_New_York.json` | `computeForecast(cfg, [])` and for the first PO team | legacy `DEFAULTS` (sample data in `index.html`) | America/New_York (KNOWN DEFECT C-01) |
-| `forecast-defaults.tz-Asia_Kolkata.json` | `computeForecast(cfg, [])` and for the first PO team | legacy `DEFAULTS` (sample data in `index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
+| `forecast-defaults.json` | `computeForecast(cfg, [])` and for the first PO team | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Europe/London (reference) |
+| `forecast-defaults.tz-America_New_York.json` | `computeForecast(cfg, [])` and for the first PO team | legacy `DEFAULTS` (sample data in `legacy/index.html`) | America/New_York (KNOWN DEFECT C-01) |
+| `forecast-defaults.tz-Asia_Kolkata.json` | `computeForecast(cfg, [])` and for the first PO team | legacy `DEFAULTS` (sample data in `legacy/index.html`) | Asia/Kolkata (KNOWN DEFECT C-01) |
 | `forecast-multicurrency.json` | `computeForecast(cfg, [])` and for the first PO team | `tests/fixtures/legacy-config-multicurrency.json` | Europe/London (reference) |
 | `forecast-multicurrency.tz-America_New_York.json` | `computeForecast(cfg, [])` and for the first PO team | `tests/fixtures/legacy-config-multicurrency.json` | America/New_York (KNOWN DEFECT C-01) |
 | `forecast-multicurrency.tz-Asia_Kolkata.json` | `computeForecast(cfg, [])` and for the first PO team | `tests/fixtures/legacy-config-multicurrency.json` | Asia/Kolkata (KNOWN DEFECT C-01) |

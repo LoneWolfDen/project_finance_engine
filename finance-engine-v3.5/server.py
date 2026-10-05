@@ -1,7 +1,7 @@
 """
 Project Finance Portfolio Engine v3.5 — SQLite-backed server.
 Finance Engine – Version 3.5
-GET  /           → serves index.html
+GET  /           → serves legacy/index.html (SHL-004; same origin, so existing data stays)
 GET  /vendor/…, /app/… → serves .js/.css/.json files from those folders (BLD-004)
 GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
@@ -34,7 +34,7 @@ OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 
 BASE_DIR = Path(__file__).parent
-HTML_FILE = BASE_DIR / "index.html"
+HTML_FILE = BASE_DIR / "legacy" / "index.html"
 STATIC_DIRS = ("vendor", "app")
 STATIC_PATH = re.compile(r"^/(vendor|app)/[A-Za-z0-9._/-]+\.(js|css|json)$")
 STATIC_TYPES = {".js": "text/javascript", ".css": "text/css", ".json": "application/json"}

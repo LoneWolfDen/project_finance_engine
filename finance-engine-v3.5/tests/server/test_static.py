@@ -103,16 +103,30 @@ class VendoredLibraryTests(ServerTestCase):
         self.assertEqual(status, 200)
         self.assertEqual(headers.get('content-type'), 'text/javascript')
 
-    def test_index_html_uses_vendored_scripts_only(self):
-        html = (server.BASE_DIR / 'index.html').read_text(encoding='utf-8')
+    def test_legacy_html_uses_vendored_scripts_only(self):
+        html = (server.BASE_DIR / 'legacy' / 'index.html').read_text(encoding='utf-8')
         sources = re.findall(r'<script src="([^"]+)"', html)
-        self.assertEqual(len([s for s in sources if s.startswith('vendor/')]), 6)
+        self.assertEqual(len([s for s in sources if s.startswith('../vendor/')]), 6)
         for src in sources:
             # Only local files: the six vendored libraries and continuum-core/app scripts (SEC-002).
-            self.assertTrue(src.startswith(('vendor/', 'app/')), src)
-            self.assertTrue((server.BASE_DIR / src).is_file(), src)
-            status, _, _ = self.request('GET', '/' + src)
+            # The page sits in legacy/; it is served at / (SHL-004), where ../ resolves to the root.
+            self.assertTrue(src.startswith(('../vendor/', '../app/')), src)
+            self.assertTrue((server.BASE_DIR / 'legacy' / src).resolve().is_file(), src)
+            status, _, _ = self.request('GET', '/' + src[len('../'):])
             self.assertEqual(status, 200, src)
+
+    def test_root_serves_the_legacy_app(self):
+        # SHL-004: same origin and path as before, so existing browser data stays visible.
+        status, headers, body = self.request('GET', '/')
+        self.assertEqual(status, 200)
+        self.assertEqual(body, (server.BASE_DIR / 'legacy' / 'index.html').read_bytes())
+        self.assertIn(b'<title>Project Finance Portfolio Engine</title>', body)
+
+    def test_root_index_html_is_a_static_placeholder(self):
+        html = (server.BASE_DIR / 'index.html').read_text(encoding='utf-8')
+        self.assertNotIn('<script', html)
+        self.assertIn('Finance Engine – new app under construction', html)
+        self.assertIn('href="legacy/index.html"', html)
 
 
 if __name__ == '__main__':

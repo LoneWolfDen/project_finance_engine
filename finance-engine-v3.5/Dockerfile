@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 WORKDIR /app
 COPY server.py index.html ./
+COPY legacy ./legacy
 COPY test_*.json test_*.csv ./
 # app/ and vendor/ always exist (each holds a .keep file), so these never fail.
 COPY app ./app

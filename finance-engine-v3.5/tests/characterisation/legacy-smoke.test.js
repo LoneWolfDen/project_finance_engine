@@ -1,5 +1,5 @@
 // TST-004: the legacy sandbox loads the legacy app and exposes its functions and data.
-// Node only (reads index.html from disk).
+// Node only (reads legacy/index.html from disk).
 (function () {
   var T = CFE_TEST, assert = T.assert;
   var loadLegacy = CFE_NODE.support('legacy-sandbox.js').loadLegacy;

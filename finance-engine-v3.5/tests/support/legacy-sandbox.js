@@ -99,28 +99,27 @@ const PRELUDE = String.raw`
 })
 `;
 
-function extractScripts(html) {
+// Script paths are relative to the page (legacy/index.html uses ../app/…); only app/ scripts are run.
+function extractScripts(html, htmlPath) {
+  const appRoot = path.join(APP_DIR, 'app') + path.sep;
   const scripts = [];
   const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
   let m;
   while ((m = re.exec(html))) {
     const src = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(m[1]);
     if (!src) scripts.push({ name: 'inline script ' + (scripts.length + 1), code: m[2] });
-    else if (src[1].startsWith('app/')) scripts.push({ name: src[1], code: fs.readFileSync(path.join(APP_DIR, src[1]), 'utf8') });
+    else {
+      const file = path.join(APP_DIR, path.dirname(htmlPath), src[1]);
+      if (file.startsWith(appRoot)) scripts.push({ name: path.relative(APP_DIR, file).split(path.sep).join('/'), code: fs.readFileSync(file, 'utf8') });
+    }
     // Other src scripts (vendor libraries) are replaced by stubs.
   }
   return scripts;
 }
 
-function legacyHtmlPath() {
-  // SHL-004 moves the legacy app to legacy/index.html.
-  const moved = path.join(APP_DIR, 'legacy', 'index.html');
-  return fs.existsSync(moved) ? 'legacy/index.html' : 'index.html';
-}
-
 function loadLegacy(options) {
   const opts = Object.assign({
-    htmlPath: legacyHtmlPath(),
+    htmlPath: 'legacy/index.html',
     now: '2026-10-01T12:00:00Z',
     protocol: 'http:',
     confirm: () => true,
@@ -136,7 +135,7 @@ function loadLegacy(options) {
   vm.runInContext(PRELUDE, ctx, { filename: 'legacy-sandbox-prelude.js' })({
     now: opts.now, protocol: opts.protocol, confirm: opts.confirm, prompt: opts.prompt
   });
-  for (const s of extractScripts(html)) {
+  for (const s of extractScripts(html, opts.htmlPath)) {
     vm.runInContext(s.code, ctx, { filename: opts.htmlPath + ' (' + s.name + ')' });
   }
   // Capture toast messages from here on (the legacy app defines its own toast()).

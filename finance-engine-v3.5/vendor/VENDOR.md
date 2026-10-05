@@ -1,6 +1,6 @@
 # Vendored libraries
 
-Third-party libraries used by the legacy app (`index.html`), stored here so the app makes no requests to CDN hosts (BLD-001; charter §10–11; ADR-008).
+Third-party libraries used by the legacy app (`legacy/index.html`), stored here so the app makes no requests to CDN hosts (BLD-001; charter §10–11; ADR-008).
 
 * Byte-identical to the files the app loaded from the CDN URLs before BLD-001, **except SheetJS**, upgraded by BLD-002, and **jsPDF / jsPDF-AutoTable**, upgraded by BLD-003 (below).
 * `tests/server/test_static.py` checks every file's SHA-256 against the table below. If you replace a file, update its row in the same commit.
