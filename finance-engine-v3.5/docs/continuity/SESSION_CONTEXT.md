@@ -20,10 +20,11 @@ For a model starting with no conversation history. Last updated 2026-10-05.
 6. `finance-engine-v3.5/docs/continuity/DECISIONS.md` (latest decisions; "-R1" rows supersede the originals)
 7. Only as cited by the item: `docs/architecture/*`, `docs/assessment/*`
 
-**Next action.** The first Model row of `NEXT_ACTIONS.md` whose owner prerequisites are done (Phase 1 F1.6: SHL-004, after the owner's F1.5 date-order check and fresh backups). Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
+**Next action.** The first Model row of `NEXT_ACTIONS.md` whose owner prerequisites are done (Phase 1 F1.6: SHL-004; the owner's F1.5 date check and fresh backups are done, DEC-039). Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
 
 **Key decisions to keep in mind.**
-* Reference ID = the first opportunity number entered, trimmed, whitespace removed, upper-cased, permanent. **No regex, no suffix.**
+* Reference ID = the first opportunity number entered, trimmed, whitespace removed, upper-cased, permanent. **No regex, no suffix.** A Continuum-generated project ID is parked until integration (DEC-042).
+* Dates are **shown** as DD-MM-YYYY and **stored** as YYYY-MM-DD (DEC-040). Use `toDisplayDate` / `fromDisplayDate` (`app/calc/dates.js`) in every view and export.
 * Distribution is `file://` from a user-chosen synced folder. No server for viewers. **No network calls from the app.**
 * Libraries are vendored locally; CDNs currently *do* load, but must not be used.
 * Real names are published. Present mode masks them.

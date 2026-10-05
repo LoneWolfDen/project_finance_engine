@@ -118,7 +118,7 @@ td[contenteditable]:focus{border-color:#2196f3;outline:none;background:#e3f2fd}
 // SEC-003: escape every data-derived value placed into HTML (Continuum.html, loaded above).
 const esc=Continuum.html.escape;
 // SRC-001: date, calendar and FX helpers live in app/calc/ (loaded above); the old global names stay as aliases.
-var parseDate=CFE.calc.dates.parseDate,parseValidityEnd=CFE.calc.dates.parseValidityEnd;
+var parseDate=CFE.calc.dates.parseDate,parseValidityEnd=CFE.calc.dates.parseValidityEnd,toDisplayDate=CFE.calc.dates.toDisplayDate,fromDisplayDate=CFE.calc.dates.fromDisplayDate;
 var HOLIDAYS_BY_LOC=CFE.calc.calendar.HOLIDAYS_BY_LOC,HOLIDAY_SETS=CFE.calc.calendar.HOLIDAY_SETS,isWorkingDay=CFE.calc.calendar.isWorkingDay;
 var fxRateAsOf=CFE.calc.fx.fxRateAsOf,otMultiplier=CFE.calc.fx.otMultiplier;
 var computeForecast=CFE.calc.forecast.computeForecast,forecastPerTeam=CFE.calc.forecast.forecastPerTeam;
@@ -396,6 +396,9 @@ document.addEventListener('click',function(e){
   const dir=tbl.dataset.sortDir==='asc'?'desc':'asc';tbl.dataset.sortDir=dir;
   rows.sort((a,b)=>{
     let av=a.cells[col]?a.cells[col].textContent.trim():'',bv=b.cells[col]?b.cells[col].textContent.trim():'';
+    // Dates (shown DD-MM-YYYY, DEC-040) sort by the real date, not by the day number.
+    const ai=fromDisplayDate(av),bi=fromDisplayDate(bv);
+    if(ai&&bi)return dir==='asc'?(ai<bi?-1:ai>bi?1:0):(ai<bi?1:ai>bi?-1:0);
     const an=parseFloat(av.replace(/[£$,%—]/g,'')),bn=parseFloat(bv.replace(/[£$,%—]/g,''));
     if(!isNaN(an)&&!isNaN(bn))return dir==='asc'?an-bn:bn-an;
     const ad=new Date(av),bd=new Date(bv);
@@ -556,7 +559,7 @@ function rInv(D){
     h+=`<tr class="grp-rows"><td colspan="8" style="padding:0"><table style="width:100%;margin:0;box-shadow:none"><tbody>`;
     items.forEach(i=>{
       const sc=i.status==='Paid'?'color:#2e7d32':i.status==='Submitted'?'color:#e65100':'color:#666';
-      h+=`<tr><td style="font-size:.65rem">${esc(i.po_team)}</td><td>${esc(i.invoice_number)}</td><td>${esc(i.period_from)}</td><td>${esc(i.period_to)}</td><td>${f(i.amount)}</td><td style="${sc};font-weight:600">${esc(i.status)}</td><td>${esc(i.paid_date||'—')}</td><td>${esc(i.notes||'')}</td></tr>`;
+      h+=`<tr><td style="font-size:.65rem">${esc(i.po_team)}</td><td>${esc(i.invoice_number)}</td><td>${esc(toDisplayDate(i.period_from))}</td><td>${esc(toDisplayDate(i.period_to))}</td><td>${f(i.amount)}</td><td style="${sc};font-weight:600">${esc(i.status)}</td><td>${esc(toDisplayDate(i.paid_date)||'—')}</td><td>${esc(i.notes||'')}</td></tr>`;
     });
     h+=`</tbody></table></td></tr>`;
   });
@@ -589,7 +592,7 @@ function rRes(D){
     h+=`<div class="tw"><table class="resGrpTable" id="res_${tid}"><thead><tr><th data-sort="0" style="cursor:pointer">Name ⇅</th><th data-sort="1" style="cursor:pointer">EmplID ⇅</th><th data-sort="2" style="cursor:pointer">Role ⇅</th><th>Location</th><th>ProjectID</th><th data-sort="5" style="cursor:pointer">Start ⇅</th><th data-sort="6" style="cursor:pointer">End ⇅</th><th data-sort="7" style="cursor:pointer">Rate ⇅</th><th>HrMult</th><th data-sort="9" style="cursor:pointer">Alloc ⇅</th><th>Fc £/day</th><th>Del</th></tr></thead><tbody>`;
     members.forEach((r,i)=>{
       const dc=r.bill_rate*r.alloc*8;
-      h+=`<tr><td contenteditable="true" data-field="name">${esc(r.name)}</td><td contenteditable="true" data-field="empl_id">${esc(r.empl_id||0)}</td><td contenteditable="true" data-field="role">${esc(r.role)}</td><td contenteditable="true" data-field="location">${esc(r.location)}</td><td contenteditable="true" data-field="projectID">${esc(r.projectID||'')}</td><td contenteditable="true" data-field="start">${esc(r.start)}</td><td contenteditable="true" data-field="end">${esc(r.end)}</td><td contenteditable="true" data-field="bill_rate">${esc(r.bill_rate)}</td><td contenteditable="true" data-field="hour_mult">${esc(r.hour_mult)}</td><td contenteditable="true" data-field="alloc">${esc(r.alloc)}</td><td style="font-weight:600">${f(dc)}</td><td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td></tr>`;
+      h+=`<tr><td contenteditable="true" data-field="name">${esc(r.name)}</td><td contenteditable="true" data-field="empl_id">${esc(r.empl_id||0)}</td><td contenteditable="true" data-field="role">${esc(r.role)}</td><td contenteditable="true" data-field="location">${esc(r.location)}</td><td contenteditable="true" data-field="projectID">${esc(r.projectID||'')}</td><td contenteditable="true" data-field="start">${esc(toDisplayDate(r.start))}</td><td contenteditable="true" data-field="end">${esc(toDisplayDate(r.end))}</td><td contenteditable="true" data-field="bill_rate">${esc(r.bill_rate)}</td><td contenteditable="true" data-field="hour_mult">${esc(r.hour_mult)}</td><td contenteditable="true" data-field="alloc">${esc(r.alloc)}</td><td style="font-weight:600">${f(dc)}</td><td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td></tr>`;
     });
     h+=`</tbody></table></div></div>`;
   });
@@ -620,7 +623,7 @@ function saveResTable(){
       const cells=tr.querySelectorAll('td[contenteditable]');
       if(!cells.length)return;
       const poTeam=tr.dataset.poTeam||teamName;
-      resources.push({name:cells[0].textContent.trim(),empl_id:parseInt(cells[1].textContent.trim())||0,role:cells[2].textContent.trim(),location:cells[3].textContent.trim(),projectID:parseInt(cells[4].textContent.trim())||0,po_team:poTeam,start:cells[5].textContent.trim(),end:cells[6].textContent.trim(),bill_rate:parseFloat(cells[7].textContent.trim())||0,hour_mult:parseFloat(cells[8].textContent.trim())||1,alloc:parseFloat(cells[9].textContent.trim())||0});
+      resources.push({name:cells[0].textContent.trim(),empl_id:parseInt(cells[1].textContent.trim())||0,role:cells[2].textContent.trim(),location:cells[3].textContent.trim(),projectID:parseInt(cells[4].textContent.trim())||0,po_team:poTeam,start:fromDisplayDate(cells[5].textContent)||cells[5].textContent.trim(),end:fromDisplayDate(cells[6].textContent)||cells[6].textContent.trim(),bill_rate:parseFloat(cells[7].textContent.trim())||0,hour_mult:parseFloat(cells[8].textContent.trim())||1,alloc:parseFloat(cells[9].textContent.trim())||0});
     });
   });
   const cfg=loadWork();cfg.resources=resources;saveWork(cfg);
@@ -762,7 +765,7 @@ function rUtil(D){
       const days=Math.max(1,Math.round((new Date(d.max)-new Date(d.min))/86400000));
       const weeks=Math.max(1,Math.ceil(days/7));
       const avgPerWeek=Math.round(d.rows/weeks*10)/10;
-      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(d.min)}</td><td>${esc(d.max)}</td><td>${d.rows.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
+      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(toDisplayDate(d.min))}</td><td>${esc(toDisplayDate(d.max))}</td><td>${d.rows.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
     });
     h+='</tbody></table></div></div>';
   }
@@ -780,7 +783,7 @@ function rUtil(D){
     h+='<div class="tw"><table><thead><tr><th data-sort="0" style="cursor:pointer">Project ID ⇅</th><th>PO_Team</th><th data-sort="2" style="cursor:pointer">From ⇅</th><th data-sort="3" style="cursor:pointer">To ⇅</th><th data-sort="4" style="cursor:pointer">Rows ⇅</th><th>Weeks</th></tr></thead><tbody>';
     filteredProj.forEach(([pid,d])=>{
       const weeks=Math.max(1,Math.round((new Date(d.max)-new Date(d.min))/604800000)+1);
-      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(d.min)}</td><td>${esc(d.max)}</td><td>${d.rows}</td><td>${weeks}</td></tr>`;
+      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(toDisplayDate(d.min))}</td><td>${esc(toDisplayDate(d.max))}</td><td>${d.rows}</td><td>${weeks}</td></tr>`;
     });
     h+='</tbody></table></div></div></div>';
   }
@@ -962,7 +965,7 @@ function rActDataInline(D){
   if(filtered.length){
     h+='<div class="tw" style="margin-top:.5rem"><table><thead><tr><th>Name</th><th>Empl ID</th><th>Date</th><th>Project</th><th>Reg Hrs</th><th>OT Hrs</th></tr></thead><tbody>';
     filtered.slice(0,10).forEach(row=>{
-      h+=`<tr><td>${esc(row['Empl Name']||'')}</td><td>${esc(row['Empl ID']||'')}</td><td>${esc(row['Reported Dt']||'')}</td><td>${esc(row['Project ID']||'')}</td><td>${esc(row['Regular Hours']||0)}</td><td>${esc(row['Overtime Hours']||0)}</td></tr>`;
+      h+=`<tr><td>${esc(row['Empl Name']||'')}</td><td>${esc(row['Empl ID']||'')}</td><td>${esc(toDisplayDate(parseDate(row['Reported Dt'],'us'))||row['Reported Dt']||'')}</td><td>${esc(row['Project ID']||'')}</td><td>${esc(row['Regular Hours']||0)}</td><td>${esc(row['Overtime Hours']||0)}</td></tr>`;
     });
     h+='</tbody></table></div>';
     if(filtered.length>10)h+=`<p style="font-size:.7rem;color:#888;margin-top:.3rem">Showing 10 of ${filtered.length} rows</p>`;
@@ -979,7 +982,7 @@ function rExp(D){
   Object.entries(expGroups).forEach(([team,items])=>{
     h+=`<tr class="grp-hdr" onclick="toggleGrp(this)"><td colspan="7">${esc(team)} (${items.length} claims, ${f(items.reduce((s,e)=>s+e.amount,0))})</td></tr>`;
     h+=`<tr class="grp-rows"><td colspan="7" style="padding:0"><table style="width:100%;margin:0;box-shadow:none;table-layout:fixed"><colgroup><col style="width:14%"><col style="width:12%"><col style="width:12%"><col style="width:8%"><col style="width:10%"><col style="width:22%"><col style="width:22%"></colgroup><tbody>`;
-    items.forEach(e=>{h+=`<tr><td>${esc(e.name)}</td><td>${esc(e.date)}</td><td>${f(e.amount)}</td><td>${esc(e.currency)}</td><td>${esc(e.projectID||'')}</td><td style="font-size:.65rem">${esc(e.po_team||'')}</td><td>${esc(e.desc)}</td></tr>`;});
+    items.forEach(e=>{h+=`<tr><td>${esc(e.name)}</td><td>${esc(toDisplayDate(e.date))}</td><td>${f(e.amount)}</td><td>${esc(e.currency)}</td><td>${esc(e.projectID||'')}</td><td style="font-size:.65rem">${esc(e.po_team||'')}</td><td>${esc(e.desc)}</td></tr>`;});
     h+=`</tbody></table></td></tr>`;
   });
   h+='</tbody></table></div>';return h;
@@ -1075,7 +1078,7 @@ function rPO(D){
   // Detail table
   h+='<div class="box"><h2>All PO Entries</h2><div class="tw"><table id="tblPO"><thead><tr><th data-sort="0" style="cursor:pointer">PO_Team ⇅</th><th data-sort="1" style="cursor:pointer">ProjectID ⇅</th><th data-sort="2" style="cursor:pointer">PO Value ⇅</th><th>Currency</th><th>Norm Currency</th><th data-sort="5" style="cursor:pointer">Start ⇅</th><th data-sort="6" style="cursor:pointer">Validity ⇅</th><th>Rollover</th><th>Status</th><th>PO Number</th></tr></thead><tbody>';
   pos.forEach(p=>{
-    h+=`<tr><td style="font-size:.68rem">${esc(p.PO_Team_Identifier)}</td><td>${esc(p.ProjectID)}</td><td>${f(p.PO_WO_value)}</td><td>${esc(p.PO_Currency_Code)}</td><td>${esc(p.Normalized_Currency_Code)}</td><td>${esc(p.WO_StartDate)}</td><td>${esc(fmtValidity(p.PO_Validity||p.PO_Validity_Year))}</td><td>${p.rollover_allowed?'✅':'❌'}</td><td>${esc(p.WO_Approval_Status)}</td><td>${esc(p.PO_WO_Number)}</td></tr>`;
+    h+=`<tr><td style="font-size:.68rem">${esc(p.PO_Team_Identifier)}</td><td>${esc(p.ProjectID)}</td><td>${f(p.PO_WO_value)}</td><td>${esc(p.PO_Currency_Code)}</td><td>${esc(p.Normalized_Currency_Code)}</td><td>${esc(toDisplayDate(p.WO_StartDate))}</td><td>${esc(fmtValidity(p.PO_Validity||p.PO_Validity_Year))}</td><td>${p.rollover_allowed?'✅':'❌'}</td><td>${esc(p.WO_Approval_Status)}</td><td>${esc(p.PO_WO_Number)}</td></tr>`;
   });
   h+='</tbody></table></div></div>';
   return h;
@@ -1223,7 +1226,7 @@ async function processUpload(data,type){
         const endRaw=r.end||r.ContractEndDt||'';
         if(rate<0)rowErrs.push(`Row ${i+2}: negative bill_rate (${rate})`);
         if(alloc<0||alloc>1)rowErrs.push(`Row ${i+2}: alloc ${alloc} outside 0-1 range`);
-        if(startRaw&&endRaw){const s=parseDate(startRaw,'uk'),e=parseDate(endRaw,'uk');if(s&&e&&s>e)rowErrs.push(`Row ${i+2}: start (${s}) > end (${e})`);}
+        if(startRaw&&endRaw){const s=parseDate(startRaw,'uk'),e=parseDate(endRaw,'uk');if(s&&e&&s>e)rowErrs.push(`Row ${i+2}: start (${toDisplayDate(s)}) > end (${toDisplayDate(e)})`);}
         if(!parseInt(r.empl_id||r['Empl ID']||r.EmplID||0))rowErrs.push(`Row ${i+2}: missing/invalid empl_id`);
         if(!(r.po_team||r.PO_Team_Identifier||'').trim())rowErrs.push(`Row ${i+2}: missing po_team`);
       });
@@ -1275,7 +1278,7 @@ async function processUpload(data,type){
       rpt+='<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Column Mapping</h3><table style="font-size:.7rem"><tbody>';
       Object.entries(mapped).forEach(([field,src])=>{const found=cols.find(c=>src.split('/').some(s=>c.toLowerCase().includes(s.toLowerCase())));rpt+=`<tr><td style="font-weight:600">${esc(field)}</td><td>${found?'✅ '+esc(found):'❌ not found'}</td></tr>`;});
       rpt+='</tbody></table></div>';
-      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Valid resources: ${resources.length}</li><li>Unique people: ${[...new Set(resources.map(r=>r.name))].length}</li><li>Date range: ${esc(resources.length?resources.reduce((m,r)=>r.start<m?r.start:m,resources[0].start):'-')} → ${esc(resources.length?resources.reduce((m,r)=>r.end>m?r.end:m,resources[0].end):'-')}</li><li>Duplicates: ${dupes.length}</li></ul>`;
+      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Valid resources: ${resources.length}</li><li>Unique people: ${[...new Set(resources.map(r=>r.name))].length}</li><li>Date range: ${esc(resources.length?toDisplayDate(resources.reduce((m,r)=>r.start<m?r.start:m,resources[0].start)):'-')} → ${esc(resources.length?toDisplayDate(resources.reduce((m,r)=>r.end>m?r.end:m,resources[0].end)):'-')}</li><li>Duplicates: ${dupes.length}</li></ul>`;
       if(warnings.length)rpt+='<div class="val-err" style="margin-top:.5rem"><ul>'+warnings.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul></div>';
       rpt+='</div></div></div>';
       document.getElementById('uploadPreview').innerHTML=rpt;
@@ -1340,7 +1343,7 @@ async function processUpload(data,type){
       rpt+='<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Columns Detected</h3><ul style="font-size:.72rem;margin-left:1rem">';
       cols.forEach(c=>{rpt+=`<li>✅ ${esc(c)}</li>`;});
       rpt+='</ul></div>';
-      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Unique employees: ${new Set(data.map(r=>r['Empl ID'])).size}</li><li>Date range: ${esc(dateRange[0]||'?')} → ${esc(dateRange[dateRange.length-1]||'?')}</li><li>Exact duplicate rows: ${exactDupes}</li><li>Projects: ${new Set(data.map(r=>r['Project ID'])).size}</li></ul>`;
+      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Unique employees: ${new Set(data.map(r=>r['Empl ID'])).size}</li><li>Date range: ${esc(toDisplayDate(dateRange[0])||'?')} → ${esc(toDisplayDate(dateRange[dateRange.length-1])||'?')}</li><li>Exact duplicate rows: ${exactDupes}</li><li>Projects: ${new Set(data.map(r=>r['Project ID'])).size}</li></ul>`;
       if(dupeText)rpt+=`<div class="val-err" style="margin-top:.5rem">⚠️ ${dupeText}</div>`;
       rpt+='</div></div></div>';
       document.getElementById('uploadPreview').innerHTML=rpt;
@@ -1424,7 +1427,7 @@ function parseSolutionExcel(){
     let h=`<div class="box" style="margin-top:.5rem"><h2>🧠 Parsed: ${resources.length} resources from "${esc(bestSheet)}" (header row ${bestHeaderRow+1})</h2>`;
     h+=`<p style="font-size:.72rem;color:#666">Matched ${bestScore} columns: ${esc(Object.keys(bestMapping).join(', '))}</p>`;
     h+='<div class="tw" style="max-height:200px;overflow:auto"><table><thead><tr><th>Name</th><th>EmplID</th><th>Role</th><th>Start</th><th>End</th><th>Rate</th><th>Alloc</th><th>PO_Team</th></tr></thead><tbody>';
-    resources.slice(0,15).forEach(r=>{h+=`<tr><td>${esc(r.name)}</td><td>${esc(r.empl_id)}</td><td>${esc(r.role)}</td><td>${esc(r.start)}</td><td>${esc(r.end)}</td><td>${esc(r.bill_rate)}</td><td>${esc(r.alloc)}</td><td>${esc(r.po_team)}</td></tr>`;});
+    resources.slice(0,15).forEach(r=>{h+=`<tr><td>${esc(r.name)}</td><td>${esc(r.empl_id)}</td><td>${esc(r.role)}</td><td>${esc(toDisplayDate(r.start))}</td><td>${esc(toDisplayDate(r.end))}</td><td>${esc(r.bill_rate)}</td><td>${esc(r.alloc)}</td><td>${esc(r.po_team)}</td></tr>`;});
     h+='</tbody></table></div>';
     if(resources.length>15)h+=`<p style="font-size:.7rem;color:#888">Showing 15 of ${resources.length}</p>`;
     h+=`<div style="margin-top:.5rem;display:flex;gap:.5rem"><button class="btn btn-green" onclick="applySolutionResources()">✅ Apply to Dashboard</button><button class="btn btn-orange" onclick="document.getElementById('solutionPreview').innerHTML=''">Cancel</button></div></div>`;
@@ -1477,19 +1480,22 @@ function getExportData(){
   return{D,monthly,invs,res,sel};
 }
 
+// Excel gets real dates (sortable, filterable) shown day first (DEC-040); empty or unreadable values stay as text.
+const XL_DATE_OPTS={dateNF:'dd-mm-yyyy'};
+function xlDate(v){const iso=fromDisplayDate(v);if(!iso)return v||'';const p=iso.split('-');return new Date(+p[0],+p[1]-1,+p[2]);}
 function exportExcel(){
   const{D,monthly,invs,res,sel}=getExportData();
   const wb=XLSX.utils.book_new();
   const sig=[[''],['Crafted by Vamsi Yedlapalli | github.com/LoneWolfDen']];
   if(sel.summary){
-    const summary=[[(sampleSections(D.cfg).length?'SAMPLE DATA – ':'')+'Project Finance Engine — Export Report'],['Generated',new Date().toISOString().slice(0,16)],['Filter',selectedPoTeams.length?selectedPoTeams.join(', '):'All Projects'],[],['Metric','Value'],['PO Value ('+D.fc.currency+')',D.fc.totalPOValue],['PO Value ('+D.fc.normCurrency+')',D.fc.normPO],['Total Forecast',D.fc.total],['Total Actuals',D.tAct],['Total Expenses',D.tExp],['Remaining Budget',D.rem],['Burn Rate/Day',D.fc.rate],...sig];
+    const summary=[[(sampleSections(D.cfg).length?'SAMPLE DATA – ':'')+'Project Finance Engine — Export Report'],['Generated',(t=>toDisplayDate(t)+' '+t.slice(11,16)+' UTC')(new Date().toISOString())],['Filter',selectedPoTeams.length?selectedPoTeams.join(', '):'All Projects'],[],['Metric','Value'],['PO Value ('+D.fc.currency+')',D.fc.totalPOValue],['PO Value ('+D.fc.normCurrency+')',D.fc.normPO],['Total Forecast',D.fc.total],['Total Actuals',D.tAct],['Total Expenses',D.tExp],['Remaining Budget',D.rem],['Burn Rate/Day',D.fc.rate],...sig];
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summary),'Summary');
   }
   if(sampleSections(D.cfg).length)XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['SAMPLE DATA – not real'],['This export contains sample data in: '+sampleSections(D.cfg).join(', ')]]),'SAMPLE DATA');
   if(sel.monthly)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(monthly),'Monthly Burndown');
-  if(sel.invoices&&invs.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(invs.map(i=>({PO_Team:i.po_team,Invoice:i.invoice_number,From:i.period_from,To:i.period_to,Amount:i.amount,Status:i.status,Paid_Date:i.paid_date||'',Notes:i.notes||''}))),'Invoices');
-  if(sel.resources)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(res.map(r=>({Name:r.name,EmplID:r.empl_id,Role:r.role,Location:r.location,PO_Team:r.po_team,Start:r.start,End:r.end,BillRate:r.bill_rate,Alloc:r.alloc,'Forecast/Day':r.bill_rate*r.alloc*8}))),'Resources');
-  if(sel.expenses&&D.filteredExpenses.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(D.filteredExpenses.map(e=>({Name:e.name,Date:e.date,Amount:e.amount,Currency:e.currency,PO_Team:e.po_team||'',Description:e.desc}))),'Expenses');
+  if(sel.invoices&&invs.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(invs.map(i=>({PO_Team:i.po_team,Invoice:i.invoice_number,From:xlDate(i.period_from),To:xlDate(i.period_to),Amount:i.amount,Status:i.status,Paid_Date:xlDate(i.paid_date),Notes:i.notes||''})),XL_DATE_OPTS),'Invoices');
+  if(sel.resources)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(res.map(r=>({Name:r.name,EmplID:r.empl_id,Role:r.role,Location:r.location,PO_Team:r.po_team,Start:xlDate(r.start),End:xlDate(r.end),BillRate:r.bill_rate,Alloc:r.alloc,'Forecast/Day':r.bill_rate*r.alloc*8})),XL_DATE_OPTS),'Resources');
+  if(sel.expenses&&D.filteredExpenses.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(D.filteredExpenses.map(e=>({Name:e.name,Date:xlDate(e.date),Amount:e.amount,Currency:e.currency,PO_Team:e.po_team||'',Description:e.desc})),XL_DATE_OPTS),'Expenses');
   if(sel.rollover&&D.fc.rolloverByYear&&Object.keys(D.fc.rolloverByYear).length>1){
     const ro=Object.entries(D.fc.rolloverByYear).sort((a,b)=>a[0]-b[0]).map(([yr,d])=>({Year:yr,'PO Value':d.poValue,'Carry-In':d.carryIn,'Available Budget':d.available,'Forecast Spend':d.spent,'Unused (Rollover)':d.unused}));
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(ro),'PO Rollover');
@@ -1524,15 +1530,15 @@ function exportPDF(){
   }
   if(sel.resources&&res.length){
     doc.addPage();doc.setFontSize(12);doc.text('Resources ('+res.length+')',14,18);
-    doc.autoTable({startY:22,head:[['Name','Role','PO_Team','Start','End','Rate','Alloc','£/Day']],body:res.slice(0,40).map(r=>[r.name,r.role||'',r.po_team||'',r.start,r.end,'£'+r.bill_rate,(r.alloc*100)+'%','£'+(r.bill_rate*r.alloc*8).toFixed(0)]),theme:'striped',styles:{fontSize:6}});
+    doc.autoTable({startY:22,head:[['Name','Role','PO_Team','Start','End','Rate','Alloc','£/Day']],body:res.slice(0,40).map(r=>[r.name,r.role||'',r.po_team||'',toDisplayDate(r.start),toDisplayDate(r.end),'£'+r.bill_rate,(r.alloc*100)+'%','£'+(r.bill_rate*r.alloc*8).toFixed(0)]),theme:'striped',styles:{fontSize:6}});
   }
   if(sel.invoices&&invs.length){
     doc.addPage();doc.setFontSize(12);doc.text('Invoices ('+invs.length+')',14,18);
-    doc.autoTable({startY:22,head:[['PO_Team','Invoice','Period','Amount','Status']],body:invs.map(i=>[i.po_team,i.invoice_number,i.period_from+' → '+i.period_to,f(i.amount),i.status]),theme:'striped',styles:{fontSize:7}});
+    doc.autoTable({startY:22,head:[['PO_Team','Invoice','Period','Amount','Status']],body:invs.map(i=>[i.po_team,i.invoice_number,toDisplayDate(i.period_from)+' → '+toDisplayDate(i.period_to),f(i.amount),i.status]),theme:'striped',styles:{fontSize:7}});
   }
   if(sel.expenses&&D.filteredExpenses.length){
     doc.addPage();doc.setFontSize(12);doc.text('Expenses ('+D.filteredExpenses.length+')',14,18);
-    doc.autoTable({startY:22,head:[['Name','Date','Amount','Currency','PO_Team','Description']],body:D.filteredExpenses.map(e=>[e.name,e.date,f(e.amount),e.currency,e.po_team||'',e.desc]),theme:'striped',styles:{fontSize:7}});
+    doc.autoTable({startY:22,head:[['Name','Date','Amount','Currency','PO_Team','Description']],body:D.filteredExpenses.map(e=>[e.name,toDisplayDate(e.date),f(e.amount),e.currency,e.po_team||'',e.desc]),theme:'striped',styles:{fontSize:7}});
   }
   if(sel.rollover&&D.fc.rolloverByYear&&Object.keys(D.fc.rolloverByYear).length>1){
     doc.addPage();doc.setFontSize(12);doc.text('PO Rollover',14,18);
@@ -1594,7 +1600,7 @@ function exportPPTX(){
     let slide=pptx.addSlide();
     slide.addText('Resource Allocation ('+res.length+' rules)',{x:0.5,y:0.2,fontSize:20,bold:true,color:titleColor});
     const rHdr=[{text:'Name',options:hdrOpts},{text:'Role',options:hdrOpts},{text:'PO_Team',options:hdrOpts},{text:'Start',options:hdrOpts},{text:'End',options:hdrOpts},{text:'Rate',options:hdrOpts},{text:'Alloc',options:hdrOpts},{text:'£/Day',options:hdrOpts}];
-    const rRows=res.slice(0,20).map(r=>[{text:r.name,options:cellOpts},{text:r.role||'',options:cellOpts},{text:r.po_team||'',options:{fontSize:7}},{text:r.start,options:cellOpts},{text:r.end,options:cellOpts},{text:'£'+r.bill_rate,options:cellOpts},{text:(r.alloc*100)+'%',options:cellOpts},{text:'£'+(r.bill_rate*r.alloc*8).toFixed(0),options:cellOpts}]);
+    const rRows=res.slice(0,20).map(r=>[{text:r.name,options:cellOpts},{text:r.role||'',options:cellOpts},{text:r.po_team||'',options:{fontSize:7}},{text:toDisplayDate(r.start),options:cellOpts},{text:toDisplayDate(r.end),options:cellOpts},{text:'£'+r.bill_rate,options:cellOpts},{text:(r.alloc*100)+'%',options:cellOpts},{text:'£'+(r.bill_rate*r.alloc*8).toFixed(0),options:cellOpts}]);
     slide.addTable([rHdr,...rRows],{x:0.2,y:0.6,w:13,border:{type:'solid',pt:0.5,color:'CCCCCC'},colW:[1.5,1.8,2.5,1.2,1.2,1,0.8,1],autoPage:true});
     if(res.length>20)slide.addText('Showing 20 of '+res.length+' resources',{x:0.5,y:7.0,fontSize:8,color:'888888'});
   }
@@ -1603,7 +1609,7 @@ function exportPPTX(){
     let slide=pptx.addSlide();
     slide.addText('Invoices ('+invs.length+')',{x:0.5,y:0.2,fontSize:20,bold:true,color:titleColor});
     const iHdr=[{text:'PO_Team',options:hdrOpts},{text:'Invoice #',options:hdrOpts},{text:'From',options:hdrOpts},{text:'To',options:hdrOpts},{text:'Amount',options:hdrOpts},{text:'Status',options:hdrOpts}];
-    const iRows=invs.slice(0,20).map(i=>[{text:i.po_team||'',options:{fontSize:7}},{text:i.invoice_number||'',options:cellOpts},{text:i.period_from,options:cellOpts},{text:i.period_to,options:cellOpts},{text:f(i.amount),options:cellOpts},{text:i.status,options:{...cellOpts,color:i.status==='Paid'?'2E7D32':i.status==='Submitted'?'E65100':'666666'}}]);
+    const iRows=invs.slice(0,20).map(i=>[{text:i.po_team||'',options:{fontSize:7}},{text:i.invoice_number||'',options:cellOpts},{text:toDisplayDate(i.period_from),options:cellOpts},{text:toDisplayDate(i.period_to),options:cellOpts},{text:f(i.amount),options:cellOpts},{text:i.status,options:{...cellOpts,color:i.status==='Paid'?'2E7D32':i.status==='Submitted'?'E65100':'666666'}}]);
     slide.addTable([iHdr,...iRows],{x:0.3,y:0.6,w:12.5,border:{type:'solid',pt:0.5,color:'CCCCCC'},colW:[3,2,1.5,1.5,1.5,1.5],autoPage:true});
   }
 
@@ -2056,7 +2062,7 @@ function smartAnswer(msg,D){
   const personMatch=people.find(p=>wholeWord(q,String(p).toLowerCase()));
   if(personMatch){
     const rules=fRes.filter(r=>r.name===personMatch);
-    return reply(H.t`Fact: 👤 <strong>${personMatch}</strong>: ${rules.length} allocation rule(s). Role: ${rules[0].role}. Rate: £${rules[0].bill_rate}/hr. Period: ${rules[0].start} → ${rules[rules.length-1].end}. Daily cost: £${(rules[0].bill_rate*rules[0].alloc*8).toFixed(0)}/day.`);}
+    return reply(H.t`Fact: 👤 <strong>${personMatch}</strong>: ${rules.length} allocation rule(s). Role: ${rules[0].role}. Rate: £${rules[0].bill_rate}/hr. Period: ${toDisplayDate(rules[0].start)} → ${toDisplayDate(rules[rules.length-1].end)}. Daily cost: £${(rules[0].bill_rate*rules[0].alloc*8).toFixed(0)}/day.`);}
 
   // Expenses
   if(q.match(/expense|claim|travel/)){

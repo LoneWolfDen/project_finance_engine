@@ -20,7 +20,7 @@ The `.js` twins hold the same JSON, wrapped as `window.CFE_PUBLISHED_MANIFEST = 
 
 **Rules for all values**
 
-* Dates are `YYYY-MM-DD` and months are `YYYY-MM`.
+* Dates are `YYYY-MM-DD` and months are `YYYY-MM`. This is the stored form; people see dates as `DD-MM-YYYY` on screen and in exports (DEC-040).
 * Money is a plain number with its own `currency` field (for example `GBP`), never a formatted string such as "£300,000".
 * `ref` is a reference normalised by `Continuum.ref` (see `CONTINUUM_REFERENCE.md`).
 

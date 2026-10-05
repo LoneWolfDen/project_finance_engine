@@ -19,16 +19,16 @@ A profile says, for one kind of source file:
   * `YYYY-MM-DD`.
   
   Any other form is refused, including 2-digit years and impossible dates such as 30 February.
+
+  The format here is how the **source file** writes dates. After the check, every date is stored as `YYYY-MM-DD`, whatever the source, and shown on screen and in exports as `DD-MM-YYYY` (DEC-040). So `31/12/2025` in a resource-rules file is stored as `2025-12-31` and shown as `31-12-2025`.
 * **Numbers** must be plain (`300000` or `1.5`). `£300,000` is refused rather than misread.
 * **Minimisation (ADR-016):** every profile drops the columns it does not list. For timesheets this removes worksite city, state, country and postal code, customer and project names, business unit, week ending, status, bill indicator, and vacation and personal hours.
 
 ## Owner confirmation (checkpoint F1.5)
 
-The column names below are the live PeopleSoft names, as you confirmed on 2026-10-04 (DEC-018-R1). Still open: check the **resource-rule date order** on one real export (not committed), as follows.
+The column names below are the live PeopleSoft names, as you confirmed on 2026-10-04 (DEC-018-R1). On 2026-10-05 you checked this document against the real exports: the column names match and resource-rule dates are day first (DEC-039).
 
-1. Open a recent resource-rules export.
-2. Find a date whose day is above 12, for example `31/12/2025` or `15/08/2025`. If the day comes first, the order is day/month/year, as `resource-rules-v1` assumes.
-3. Compare the header row with the tables below and note any column whose name differs.
+Still open: where real PO details come from and how their start dates are written (DEC-041). `po-details-v1` currently expects `YYYY-MM-DD`, the form the app saves PO data in.
 
 ## peoplesoft-timesheet-v1
 
@@ -50,7 +50,7 @@ Source: PeopleSoft (timesheet query export). Entity: `timesheet_rows`. Columns n
 
 ## resource-rules-v1
 
-Resource rules: who is billed at which rate, for which PO team and period. Dates are day/month/year (DEC-018-R1); the owner confirms this on one live file at checkpoint F1.5.
+Resource rules: who is billed at which rate, for which PO team and period. Dates are day/month/year (DEC-018-R1; confirmed by the owner, DEC-039).
 
 Source: Resource rules (rate card export). Entity: `resource_rules`. Columns not listed are dropped at import.
 
@@ -70,7 +70,7 @@ Source: Resource rules (rate card export). Entity: `resource_rules`. Columns not
 
 ## po-details-v1
 
-Purchase orders. Validity is either mm-yy text (PO_Validity) or a year (PO_Validity_Year); the importer turns it into validity_end. Start dates are YYYY-MM-DD.
+Purchase orders. Validity is either mm-yy text (PO_Validity) or a year (PO_Validity_Year); the importer turns it into validity_end. Start dates are YYYY-MM-DD (open: DEC-041).
 
 Source: PO details (legacy test_PO_Details.json fields). Entity: `purchase_orders`. Columns not listed are dropped at import.
 
