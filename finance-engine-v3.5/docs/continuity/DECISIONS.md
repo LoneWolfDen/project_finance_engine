@@ -115,6 +115,7 @@ Full text in `docs/architecture/ADR_REGISTER.md`. All were written on 2026-10-04
 | 2026-10-04 | DEC-018 | Superseded by DEC-018-R1 | Owner confirmation |
 | 2026-10-04 | DEC-030 | Superseded by DEC-030-R1 | Owner supplied the URL shape |
 | 2026-10-05 | DEC-035 | Released by DEC-036 | Owner confirmed backups |
+| 2026-10-05 | DEC-016 | Accepted | Owner approved exact-row de-duplication (session question, 2026-10-05), knowing that kept split rows can raise actuals and that rows dropped earlier come back only from backups or source files |
 
 ## 5. Validation results recorded
 

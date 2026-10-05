@@ -1653,10 +1653,13 @@ async function processUpload(data,type){
       else uploadErrs.push(...rowErrs);
       if(uploadErrs.length){toast('✗ Upload validation failed: '+uploadErrs.slice(0,3).join('; '),false);document.getElementById('uploadPreview').innerHTML='<div class="val-err"><strong>⚠️ Upload Errors ('+uploadErrs.length+'):</strong><ul>'+uploadErrs.map(e=>'<li>'+e+'</li>').join('')+'</ul></div>';return;}
       // Duplicate detection for actuals
-      const actDupeMap={};
-      data.forEach(row=>{const k=`${row['Empl ID']||''}|${row['Reported Dt']||''}|${row['Project ID']||''}`;actDupeMap[k]=(actDupeMap[k]||0)+1;});
-      const actDupes=Object.values(actDupeMap).filter(c=>c>1).length;
-      if(actDupes&&!confirm('⚠️ '+actDupes+' duplicate timesheet entries detected (same employee+date+project). Import anyway?'))return;
+      // DAT-006: exact duplicates are removed on append; rows that only share employee+date+project are kept.
+      const exactKeys=new Set(),sameKeyRows={};
+      data.forEach(row=>{const x=actualsRowKey(row);exactKeys.add(x);const k=`${row['Empl ID']||''}|${row['Reported Dt']||''}|${row['Project ID']||''}`;(sameKeyRows[k]=sameKeyRows[k]||new Set()).add(x);});
+      const exactDupes=data.length-exactKeys.size;
+      const sameKeyKept=Object.values(sameKeyRows).filter(set=>set.size>1).reduce((n,set)=>n+set.size,0);
+      const dupeText=[exactDupes?exactDupes+' exact duplicate rows (will be removed on append)':'',sameKeyKept?sameKeyKept+' rows with the same employee+date+project but different details (kept)':''].filter(Boolean).join('; ');
+      if(dupeText&&!confirm('⚠️ In this file: '+dupeText+'. Import anyway?'))return;
       // Store raw actuals for processing
       const cfg=loadWork();
       let mode='replace';
@@ -1684,8 +1687,8 @@ async function processUpload(data,type){
       rpt+='<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Columns Detected</h3><ul style="font-size:.72rem;margin-left:1rem">';
       cols.forEach(c=>{rpt+=`<li>✅ ${c}</li>`;});
       rpt+='</ul></div>';
-      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Unique employees: ${new Set(data.map(r=>r['Empl ID'])).size}</li><li>Date range: ${dateRange[0]||'?'} → ${dateRange[dateRange.length-1]||'?'}</li><li>Duplicate rows: ${actDupes}</li><li>Projects: ${new Set(data.map(r=>r['Project ID'])).size}</li></ul>`;
-      if(actDupes)rpt+=`<div class="val-err" style="margin-top:.5rem">⚠️ ${actDupes} duplicate timesheet entries detected (same employee+date+project)</div>`;
+      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Unique employees: ${new Set(data.map(r=>r['Empl ID'])).size}</li><li>Date range: ${dateRange[0]||'?'} → ${dateRange[dateRange.length-1]||'?'}</li><li>Exact duplicate rows: ${exactDupes}</li><li>Projects: ${new Set(data.map(r=>r['Project ID'])).size}</li></ul>`;
+      if(dupeText)rpt+=`<div class="val-err" style="margin-top:.5rem">⚠️ ${dupeText}</div>`;
       rpt+='</div></div></div>';
       document.getElementById('uploadPreview').innerHTML=rpt;
     }
@@ -2248,12 +2251,15 @@ function promptFactoryReset(){
   d.innerHTML='<div class="modal"><h3>⚠️ Factory Reset</h3><p style="font-size:.82rem;margin-bottom:.8rem">This resets BOTH master and working config to defaults. Enter PIN:</p><input type="password" id="pinInput" placeholder="Enter PIN" maxlength="10"><div><button class="btn btn-red" onclick="checkPin(\'reset\')">Reset All</button><button class="btn btn-blue" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div></div>';
   document.body.appendChild(d);d.querySelector('input').focus();
 }
+// DAT-006 (DEC-016): only rows identical in every column are duplicates. The key is every column,
+// in sorted order, with trimmed values (the column name is included so different column sets never collide).
+function actualsRowKey(row){return Object.keys(row).sort().map(k=>k+'\u001e'+String(row[k]==null?'':row[k]).trim()).join('\u001f');}
 function deduplicateActuals(cfg){
   if(!cfg.raw_actuals||!cfg.raw_actuals.length)return cfg;
   const seen=new Map();
   cfg.raw_actuals.forEach(row=>{
-    const key=`${row['Empl ID']||''}|${row['Reported Dt']||''}|${row['Project ID']||''}`;
-    seen.set(key,row);// last wins
+    const key=actualsRowKey(row);
+    if(!seen.has(key))seen.set(key,row);
   });
   const before=cfg.raw_actuals.length;
   cfg.raw_actuals=[...seen.values()];

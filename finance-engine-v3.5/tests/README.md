@@ -89,7 +89,7 @@ Run: `node tests/run-node.js --suite=legacy-calc --tz=Europe/London` (also `--tz
 | `builddata-y2027.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-2027.json` | Europe/London (reference) |
 | `builddata-y2027.tz-America_New_York.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-2027.json` | America/New_York (KNOWN DEFECT C-01) |
 | `builddata-y2027.tz-Asia_Kolkata.json` | `buildData()` totals: tAct, tExp, rem, fc.total, fc.rate, years, teams | `tests/fixtures/legacy-config-2027.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
-| `deduplicate-actuals.json` | `deduplicateActuals` | `tests/fixtures/timesheet-duplicates.csv` | any |
+| `deduplicate-actuals.json` | `deduplicateActuals`. **Changed by DAT-006 (DEC-016, 2026-10-05):** only rows identical in every column are removed, so `removed` went from 2 to 1 and the 6 h PERFORM row of employee 1001 (same day and project as the 2 h TRAVEL row) is now kept | `tests/fixtures/timesheet-duplicates.csv` | any |
 | `forecast-basic-now-2025-08-15.json` | `computeForecast(cfg, [])` with the clock at 2025-08-15 | `tests/fixtures/legacy-config-basic.json` | Europe/London (reference) |
 | `forecast-basic-now-2025-08-15.tz-America_New_York.json` | `computeForecast(cfg, [])` with the clock at 2025-08-15 | `tests/fixtures/legacy-config-basic.json` | America/New_York (KNOWN DEFECT C-01) |
 | `forecast-basic-now-2025-08-15.tz-Asia_Kolkata.json` | `computeForecast(cfg, [])` with the clock at 2025-08-15 | `tests/fixtures/legacy-config-basic.json` | Asia/Kolkata (KNOWN DEFECT C-01) |
