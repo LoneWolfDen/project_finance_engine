@@ -522,7 +522,7 @@ function render(){charts.forEach(c=>c.destroy());charts=[];const D=buildData();
   let navH='';
   TABS.forEach((t,i)=>{
     if(i===3||i===5||i===8)navH+='<span class="sep"></span>';
-    navH+=`<button class="${t.id===tab?'active':''}" onclick="show('${t.id}')">${t.l}</button>`;
+    navH+=`<button class="${t.id===tab?'active':''}" data-tab="${t.id}" onclick="show(this.dataset.tab)">${t.l}</button>`;
   });
   // Year filter as clickable buttons
   if(D.allYears.length>0){
@@ -544,12 +544,20 @@ function render(){charts.forEach(c=>c.destroy());charts=[];const D=buildData();
   const sampleSecs=sampleSections(D.cfg);
   const sampleBanner=sampleSecs.length?`<div class="sample-banner" style="padding:.7rem 1rem;background:#fff3cd;border:1px solid #f0ad4e;border-radius:8px;margin-bottom:1rem;font-size:.8rem;color:#664d03"><strong>⚠️ Contains SAMPLE data (not real):</strong> ${esc(sampleSecs.join(', '))}. Replace it on the 📤 Data &amp; Reports tab.</div>`:'';
   document.getElementById('app').innerHTML=`<div class="tab active">${sampleBanner}${rTab(tab,D)}</div>`;
+  afterRender(tab);
   setTimeout(()=>drawCharts(tab,D),60);
+}
+// SEC-004: values that must not pass through HTML are set after render (Settings textareas).
+let cfgTextareaValues={};
+function afterRender(t){
+  if(t==='config')Object.entries(cfgTextareaValues).forEach(([k,v])=>{const ta=document.getElementById('cfg_'+k);if(ta)ta.value=v;});
 }
 function setYear(y){selectedYear=y;selectedPoTeams=[];render();}
 // SEC-003: year buttons and PO-team checkboxes carry their value in data attributes; one listener each on #nav.
 document.getElementById('nav').addEventListener('click',e=>{const b=e.target.closest('[data-action="set-year"]');if(b)setYear(b.dataset.value);});
 document.getElementById('nav').addEventListener('change',e=>{const c=e.target.closest('[data-action="toggle-po-team"]');if(c)togglePoTeam(c.value,c.checked);});
+// SEC-004: scenario Load / Delete buttons carry the name in data-name; one listener on #app.
+document.getElementById('app').addEventListener('click',e=>{const b=e.target.closest('[data-action="load-scenario"],[data-action="delete-scenario"]');if(!b)return;if(b.dataset.action==='load-scenario')loadScenario(b.dataset.name);else deleteScenario(b.dataset.name);});
 function toggleSlicer(){document.getElementById('slicerDD').classList.toggle('open');}
 function filterSlicer(q){const opts=document.querySelectorAll('#slicerOpts label');opts.forEach(l=>{l.style.display=l.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});}
 function togglePoTeam(pt,checked){if(checked){if(!selectedPoTeams.includes(pt))selectedPoTeams.push(pt);}else{selectedPoTeams=selectedPoTeams.filter(t=>t!==pt);}render();}
@@ -793,11 +801,11 @@ function rRes(D){
   const resGroups={};res.forEach(r=>{const t=r.po_team||'Unknown';if(!resGroups[t])resGroups[t]=[];resGroups[t].push(r);});
   Object.entries(resGroups).forEach(([team,members])=>{
     const tid=team.replace(/[^a-zA-Z0-9]/g,'_');
-    h+=`<div class="box" style="margin-bottom:.8rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem"><h2 style="font-size:.85rem;margin:0">${team} <span style="font-size:.7rem;color:#888">(${members.length} rules, ${[...new Set(members.map(r=>r.name))].length} people)</span></h2><div><button class="btn btn-green" style="font-size:.65rem" onclick="addResRowTo('${tid}','${team}')">➕ Add</button> <button class="btn btn-blue" style="font-size:.65rem" onclick="saveResTable()">💾 Save</button></div></div>`;
+    h+=`<div class="box" style="margin-bottom:.8rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem"><h2 style="font-size:.85rem;margin:0">${esc(team)} <span style="font-size:.7rem;color:#888">(${members.length} rules, ${[...new Set(members.map(r=>r.name))].length} people)</span></h2><div><button class="btn btn-green" style="font-size:.65rem" data-tid="${tid}" data-team="${esc(team)}" onclick="addResRowTo(this.dataset.tid,this.dataset.team)">➕ Add</button> <button class="btn btn-blue" style="font-size:.65rem" onclick="saveResTable()">💾 Save</button></div></div>`;
     h+=`<div class="tw"><table class="resGrpTable" id="res_${tid}"><thead><tr><th data-sort="0" style="cursor:pointer">Name ⇅</th><th data-sort="1" style="cursor:pointer">EmplID ⇅</th><th data-sort="2" style="cursor:pointer">Role ⇅</th><th>Location</th><th>ProjectID</th><th data-sort="5" style="cursor:pointer">Start ⇅</th><th data-sort="6" style="cursor:pointer">End ⇅</th><th data-sort="7" style="cursor:pointer">Rate ⇅</th><th>HrMult</th><th data-sort="9" style="cursor:pointer">Alloc ⇅</th><th>Fc £/day</th><th>Del</th></tr></thead><tbody>`;
     members.forEach((r,i)=>{
       const dc=r.bill_rate*r.alloc*8;
-      h+=`<tr><td contenteditable="true" data-field="name">${r.name}</td><td contenteditable="true" data-field="empl_id">${r.empl_id||0}</td><td contenteditable="true" data-field="role">${r.role}</td><td contenteditable="true" data-field="location">${r.location}</td><td contenteditable="true" data-field="projectID">${r.projectID||''}</td><td contenteditable="true" data-field="start">${r.start}</td><td contenteditable="true" data-field="end">${r.end}</td><td contenteditable="true" data-field="bill_rate">${r.bill_rate}</td><td contenteditable="true" data-field="hour_mult">${r.hour_mult}</td><td contenteditable="true" data-field="alloc">${r.alloc}</td><td style="font-weight:600">${f(dc)}</td><td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td></tr>`;
+      h+=`<tr><td contenteditable="true" data-field="name">${esc(r.name)}</td><td contenteditable="true" data-field="empl_id">${esc(r.empl_id||0)}</td><td contenteditable="true" data-field="role">${esc(r.role)}</td><td contenteditable="true" data-field="location">${esc(r.location)}</td><td contenteditable="true" data-field="projectID">${esc(r.projectID||'')}</td><td contenteditable="true" data-field="start">${esc(r.start)}</td><td contenteditable="true" data-field="end">${esc(r.end)}</td><td contenteditable="true" data-field="bill_rate">${esc(r.bill_rate)}</td><td contenteditable="true" data-field="hour_mult">${esc(r.hour_mult)}</td><td contenteditable="true" data-field="alloc">${esc(r.alloc)}</td><td style="font-weight:600">${f(dc)}</td><td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td></tr>`;
     });
     h+=`</tbody></table></div></div>`;
   });
@@ -928,16 +936,16 @@ function rUtil(D){
     const team=members[0]?(members[0].po_team||''):'';
     const byPersonProj={};
     members.forEach(r=>{const key=`${r.empl_id}|${r.name}`;if(!byPersonProj[key])byPersonProj[key]=[];byPersonProj[key].push(r);});
-    h+=`<div class="grp-hdr" onclick="toggleGrp(this)">Project ${pid} · ${team} (${Object.keys(byPersonProj).length} people)</div><div class="grp-rows">`;
+    h+=`<div class="grp-hdr" onclick="toggleGrp(this)">Project ${esc(pid)} · ${esc(team)} (${Object.keys(byPersonProj).length} people)</div><div class="grp-rows">`;
     Object.entries(byPersonProj).forEach(([key,rules])=>{
       const [eid,name]=key.split('|');
-      h+=`<div class="tl-row"><span class="nm">${name}</span><div class="ba">`;
+      h+=`<div class="tl-row"><span class="nm">${esc(name)}</span><div class="ba">`;
       rules.forEach(r=>{
         const rs=new Date(r.start),re=new Date(r.end);
         if(isNaN(rs)||isNaN(re)||rs>re)return;
         const left=Math.max(0,(rs-tlStart)/tlSpan*100).toFixed(1);
         const width=Math.max(1,(re-rs)/tlSpan*100).toFixed(1);
-        h+=`<div class="br" style="left:${left}%;width:${width}%;background:${colors[pi%colors.length]};opacity:${0.6+r.alloc*0.4}" title="${r.role} · ${r.alloc*100}% · £${r.bill_rate}/hr">${r.alloc*100}% ${r.role||''}</div>`;
+        h+=`<div class="br" style="left:${left}%;width:${width}%;background:${colors[pi%colors.length]};opacity:${0.6+r.alloc*0.4}" title="${esc(r.role)} · ${r.alloc*100}% · £${esc(r.bill_rate)}/hr">${r.alloc*100}% ${esc(r.role||'')}</div>`;
       });
       h+=`</div></div>`;pi++;
     });
@@ -956,7 +964,7 @@ function rUtil(D){
     const color=!hasActuals?'color:#888':pct>100?'color:#c62828':pct>=70?'color:#2e7d32':'color:#e65100';
     const teams=[...new Set(p.rules.map(r=>r.po_team))].join(', ');
     const period=p.minDt?`${p.minDt} → ${p.maxDt}`:'—';
-    h+=`<tr><td>${p.name}</td><td>${p.empl_id}</td><td style="font-size:.65rem">${teams}</td><td>${Math.round(p.totalAvail)}</td><td>${Math.round(p.totalActual)}</td><td style="font-weight:700;${color}">${pct}%</td><td>${status}</td><td style="font-size:.65rem">${period}</td></tr>`;
+    h+=`<tr><td>${esc(p.name)}</td><td>${esc(p.empl_id)}</td><td style="font-size:.65rem">${esc(teams)}</td><td>${Math.round(p.totalAvail)}</td><td>${Math.round(p.totalActual)}</td><td style="font-weight:700;${color}">${pct}%</td><td>${status}</td><td style="font-size:.65rem">${esc(period)}</td></tr>`;
   });
   h+='</tbody></table></div>';
   if(!fullCfg.raw_actuals||!fullCfg.raw_actuals.length)h+='<p style="color:#888;font-size:.8rem;margin-top:1rem">⚠️ Upload timesheet actuals to see actual hours utilization.</p>';
@@ -971,7 +979,7 @@ function rUtil(D){
       const days=Math.max(1,Math.round((new Date(d.max)-new Date(d.min))/86400000));
       const weeks=Math.max(1,Math.ceil(days/7));
       const avgPerWeek=Math.round(d.rows/weeks*10)/10;
-      h+=`<tr><td>${pid}</td><td style="font-size:.65rem">${d.team}</td><td>${d.min}</td><td>${d.max}</td><td>${d.rows.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
+      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(d.min)}</td><td>${esc(d.max)}</td><td>${d.rows.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
     });
     h+='</tbody></table></div></div>';
   }
@@ -989,7 +997,7 @@ function rUtil(D){
     h+='<div class="tw"><table><thead><tr><th data-sort="0" style="cursor:pointer">Project ID ⇅</th><th>PO_Team</th><th data-sort="2" style="cursor:pointer">From ⇅</th><th data-sort="3" style="cursor:pointer">To ⇅</th><th data-sort="4" style="cursor:pointer">Rows ⇅</th><th>Weeks</th></tr></thead><tbody>';
     filteredProj.forEach(([pid,d])=>{
       const weeks=Math.max(1,Math.round((new Date(d.max)-new Date(d.min))/604800000)+1);
-      h+=`<tr><td>${pid}</td><td style="font-size:.65rem">${d.team}</td><td>${d.min}</td><td>${d.max}</td><td>${d.rows}</td><td>${weeks}</td></tr>`;
+      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(d.min)}</td><td>${esc(d.max)}</td><td>${d.rows}</td><td>${weeks}</td></tr>`;
     });
     h+='</tbody></table></div></div></div>';
   }
@@ -1012,7 +1020,7 @@ function rScen(D){
     h+='<div class="box"><h2>Saved Scenarios</h2><div class="tw"><table><thead><tr><th>Name</th><th>Resources</th><th>POs</th><th>Total Forecast</th><th>Saved</th><th>Actions</th></tr></thead><tbody>';
     names.forEach(n=>{
       const s=scenarios[n];
-      h+=`<tr><td><strong>${n}</strong></td><td>${(s.resources||[]).length}</td><td>${(s.po_details||[]).length}</td><td>${f(s._forecast||0)}</td><td style="font-size:.65rem">${s._saved||'—'}</td><td><button class="btn btn-blue" style="font-size:.65rem" onclick="loadScenario('${n.replace(/'/g,"\\'")}')">Load</button> <button class="btn btn-red" style="font-size:.65rem" onclick="deleteScenario('${n.replace(/'/g,"\\'")}')">🗑️</button></td></tr>`;
+      h+=`<tr><td><strong>${esc(n)}</strong></td><td>${(s.resources||[]).length}</td><td>${(s.po_details||[]).length}</td><td>${f(s._forecast||0)}</td><td style="font-size:.65rem">${esc(s._saved||'—')}</td><td><button class="btn btn-blue" style="font-size:.65rem" data-action="load-scenario" data-name="${esc(n)}">Load</button> <button class="btn btn-red" style="font-size:.65rem" data-action="delete-scenario" data-name="${esc(n)}">🗑️</button></td></tr>`;
     });
     h+='</tbody></table></div></div>';
   }
@@ -1021,10 +1029,10 @@ function rScen(D){
     h+='<div class="box"><h2>Compare Scenarios</h2>';
     h+='<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">';
     h+='<select id="scenA" style="padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem"><option value="_current">Current Working</option>';
-    names.forEach(n=>{h+=`<option value="${n}">${n}</option>`;});
+    names.forEach(n=>{h+=`<option value="${esc(n)}">${esc(n)}</option>`;});
     h+='</select><span style="font-weight:700">vs</span>';
     h+='<select id="scenB" style="padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem">';
-    names.forEach(n=>{h+=`<option value="${n}">${n}</option>`;});
+    names.forEach(n=>{h+=`<option value="${esc(n)}">${esc(n)}</option>`;});
     h+='</select><button class="btn btn-blue" onclick="compareScenarios()">Compare</button></div>';
     h+='<div id="scenCompare"></div></div>';
   }
@@ -1074,7 +1082,7 @@ function compareScenarios(){
   const fcA=computeForecast(cfgA,[]);
   const fcB=computeForecast(cfgB,[]);
   const resA=cfgA.resources||[],resB=cfgB.resources||[];
-  let h='<table><thead><tr><th>Metric</th><th>'+(aName==='_current'?'Current':aName)+'</th><th>'+bName+'</th><th>Difference</th></tr></thead><tbody>';
+  let h='<table><thead><tr><th>Metric</th><th>'+esc(aName==='_current'?'Current':aName)+'</th><th>'+esc(bName)+'</th><th>Difference</th></tr></thead><tbody>';
   const rows=[
     ['Resources',resA.length,resB.length],
     ['People',[...new Set(resA.map(r=>r.name))].length,[...new Set(resB.map(r=>r.name))].length],
@@ -1087,7 +1095,7 @@ function compareScenarios(){
     const diff=typeof a==='number'?a-b:0;
     const diffStr=typeof a==='number'?(diff>0?'+':'')+f(diff):'—';
     const color=diff>0?'color:#c62828':diff<0?'color:#2e7d32':'';
-    h+=`<tr><td><strong>${label}</strong></td><td>${typeof a==='number'?f(a):a}</td><td>${typeof b==='number'?f(b):b}</td><td style="${color};font-weight:600">${diffStr}</td></tr>`;
+    h+=`<tr><td><strong>${esc(label)}</strong></td><td>${typeof a==='number'?f(a):esc(a)}</td><td>${typeof b==='number'?f(b):esc(b)}</td><td style="${color};font-weight:600">${esc(diffStr)}</td></tr>`;
   });
   h+='</tbody></table>';
   // Resource diff
@@ -1096,8 +1104,8 @@ function compareScenarios(){
   const removed=[...namesA].filter(n=>!namesB.has(n));
   if(added.length||removed.length){
     h+='<div style="margin-top:.8rem;font-size:.78rem">';
-    if(added.length)h+=`<p style="color:#2e7d32">➕ In ${bName} only: ${added.join(', ')}</p>`;
-    if(removed.length)h+=`<p style="color:#c62828">➖ In ${aName==='_current'?'Current':aName} only: ${removed.join(', ')}</p>`;
+    if(added.length)h+=`<p style="color:#2e7d32">➕ In ${esc(bName)} only: ${esc(added.join(', '))}</p>`;
+    if(removed.length)h+=`<p style="color:#c62828">➖ In ${esc(aName==='_current'?'Current':aName)} only: ${esc(removed.join(', '))}</p>`;
     h+='</div>';
   }
   document.getElementById('scenCompare').innerHTML=h;
@@ -1131,11 +1139,11 @@ function rTL(D){
   Object.entries(groups).forEach(([team,members])=>{
     const byPerson={};
     members.forEach(r=>{const key=`${r.empl_id}|${r.name}`;if(!byPerson[key])byPerson[key]=[];byPerson[key].push(r);});
-    h+=`<div class="grp-hdr" onclick="toggleGrp(this)">${team} (${Object.keys(byPerson).length} people)</div><div class="grp-rows">`;
+    h+=`<div class="grp-hdr" onclick="toggleGrp(this)">${esc(team)} (${Object.keys(byPerson).length} people)</div><div class="grp-rows">`;
     let pi=0;
     Object.entries(byPerson).forEach(([key,rules])=>{
       const [eid,name]=key.split('|');
-      h+=`<div class="tl-row"><span class="nm">${name} (${eid})</span><div class="ba">`;
+      h+=`<div class="tl-row"><span class="nm">${esc(name)} (${esc(eid)})</span><div class="ba">`;
       rules.forEach(r=>{
         const rs=new Date(r.start),re=new Date(r.end);
         if(isNaN(rs)||isNaN(re)||rs>re)return;
@@ -1175,10 +1183,10 @@ function rTLInline(D){
   Object.entries(groups).forEach(([team,members])=>{
     const byPerson={};
     members.forEach(r=>{const key=`${r.empl_id}|${r.name}`;if(!byPerson[key])byPerson[key]=[];byPerson[key].push(r);});
-    h+=`<div style="font-weight:700;font-size:.75rem;margin-top:.5rem;color:#1a1a2e">${team} (${Object.keys(byPerson).length} people)</div>`;
+    h+=`<div style="font-weight:700;font-size:.75rem;margin-top:.5rem;color:#1a1a2e">${esc(team)} (${Object.keys(byPerson).length} people)</div>`;
     Object.entries(byPerson).forEach(([key,rules])=>{
       const [eid,name]=key.split('|');
-      h+=`<div class="tl-row"><span class="nm">${name}</span><div class="ba">`;
+      h+=`<div class="tl-row"><span class="nm">${esc(name)}</span><div class="ba">`;
       rules.forEach(r=>{
         const rs=new Date(r.start),re=new Date(r.end);
         if(isNaN(rs)||isNaN(re)||rs>re)return;
@@ -1238,7 +1246,7 @@ function rActData(D){
       const days=Math.max(1,Math.round((new Date(d.max)-new Date(d.min))/86400000));
       const weeks=Math.max(1,Math.ceil(days/7));
       const avgPerWeek=Math.round(d.count/weeks*10)/10;
-      h+=`<tr><td>${pid}</td><td style="font-size:.65rem">${d.team}</td><td>${d.min}</td><td>${d.max}</td><td>${d.count.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
+      h+=`<tr><td>${esc(pid)}</td><td style="font-size:.65rem">${esc(d.team)}</td><td>${esc(d.min)}</td><td>${esc(d.max)}</td><td>${d.count.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
     });
     h+='</tbody></table></div></div>';
   }
@@ -1263,7 +1271,7 @@ function rActData(D){
   });
   Object.entries(monthBuckets).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).forEach(([m,v])=>{
     cum+=v.cost;
-    h+=`<tr><td><strong>${m}</strong></td><td>${f(v.cost)}</td><td>${v.rows}</td><td>${f(poVal-cum)}</td></tr>`;
+    h+=`<tr><td><strong>${esc(m)}</strong></td><td>${f(v.cost)}</td><td>${v.rows}</td><td>${f(poVal-cum)}</td></tr>`;
   });
   h+='</tbody></table></div></div></div>';
 
@@ -1277,7 +1285,7 @@ function rActData(D){
       const rate=rule?rule.bill_rate:0;const hm=rule?rule.hour_mult:1;
       const reg=parseFloat(row['Regular Hours']||0);const ot=parseFloat(row['Overtime Hours']||0);
       const cost=(reg*hm*rate)+(ot*hm*rate);
-      h+=`<tr><td>${row['Empl Name']||''}</td><td>${eid}</td><td>${dt}</td><td>${row['Project ID']||''}</td><td>${reg}</td><td>${ot}</td><td>£${rate}×${hm}</td><td>${f(cost)}</td></tr>`;
+      h+=`<tr><td>${esc(row['Empl Name']||'')}</td><td>${esc(eid)}</td><td>${esc(dt)}</td><td>${esc(row['Project ID']||'')}</td><td>${esc(reg)}</td><td>${esc(ot)}</td><td>£${esc(rate)}×${esc(hm)}</td><td>${f(cost)}</td></tr>`;
     });
     h+='</tbody></table></div></div>';
   }
@@ -1308,7 +1316,7 @@ function rActDataInline(D){
   if(filtered.length){
     h+='<div class="tw" style="margin-top:.5rem"><table><thead><tr><th>Name</th><th>Empl ID</th><th>Date</th><th>Project</th><th>Reg Hrs</th><th>OT Hrs</th></tr></thead><tbody>';
     filtered.slice(0,10).forEach(row=>{
-      h+=`<tr><td>${row['Empl Name']||''}</td><td>${row['Empl ID']||''}</td><td>${row['Reported Dt']||''}</td><td>${row['Project ID']||''}</td><td>${row['Regular Hours']||0}</td><td>${row['Overtime Hours']||0}</td></tr>`;
+      h+=`<tr><td>${esc(row['Empl Name']||'')}</td><td>${esc(row['Empl ID']||'')}</td><td>${esc(row['Reported Dt']||'')}</td><td>${esc(row['Project ID']||'')}</td><td>${esc(row['Regular Hours']||0)}</td><td>${esc(row['Overtime Hours']||0)}</td></tr>`;
     });
     h+='</tbody></table></div>';
     if(filtered.length>10)h+=`<p style="font-size:.7rem;color:#888;margin-top:.3rem">Showing 10 of ${filtered.length} rows</p>`;
@@ -1428,10 +1436,10 @@ function rPO(D){
 }
 function rFX(D){
   let h='<div class="box"><h2>💱 FX Rates</h2><div class="tw"><table><thead><tr><th>Currency</th><th>Effective</th><th>Rate</th></tr></thead><tbody>';
-  D.cfg.fx_rates.forEach(r=>{h+=`<tr><td>${r.code}</td><td>${r.effective}</td><td>${r.rate}</td></tr>`;});
+  D.cfg.fx_rates.forEach(r=>{h+=`<tr><td>${esc(r.code)}</td><td>${esc(r.effective)}</td><td>${esc(r.rate)}</td></tr>`;});
   h+='</tbody></table></div></div>';
   h+='<div class="box"><h2>⏱️ OT Params</h2><div class="tw"><table><thead><tr><th>Type</th><th>Effective</th><th>Multiplier</th><th>TRC</th></tr></thead><tbody>';
-  D.cfg.ot_params.forEach(r=>{h+=`<tr><td>${r.type}</td><td>${r.effective}</td><td><strong>${r.multiplier}x</strong></td><td>${r.trc||'—'}</td></tr>`;});
+  D.cfg.ot_params.forEach(r=>{h+=`<tr><td>${esc(r.type)}</td><td>${esc(r.effective)}</td><td><strong>${esc(r.multiplier)}x</strong></td><td>${esc(r.trc||'—')}</td></tr>`;});
   h+='</tbody></table></div></div>';return h;
 }
 
@@ -1583,7 +1591,7 @@ async function processUpload(data,type){
       });
       if(rowErrs.length>10)uploadErrs.push(...rowErrs.slice(0,10),`...and ${rowErrs.length-10} more row errors`);
       else uploadErrs.push(...rowErrs);
-      if(uploadErrs.length){toast('✗ Upload validation failed: '+uploadErrs.slice(0,3).join('; '),false);document.getElementById('uploadPreview').innerHTML='<div class="val-err"><strong>⚠️ Upload Errors ('+uploadErrs.length+'):</strong><ul>'+uploadErrs.map(e=>'<li>'+e+'</li>').join('')+'</ul></div>';return;}
+      if(uploadErrs.length){toast('✗ Upload validation failed: '+uploadErrs.slice(0,3).join('; '),false);document.getElementById('uploadPreview').innerHTML='<div class="val-err"><strong>⚠️ Upload Errors ('+uploadErrs.length+'):</strong><ul>'+uploadErrs.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul></div>';return;}
       // Normalize resource data
       const resources=data.map(r=>{
         const startRaw=r.start||r.RateEffectiveDt||'';
@@ -1627,10 +1635,10 @@ async function processUpload(data,type){
       let rpt='<div class="box"><h2>📋 Upload Report</h2>';
       rpt+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
       rpt+='<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Column Mapping</h3><table style="font-size:.7rem"><tbody>';
-      Object.entries(mapped).forEach(([field,src])=>{const found=cols.find(c=>src.split('/').some(s=>c.toLowerCase().includes(s.toLowerCase())));rpt+=`<tr><td style="font-weight:600">${field}</td><td>${found?'✅ '+found:'❌ not found'}</td></tr>`;});
+      Object.entries(mapped).forEach(([field,src])=>{const found=cols.find(c=>src.split('/').some(s=>c.toLowerCase().includes(s.toLowerCase())));rpt+=`<tr><td style="font-weight:600">${esc(field)}</td><td>${found?'✅ '+esc(found):'❌ not found'}</td></tr>`;});
       rpt+='</tbody></table></div>';
-      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Valid resources: ${resources.length}</li><li>Unique people: ${[...new Set(resources.map(r=>r.name))].length}</li><li>Date range: ${resources.length?resources.reduce((m,r)=>r.start<m?r.start:m,resources[0].start):'-'} → ${resources.length?resources.reduce((m,r)=>r.end>m?r.end:m,resources[0].end):'-'}</li><li>Duplicates: ${dupes.length}</li></ul>`;
-      if(warnings.length)rpt+='<div class="val-err" style="margin-top:.5rem"><ul>'+warnings.map(w=>'<li>'+w+'</li>').join('')+'</ul></div>';
+      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Valid resources: ${resources.length}</li><li>Unique people: ${[...new Set(resources.map(r=>r.name))].length}</li><li>Date range: ${esc(resources.length?resources.reduce((m,r)=>r.start<m?r.start:m,resources[0].start):'-')} → ${esc(resources.length?resources.reduce((m,r)=>r.end>m?r.end:m,resources[0].end):'-')}</li><li>Duplicates: ${dupes.length}</li></ul>`;
+      if(warnings.length)rpt+='<div class="val-err" style="margin-top:.5rem"><ul>'+warnings.map(w=>'<li>'+esc(w)+'</li>').join('')+'</ul></div>';
       rpt+='</div></div></div>';
       document.getElementById('uploadPreview').innerHTML=rpt;
       setTimeout(render,400);
@@ -1658,7 +1666,7 @@ async function processUpload(data,type){
       });
       if(rowErrs.length>10)uploadErrs.push(...rowErrs.slice(0,10),`...and ${rowErrs.length-10} more row errors`);
       else uploadErrs.push(...rowErrs);
-      if(uploadErrs.length){toast('✗ Upload validation failed: '+uploadErrs.slice(0,3).join('; '),false);document.getElementById('uploadPreview').innerHTML='<div class="val-err"><strong>⚠️ Upload Errors ('+uploadErrs.length+'):</strong><ul>'+uploadErrs.map(e=>'<li>'+e+'</li>').join('')+'</ul></div>';return;}
+      if(uploadErrs.length){toast('✗ Upload validation failed: '+uploadErrs.slice(0,3).join('; '),false);document.getElementById('uploadPreview').innerHTML='<div class="val-err"><strong>⚠️ Upload Errors ('+uploadErrs.length+'):</strong><ul>'+uploadErrs.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul></div>';return;}
       // Duplicate detection for actuals
       // DAT-006: exact duplicates are removed on append; rows that only share employee+date+project are kept.
       const exactKeys=new Set(),sameKeyRows={};
@@ -1692,9 +1700,9 @@ async function processUpload(data,type){
       let rpt='<div class="box"><h2>📋 Upload Report</h2>';
       rpt+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
       rpt+='<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Columns Detected</h3><ul style="font-size:.72rem;margin-left:1rem">';
-      cols.forEach(c=>{rpt+=`<li>✅ ${c}</li>`;});
+      cols.forEach(c=>{rpt+=`<li>✅ ${esc(c)}</li>`;});
       rpt+='</ul></div>';
-      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Unique employees: ${new Set(data.map(r=>r['Empl ID'])).size}</li><li>Date range: ${dateRange[0]||'?'} → ${dateRange[dateRange.length-1]||'?'}</li><li>Exact duplicate rows: ${exactDupes}</li><li>Projects: ${new Set(data.map(r=>r['Project ID'])).size}</li></ul>`;
+      rpt+=`<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Unique employees: ${new Set(data.map(r=>r['Empl ID'])).size}</li><li>Date range: ${esc(dateRange[0]||'?')} → ${esc(dateRange[dateRange.length-1]||'?')}</li><li>Exact duplicate rows: ${exactDupes}</li><li>Projects: ${new Set(data.map(r=>r['Project ID'])).size}</li></ul>`;
       if(dupeText)rpt+=`<div class="val-err" style="margin-top:.5rem">⚠️ ${dupeText}</div>`;
       rpt+='</div></div></div>';
       document.getElementById('uploadPreview').innerHTML=rpt;
@@ -1775,10 +1783,10 @@ function parseSolutionExcel(){
       if(res.name)resources.push(res);
     }
     // Show preview
-    let h=`<div class="box" style="margin-top:.5rem"><h2>🧠 Parsed: ${resources.length} resources from "${bestSheet}" (header row ${bestHeaderRow+1})</h2>`;
-    h+=`<p style="font-size:.72rem;color:#666">Matched ${bestScore} columns: ${Object.keys(bestMapping).join(', ')}</p>`;
+    let h=`<div class="box" style="margin-top:.5rem"><h2>🧠 Parsed: ${resources.length} resources from "${esc(bestSheet)}" (header row ${bestHeaderRow+1})</h2>`;
+    h+=`<p style="font-size:.72rem;color:#666">Matched ${bestScore} columns: ${esc(Object.keys(bestMapping).join(', '))}</p>`;
     h+='<div class="tw" style="max-height:200px;overflow:auto"><table><thead><tr><th>Name</th><th>EmplID</th><th>Role</th><th>Start</th><th>End</th><th>Rate</th><th>Alloc</th><th>PO_Team</th></tr></thead><tbody>';
-    resources.slice(0,15).forEach(r=>{h+=`<tr><td>${r.name}</td><td>${r.empl_id}</td><td>${r.role}</td><td>${r.start}</td><td>${r.end}</td><td>${r.bill_rate}</td><td>${r.alloc}</td><td>${r.po_team}</td></tr>`;});
+    resources.slice(0,15).forEach(r=>{h+=`<tr><td>${esc(r.name)}</td><td>${esc(r.empl_id)}</td><td>${esc(r.role)}</td><td>${esc(r.start)}</td><td>${esc(r.end)}</td><td>${esc(r.bill_rate)}</td><td>${esc(r.alloc)}</td><td>${esc(r.po_team)}</td></tr>`;});
     h+='</tbody></table></div>';
     if(resources.length>15)h+=`<p style="font-size:.7rem;color:#888">Showing 15 of ${resources.length}</p>`;
     h+=`<div style="margin-top:.5rem;display:flex;gap:.5rem"><button class="btn btn-green" onclick="applySolutionResources()">✅ Apply to Dashboard</button><button class="btn btn-orange" onclick="document.getElementById('solutionPreview').innerHTML=''">Cancel</button></div></div>`;
@@ -2046,8 +2054,10 @@ function rCfg(D){
   h+='</div><div id="cfgImportStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
   h+='</div></details>';
   const sections=[{key:'po_details',label:'PO Details',data:D.cfg.po_details},{key:'resources',label:'Resources ('+D.cfg.resources.length+')',data:D.cfg.resources,tall:true},{key:'invoices',label:'Invoices ('+(D.cfg.invoices||[]).length+')',data:D.cfg.invoices||[]},{key:'fx_rates',label:'FX Rates',data:D.cfg.fx_rates},{key:'ot_params',label:'OT Params',data:D.cfg.ot_params},{key:'expenses',label:'Expenses',data:D.cfg.expenses},{key:'actuals_monthly',label:'Monthly Actuals',data:D.cfg.actuals_monthly,tall:true}];
+  cfgTextareaValues={};
   sections.forEach((s,i)=>{
-    h+=`<details class="cfg-section"${i===0?' open':''}><summary>${s.label}</summary><div class="inner"><textarea id="cfg_${s.key}"${s.tall?' style="min-height:350px"':''}>${JSON.stringify(s.data,null,2)}</textarea><button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button></div></details>`;
+    cfgTextareaValues[s.key]=JSON.stringify(s.data,null,2);
+    h+=`<details class="cfg-section"${i===0?' open':''}><summary>${esc(s.label)}</summary><div class="inner"><textarea id="cfg_${s.key}"${s.tall?' style="min-height:350px"':''}></textarea><button class="btn btn-green" data-key="${s.key}" onclick="doSave(this.dataset.key)">💾 Save ${esc(s.label)}</button></div></details>`;
   });
   h+='<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner"><p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p><button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button><p style="font-size:.8rem;margin:1rem 0 .5rem">Reset everything to factory defaults (PIN required):</p><button class="btn btn-red" onclick="promptFactoryReset()">⚠️ Factory Reset</button></div></details>';
   h+='<details class="cfg-section" style="margin-top:1.5rem;border:1px solid #c5cae9"><summary style="background:#e8eaf6;font-size:.9rem">📖 README — Definitions & Logic</summary><div class="inner" style="font-size:.75rem;line-height:1.6;color:#333">';
@@ -2082,7 +2092,7 @@ function doSave(key){
   let val;
   try{val=JSON.parse(raw);}catch(e){toast('✗ Invalid JSON: '+e.message,false);return;}
   const errs=validateData(key,val);
-  if(errs.length){toast('✗ Validation failed — see errors below',false);document.getElementById('cfg_'+key).insertAdjacentHTML('afterend','<div class="val-err"><strong>⚠️ Validation Errors:</strong><ul>'+errs.map(e=>'<li>'+e+'</li>').join('')+'</ul></div>');return;}
+  if(errs.length){toast('✗ Validation failed — see errors below',false);document.getElementById('cfg_'+key).insertAdjacentHTML('afterend','<div class="val-err"><strong>⚠️ Validation Errors:</strong><ul>'+errs.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul></div>');return;}
   // Clear previous errors
   const prev=document.getElementById('cfg_'+key).parentElement.querySelector('.val-err');if(prev)prev.remove();
   const cfg=loadWork();cfg[key]=val;markReal(cfg,key);saveWork(cfg);toast('✓ Saved '+key);setTimeout(render,400);
@@ -2196,12 +2206,12 @@ function cfgImportFile(){
   if(!file){status.innerHTML='<span style="color:#c62828">Select a file first</span>';return;}
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='json'){
-    file.text().then(t=>{try{const d=JSON.parse(t);const ta=document.getElementById('cfg_'+target);if(ta){ta.value=JSON.stringify(d,null,2);status.innerHTML=`<span style="color:#2e7d32">✅ ${Array.isArray(d)?d.length+' rows':'object'} loaded into ${target}. Click Save to apply.</span>`;}else{status.innerHTML='<span style="color:#c62828">Open the "'+target+'" section first</span>';}}catch(e){status.innerHTML='<span style="color:#c62828">Invalid JSON: '+e.message+'</span>';}});
+    file.text().then(t=>{try{const d=JSON.parse(t);const ta=document.getElementById('cfg_'+target);if(ta){ta.value=JSON.stringify(d,null,2);status.innerHTML=`<span style="color:#2e7d32">✅ ${Array.isArray(d)?d.length+' rows':'object'} loaded into ${esc(target)}. Click Save to apply.</span>`;}else{status.innerHTML='<span style="color:#c62828">Open the "'+esc(target)+'" section first</span>';}}catch(e){status.innerHTML='<span style="color:#c62828">Invalid JSON: '+esc(e.message)+'</span>';}});
   }else if(ext==='csv'){
-    file.text().then(t=>{const lines=t.trim().split('\n');const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));const data=lines.slice(1).filter(l=>l.trim()).map(line=>{const vals=line.split(',').map(v=>v.trim().replace(/"/g,''));const obj={};headers.forEach((h,i)=>{const v=vals[i]||'';obj[h]=isNaN(v)||v===''?v:Number(v);});return obj;});const ta=document.getElementById('cfg_'+target);if(ta){ta.value=JSON.stringify(data,null,2);status.innerHTML=`<span style="color:#2e7d32">✅ ${data.length} rows from CSV loaded into ${target}. Click Save to apply.</span>`;}else{status.innerHTML='<span style="color:#c62828">Open the "'+target+'" section first</span>';}});
+    file.text().then(t=>{const lines=t.trim().split('\n');const headers=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));const data=lines.slice(1).filter(l=>l.trim()).map(line=>{const vals=line.split(',').map(v=>v.trim().replace(/"/g,''));const obj={};headers.forEach((h,i)=>{const v=vals[i]||'';obj[h]=isNaN(v)||v===''?v:Number(v);});return obj;});const ta=document.getElementById('cfg_'+target);if(ta){ta.value=JSON.stringify(data,null,2);status.innerHTML=`<span style="color:#2e7d32">✅ ${data.length} rows from CSV loaded into ${esc(target)}. Click Save to apply.</span>`;}else{status.innerHTML='<span style="color:#c62828">Open the "'+esc(target)+'" section first</span>';}});
   }else if(ext==='xlsx'||ext==='xls'){
-    file.arrayBuffer().then(buf=>{const wb=XLSX.read(buf);const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws);const ta=document.getElementById('cfg_'+target);if(ta){ta.value=JSON.stringify(data,null,2);status.innerHTML=`<span style="color:#2e7d32">✅ ${data.length} rows from sheet "${wb.SheetNames[0]}" loaded into ${target}. Click Save to apply.</span>`;}else{status.innerHTML='<span style="color:#c62828">Open the "'+target+'" section first</span>';}});
-  }else{status.innerHTML='<span style="color:#c62828">Unsupported file type: .'+ext+'</span>';}
+    file.arrayBuffer().then(buf=>{const wb=XLSX.read(buf);const ws=wb.Sheets[wb.SheetNames[0]];const data=XLSX.utils.sheet_to_json(ws);const ta=document.getElementById('cfg_'+target);if(ta){ta.value=JSON.stringify(data,null,2);status.innerHTML=`<span style="color:#2e7d32">✅ ${data.length} rows from sheet "${esc(wb.SheetNames[0])}" loaded into ${esc(target)}. Click Save to apply.</span>`;}else{status.innerHTML='<span style="color:#c62828">Open the "'+esc(target)+'" section first</span>';}});
+  }else{status.innerHTML='<span style="color:#c62828">Unsupported file type: .'+esc(ext)+'</span>';}
 }
 function validateData(key,data){
   const errs=[];
