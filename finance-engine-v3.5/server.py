@@ -262,9 +262,15 @@ class Handler(BaseHTTPRequestHandler):
         return
 
 
+class LocalServer(HTTPServer):
+    # The page opens many connections at once (one per <script>); the default queue of 5
+    # made the OS refuse some of them, so scripts sometimes failed to load (L-03).
+    request_queue_size = 64
+
+
 def make_server(host=None, port=None):
     """Create the server. Tests pass port 0 to get a free port."""
-    server = HTTPServer((HOST if host is None else host, PORT if port is None else port), Handler)
+    server = LocalServer((HOST if host is None else host, PORT if port is None else port), Handler)
     server.allowed_hosts = allowed_hosts(server.server_address[1])
     return server
 

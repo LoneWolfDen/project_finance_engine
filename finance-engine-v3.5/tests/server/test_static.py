@@ -6,6 +6,7 @@ Run from finance-engine-v3.5/:
 
 import hashlib
 import re
+import socket
 import unittest
 
 from test_server import ServerTestCase, server
@@ -116,3 +117,26 @@ class VendoredLibraryTests(ServerTestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ParallelConnectionTests(ServerTestCase):
+    """L-03: a page opens many connections at once (one per script); none may be refused."""
+
+    def test_twenty_simultaneous_connections_are_all_served(self):
+        socks = [socket.create_connection(('127.0.0.1', self.port), timeout=10) for _ in range(20)]
+        try:
+            for s in socks:
+                s.sendall(f'GET /app/cfe.js HTTP/1.1\r\nHost: localhost:{self.port}\r\nConnection: close\r\n\r\n'.encode())
+            statuses = []
+            for s in socks:
+                data = b''
+                while True:
+                    chunk = s.recv(65536)
+                    if not chunk:
+                        break
+                    data += chunk
+                statuses.append(data.split(b'\r\n', 1)[0])
+        finally:
+            for s in socks:
+                s.close()
+        self.assertEqual(statuses, [b'HTTP/1.0 200 OK'] * 20)
