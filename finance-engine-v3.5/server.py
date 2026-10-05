@@ -214,7 +214,11 @@ class Handler(BaseHTTPRequestHandler):
         # The Ollama proxy is experimental and off unless ENABLE_OLLAMA=1 (CHT-002).
         chat_enabled = os.environ.get('ENABLE_OLLAMA') == '1'
         if self.path not in ('/api/config', '/api/config/master') and not (chat_enabled and self.path == '/api/chat'):
-            self.send_error_json(404)
+            try:
+                length = max(0, int(self.headers.get('Content-Length', 0)))
+            except ValueError:
+                length = 0
+            self._reject(404, length)  # read the body first, or the client may see a connection reset
             return
         body = self._check_post()
         if body is None:
