@@ -8,6 +8,7 @@
   var APP_SCRIPTS = [
     'app/continuum-core/CORE_VERSION.js',
     'app/continuum-core/html.js',
+    'app/continuum-core/storage.js',
     'app/cfe.js',
     'app/calc/dates.js',
     'app/data/calendars.js',
@@ -21,6 +22,7 @@
   var SUITES = [
     'unit/harness.test.js',
     'unit/html.test.js',
+    'unit/core-storage.test.js',
     'unit/calc-dates.test.js',
     'unit/data-calendars.test.js',
     'unit/calc-calendar.test.js',
