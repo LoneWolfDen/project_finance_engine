@@ -9,4 +9,3 @@ Last updated: 2026-10-05 (after REP-001; F1.1–F1.3 done). Maximum 15 entries. 
 | 3 | BLD-001 | On the work laptop, open the app with DevTools → Network: no CDN hosts | Owner (later: DEC-038) |
 | 4 | BLD-002 | Open an Excel export from the app in Microsoft Excel: no repair prompt | Owner (can be done on the Mac if Excel is installed) |
 | 5 | BAS-002 | Record the probe results; append DEC-020/023/026 outcomes as Proposed | Model |
-| 6 | IMP-003 | Phase 1 (F1.5) | Model |

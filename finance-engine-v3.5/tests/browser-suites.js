@@ -21,7 +21,16 @@
     'app/calc/forecast.js',
     'app/calc/actuals.js',
     'app/data/schema.js',
-    'app/data/migrate.js'
+    'app/data/migrate.js',
+    'app/data/mapping.js',
+    'app/data/mappings/peoplesoft-timesheet-v1.js',
+    'app/data/mappings/resource-rules-v1.js',
+    'app/data/mappings/po-details-v1.js',
+    'app/data/mappings/invoices-v1.js',
+    'app/data/mappings/expenses-v1.js',
+    'app/data/mappings/fx-rates-v1.js',
+    'app/data/mappings/ot-rules-v1.js',
+    'app/data/mappings/references-crosswalk-v1.js'
   ];
 
   // Browser-safe test files.
@@ -40,7 +49,8 @@
     'unit/calc-forecast.test.js',
     'unit/calc-actuals.test.js',
     'unit/data-schema.test.js',
-    'unit/data-migrate.test.js'
+    'unit/data-migrate.test.js',
+    'unit/data-mapping.test.js'
   ];
 
   function loadScript(src) {
