@@ -9,8 +9,11 @@
 //   4. applies the mapping (CFE.data.mapping.apply);
 //   5. shows a card: rows read and used, errors (blocking), warnings (to acknowledge), the first 10
 //      mapped rows (escaped) and the provenance record.
-// Everything stays in memory on this page. Nothing is stored: leaving the page discards it
-// (saving a draft arrives in IMP-008).
+// Previews stay in memory: leaving the page discards them. **Keep in draft** stores the mapped
+// records and provenance in the browser (CFE.store.draft, IMP-008); the page restores that draft on
+// load ("Draft from … restored") and offers **Discard draft**. Keep needs every file free of errors
+// (remove a file to drop it) and its warnings acknowledged. If storage is full, the page says so and
+// offers **Save draft to file**; **Load draft from file…** reads such a file back.
 //
 // Pure parts, also used by tests:
 //   CFE.views.publish.parse({name, bytes, sheet}) → {parser, parserVersion, sheets, sheet, header, rows, problems}
@@ -150,6 +153,32 @@
   // ─── page ──────────────────────────────────────────────────────────────
   function H() { return Continuum.html; }
 
+  function when(utc) {
+    var d = CFE.calc && CFE.calc.dates ? CFE.calc.dates.toDisplayDate(utc) : String(utc).slice(0, 10);
+    return d + ' ' + String(utc).slice(11, 16) + ' UTC';
+  }
+
+  // Why Keep in draft is not possible yet, or '' when it is.
+  function keepBlocker() {
+    if (!files.length) return 'Choose files first.';
+    var bad = files.filter(function (f) { return !f.result || f.result.errors.length || (f.parsed.problems || []).length; });
+    if (bad.length) return 'Fix or remove the files with errors: ' + bad.map(function (f) { return f.name; }).join(', ') + '.';
+    var unread = files.filter(function (f) { return f.result.warnings.length && !f.acknowledged; });
+    if (unread.length) return 'Tick "I have read these warnings" for: ' + unread.map(function (f) { return f.name; }).join(', ') + '.';
+    return '';
+  }
+
+  function draftHtml(state) {
+    var t = H().t, raw = H().raw, d = state.draft;
+    if (!d) return '';
+    var counts = Object.keys(d.records).sort().map(function (e) { return e.replace(/_/g, ' ') + ': ' + d.records[e].length; }).join(', ');
+    return String(t`<section class="draft" aria-label="Draft">
+<p><strong>${state.draftNote || 'Draft from ' + when(d.saved_utc)}</strong>: ${d.files.length} ${d.files.length === 1 ? 'file' : 'files'}${raw(counts ? String(t`; ${counts}`) : '')}.</p>
+<ul>${raw(d.files.map(function (f) { return String(t`<li>${f.name} · ${f.mapping_profile} · ${f.rows_used} of ${f.rows_read} rows</li>`); }).join(''))}</ul>
+<p><button type="button" class="btn btn-danger" data-action="discard-draft">Discard draft</button> The draft holds the imported rows on this computer until you discard it.</p>
+</section>`);
+  }
+
   function cardHtml(f, i) {
     var t = H().t, raw = H().raw;
     var p = f.parsed, r = f.result;
@@ -162,6 +191,7 @@
     }).join(''))}</select></label>` : '';
     var errors = (p.problems || []).concat(r ? r.errors.map(function (e) { return 'Row ' + e.row + (e.column ? ', ' + e.column : '') + ': ' + e.message; }) : []);
     var warnings = r ? r.warnings.map(function (w) { return w.message; }) : [];
+    if (!p.rows) p.rows = [];
     var status = !r ? 'Not imported' : errors.length ? errors.length + (errors.length === 1 ? ' error' : ' errors') + ' (rows with errors are left out)' : 'No errors';
     var cols = r && r.records.length ? Object.keys(f.profile.columns) : [];
     var preview = r && r.records.length ? t`<div class="tw"><table class="simple preview"><thead><tr>${raw(cols.map(function (c) { return String(t`<th>${c}</th>`); }).join(''))}</tr></thead><tbody>${raw(r.records.slice(0, PREVIEW_ROWS).map(function (rec) {
@@ -170,7 +200,7 @@
     var prov = f.provenance;
     return String(t`<section class="card" aria-label="${f.name}">
 <h2>${f.name}</h2>
-<p>${profileSelect}${sheetSelect}</p>
+<p>${profileSelect}${sheetSelect}<button type="button" class="btn btn-small" data-action="remove-file" data-file="${i}">Remove</button></p>
 <p><strong>${status}.</strong> Rows read: ${p.rows.length}. Rows used: ${r ? r.records.length : 0}.${raw(r && r.droppedColumns.length ? String(t` Columns not imported (not needed): ${r.droppedColumns.join(', ')}.`) : '')}</p>
 ${raw(errors.length ? String(t`<details class="errors" open><summary>Errors (${errors.length})</summary><ul>${raw(errors.slice(0, SHOWN_ERRORS).map(function (e) { return String(t`<li>${e}</li>`); }).join(''))}</ul>${raw(errors.length > SHOWN_ERRORS ? String(t`<p>…and ${errors.length - SHOWN_ERRORS} more.</p>`) : '')}</details>`) : '')}
 ${raw(warnings.length ? String(t`<div class="warnings"><ul>${raw(warnings.map(function (w) { return String(t`<li>${w}</li>`); }).join(''))}</ul><label><input type="checkbox" data-action="acknowledge" data-file="${i}"${raw(f.acknowledged ? ' checked' : '')}> I have read these warnings</label></div>`) : '')}
@@ -181,12 +211,26 @@ ${raw(f.provenanceError ? String(t`<p class="errors">Provenance could not be rec
   }
 
   function pageHtml(state) {
-    var t = H().t, raw = H().raw;
+    var t = H().t, raw = H().raw, blocker = keepBlocker();
     return t`<h1>Publish</h1>
-<p>Choose the files exported from PeopleSoft and the other sources. Each file is checked and previewed here. Nothing is saved yet: leaving this page discards the preview.</p>
+<p>Choose the files exported from PeopleSoft and the other sources. Each file is checked and previewed here. Nothing is saved until you click <strong>Keep in draft</strong>: leaving this page discards the preview.</p>
+${raw(draftHtml(state))}
 <div class="dropzone" data-action="drop-files"><p><label class="btn">Choose files…<input type="file" multiple accept=".csv,.xlsx,.json" class="visually-hidden" data-action="pick-files"></label> or drop files here (.csv, .xlsx, .json).</p></div>
+<p class="draft-file"><label class="btn btn-small">Load draft from file…<input type="file" accept=".json" class="visually-hidden" data-action="load-draft-file"></label></p>
 ${raw(state.busy ? '<p role="status">Reading files…</p>' : '')}
-${raw(files.map(cardHtml).join(''))}`;
+${raw(files.map(cardHtml).join(''))}
+${raw(files.length ? String(t`<p class="keep"><button type="button" class="btn" data-action="keep-draft"${raw(blocker ? ' disabled' : '')}>Keep in draft</button> ${blocker}</p>`) : '')}
+<p class="message" role="status">${state.message || ''}</p>
+${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved in the browser (${state.saveFailed}). Save it to a file instead, and load it from there later. <button type="button" class="btn btn-small" data-action="save-draft-file">Save draft to file</button></p>`) : '')}`;
+  }
+
+  function download(doc, name, text) {
+    var win = doc.defaultView || window;
+    var url = win.URL.createObjectURL(new win.Blob([text], { type: 'application/json' }));
+    var a = doc.createElement('a');
+    a.href = url; a.download = name; a.className = 'offscreen';
+    doc.body.appendChild(a); a.click(); a.remove();
+    win.setTimeout(function () { win.URL.revokeObjectURL(url); }, 1000);
   }
 
   function readBytes(file) {
@@ -205,11 +249,64 @@ ${raw(files.map(cardHtml).join(''))}`;
     if (detach) { detach(); detach = null; }
   }
 
-  function render(doc) {
+  // opts.store: another draft store (tests use their own key so a real draft is never touched).
+  function render(doc, opts) {
     discard();   // a fresh page: nothing is carried over
     var main = doc.getElementById('main');
-    var state = { busy: false };
+    var state = { busy: false, draft: null, draftNote: '', message: '', saveFailed: '', pending: null };
+    var store = (opts && opts.store) || CFE.require('store.draft');
     function draw() { H().setHtml(main, pageHtml(state)); }
+
+    var restored = store.load().then(function (d) {
+      if (d && detach === myDetach) { state.draft = d; state.draftNote = 'Draft from ' + when(d.saved_utc) + ' restored'; draw(); }
+      return d;
+    });
+
+    function keep() {
+      if (keepBlocker()) return Promise.resolve();
+      var d = store.build(files);
+      state.pending = d;
+      return store.save(d).then(function (r) {
+        if (r.ok) {
+          state.draft = d; state.draftNote = 'Draft saved ' + when(d.saved_utc); state.message = 'Kept in draft.'; state.saveFailed = ''; state.pending = null;
+          Continuum.log.info('publish', 'Draft saved', { files: d.files.length });
+        } else {
+          state.saveFailed = r.error.kind === 'quota' ? 'the browser storage is full' : r.error.kind === 'unavailable' ? 'browser storage is not available' : 'unexpected storage error';
+          state.message = '';
+          Continuum.log.warn('publish', 'Draft not saved', { kind: r.error.kind });
+        }
+        draw();
+      });
+    }
+
+    function discardDraft() {
+      var win = doc.defaultView || window;
+      if (win.confirm && !win.confirm('Discard the draft? The imported rows are removed from this computer. Your source files are not changed.')) return Promise.resolve();
+      return store.discard().then(function (r) {
+        if (r.ok) { state.draft = null; state.message = 'Draft discarded.'; Continuum.log.info('publish', 'Draft discarded'); }
+        else state.message = 'The draft could not be discarded: ' + r.error.message;
+        draw();
+      });
+    }
+
+    function saveToFile() {
+      var d = state.pending || state.draft;
+      if (!d) return Promise.resolve();
+      return store.toFile(d).then(function (f) { download(doc, f.name, f.text); state.message = 'Saved ' + f.name + '. Keep it safe: it holds the imported rows.'; draw(); });
+    }
+
+    function loadFromFile(file) {
+      if (!file) return Promise.resolve();
+      return (file.text ? file.text() : Promise.reject(new Error('no text'))).then(store.fromFileText).then(function (r) {
+        if (!r.ok) { state.message = r.message; draw(); return; }
+        state.draft = r.draft; state.draftNote = 'Draft from ' + when(r.draft.saved_utc) + ' loaded from file';
+        state.message = 'Draft loaded from the file.';
+        return store.save(r.draft).then(function (s) {
+          if (!s.ok) state.message += ' It could not be kept in the browser (' + s.error.kind + '); it stays on this page only.';
+          draw();
+        });
+      }, function () { state.message = 'The file could not be read.'; draw(); });
+    }
 
     function addFiles(list) {
       var chosen = Array.prototype.slice.call(list || []);
@@ -235,12 +332,22 @@ ${raw(files.map(cardHtml).join(''))}`;
       return processFile({ name: f.name, size: f.size, lastModified: f.lastModified, bytes: f.bytes }, opts).then(function (entry) { files[i] = entry; draw(); });
     }
 
+    function onClick(e) {
+      var el = e.target.closest('[data-action]');
+      if (!el) return;
+      var a = el.getAttribute('data-action');
+      if (a === 'keep-draft') keep();
+      else if (a === 'discard-draft') discardDraft();
+      else if (a === 'save-draft-file') saveToFile();
+      else if (a === 'remove-file') { files.splice(+el.getAttribute('data-file'), 1); draw(); }
+    }
     function onChange(e) {
       var a = e.target.getAttribute('data-action'), i = +e.target.getAttribute('data-file');
       if (a === 'pick-files') addFiles(e.target.files);
+      else if (a === 'load-draft-file') loadFromFile(e.target.files && e.target.files[0]);
       else if (a === 'choose-profile') redo(i, { profileId: e.target.value || null, sheet: files[i].parsed.sheet });
       else if (a === 'choose-sheet') redo(i, { sheet: e.target.value });
-      else if (a === 'acknowledge') files[i].acknowledged = e.target.checked;
+      else if (a === 'acknowledge') { files[i].acknowledged = e.target.checked; draw(); }
     }
     function onDragOver(e) { if (e.target.closest('[data-action="drop-files"]')) e.preventDefault(); }
     function onDrop(e) {
@@ -248,16 +355,19 @@ ${raw(files.map(cardHtml).join(''))}`;
       e.preventDefault();
       addFiles(e.dataTransfer && e.dataTransfer.files);
     }
+    main.addEventListener('click', onClick);
     main.addEventListener('change', onChange);
     main.addEventListener('dragover', onDragOver);
     main.addEventListener('drop', onDrop);
-    detach = function () {
+    var myDetach = detach = function () {
+      main.removeEventListener('click', onClick);
       main.removeEventListener('change', onChange);
       main.removeEventListener('dragover', onDragOver);
       main.removeEventListener('drop', onDrop);
     };
     draw();
-    return { addFiles: addFiles, files: function () { return files; } };
+    return { addFiles: addFiles, files: function () { return files; }, restored: restored, keep: keep, discardDraft: discardDraft,
+      saveToFile: saveToFile, loadFromFile: loadFromFile, state: state };
   }
 
   CFE.views.publish = { render: render, discard: discard, parse: parse, mapFile: mapFile, processFile: processFile, previewRows: PREVIEW_ROWS,

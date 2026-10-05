@@ -11,7 +11,6 @@ Last updated: 2026-10-05 (F1.9 in progress: IMP-004 done; F1.8 checkpoint result
 | 5 | BAS-002 | Record the probe results; append DEC-020/023/026 outcomes as Proposed | Model |
 | 6 | SHL-003 (check) | Optional: in Edge, open the new `index.html` → Diagnostics → **Copy diagnostics**, and paste the text to Claude (to compare the Features lines with the BAS-002 probe later) | Owner |
 | 7 | F1.8 | Checkpoint: copy the folder `samples/published` to `published` (next to `index.html`) in your synced folder, double-click `index.html`: the banner should be green, "Ready: Sample data (not real) …", with counts on Portfolio. Then delete that `published` folder again | Owner |
-| 8 | IMP-008 | Phase 1 (F1.9) | Model |
-| 9 | IMP-005 | Phase 1 (F1.9) | Model |
-| 10 | IMP-006 | Phase 1 (F1.9) | Model |
-| 11 | F1.9 | Checkpoint: import your real backup in the new app and compare the KPIs with the legacy app (on your computer only, never committed) | Owner |
+| 8 | IMP-005 | Phase 1 (F1.9) | Model |
+| 9 | IMP-006 | Phase 1 (F1.9) | Model |
+| 10 | F1.9 | Checkpoint: import your real backup in the new app and compare the KPIs with the legacy app (on your computer only, never committed) | Owner |

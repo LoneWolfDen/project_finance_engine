@@ -39,6 +39,10 @@ label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
 .preview { font-size: 0.8rem; }
 .errors { color: var(--not-ready-text); }
 .warnings { background: var(--attention-bg); color: var(--attention-text); padding: var(--space-2); border-radius: var(--radius); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-danger { border-color: var(--not-ready-text); color: var(--not-ready-text); }
+.draft { background: var(--bg); border-radius: var(--radius); padding: var(--space-2) var(--space-3); margin: var(--space-3) 0; }
+.draft ul { margin: var(--space-1) 0; }
 .offscreen { position: fixed; left: -9999px; top: 0; }
 
 @media (max-width: 40rem) {

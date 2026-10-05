@@ -38,6 +38,7 @@
     'app/data/mappings/references-crosswalk-v1.js',
     'app/store/state.js',
     'app/store/dataset-loader.js',
+    'app/store/draft.js',
     'app/views/shell.js',
     'app/views/diagnostics.js',
     'app/views/about.js',
@@ -68,7 +69,8 @@
     'unit/app-router.test.js',
     'unit/about-view.test.js',
     'unit/store-loader.test.js',
-    'unit/views-publish.test.js'
+    'unit/views-publish.test.js',
+    'unit/store-draft.test.js'
   ];
 
   function loadScript(src) {
