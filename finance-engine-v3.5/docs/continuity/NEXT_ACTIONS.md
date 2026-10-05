@@ -1,15 +1,20 @@
 # Next Actions
 
-Last updated: 2026-10-04 (after SEC-001). Maximum 15 entries. Ordered. Source order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execute coding items with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`.
+Last updated: 2026-10-05 (owner confirmed backups, DEC-036; managed-laptop checks deferred, DEC-038). Maximum 15 entries. Ordered. Source order: `docs/backlog/FINAL_EXECUTION_SEQUENCE.md`. Execute coding items with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`.
 
 | # | Backlog ID | Action | Who |
 |---|---|---|---|
-| 1 | SEC-001 | Review and commit: `SEC-001: Harden legacy server.py (loopback, origin checks, no wildcard CORS)`. Then run the app once with the real database (`python3 server.py`, open http://localhost:3005, save, reload) | Owner |
-| 2 | BAS-002 | Copy `tools/probe/` into the synced Teams channel folder, open `index.html` in managed Edge, follow `tools/probe/README.md`, press **Copy results**, and paste them to the model (or into PROJECT_STATE "Probe results") | Owner |
-| 3 | BAS-002 | Record the pasted results; append DEC-020/023/026 outcomes as Proposed to DECISIONS.md | Model |
-| 4 | DAT-001 | Confirmation and backup before Restore-from-Master and Load-scenario | Model |
-| 5 | DAT-002 | Next item in F0.7 (see MASTER_BACKLOG) | Model |
-| 6 | DAT-003 | Next item in F0.7 (see MASTER_BACKLOG) | Model |
-| 7 | BAK-001 | **Before using the updated legacy app:** Export Full Config (now a complete backup) from every place the legacy app has been used: `http://localhost:3005`, each `file://` copy (e.g. Downloads), any Codespaces URL. Store the files safely (not in the repo). This unblocks DAT-001…DAT-006 | Owner |
-
-Unblocked by DOC-001 but not yet listed (later in the sequence; each also needs other dependencies): REF-001 (needs TST-001), XREP-001 (needs REF-001).
+| 1 | (review) | Review the 15 overnight commits (`git log --oneline 60ea319..HEAD`; one commit per item), run the legacy app once, then `git push` | Owner |
+| 2 | BAS-002 | Run `tools/probe/` from the synced Teams channel folder in managed Edge; paste "Copy results" | Owner (later: DEC-038) |
+| 3 | BLD-001 | On the work laptop, open the app with DevTools → Network: no CDN hosts | Owner (later: DEC-038) |
+| 4 | BLD-002 | Open an Excel export from the app in Microsoft Excel: no repair prompt | Owner (can be done on the Mac if Excel is installed) |
+| 5 | BAS-002 | Record the probe results; append DEC-020/023/026 outcomes as Proposed | Model |
+| 6 | DAT-001 | Confirmation and backup before Restore-from-Master and Load-scenario (backups confirmed, DEC-036) | Model |
+| 7 | DAT-002 | Explicit Append/Replace dialog for timesheet upload | Model |
+| 8 | DAT-003 | Visible storage and server-save failures | Model |
+| 9 | DAT-004 | Startup sync must not overwrite newer browser data | Model |
+| 10 | DAT-005 | Make Factory Reset reset what it claims (after a backup) | Model |
+| 11 | DAT-006 | De-duplicate only exact duplicate timesheet rows | Model |
+| 12 | SEC-003 | Phase 1 starts (F1.1): escape the remaining renderers | Model |
+| 13 | SEC-004 | Phase 1 (F1.1) | Model |
+| 14 | SRC-001 | Phase 1 (F1.2) | Model |

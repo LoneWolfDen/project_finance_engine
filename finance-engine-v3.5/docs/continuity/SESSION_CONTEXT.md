@@ -1,16 +1,15 @@
 # Session Context: Restart Briefing
 
-For a model starting with no conversation history. Last updated 2026-10-04.
+For a model starting with no conversation history. Last updated 2026-10-05.
 
 **Project.** Continuum Finance Engine: a project-finance dashboard (PO burn, forecast, actuals, invoices, expenses). The owner is a non-developer who built it with coding agents. Viewers are senior leaders who use it only through the UI. One publisher (the owner) refreshes the data from PeopleSoft CSV/XLSX downloads. It belongs to the owner's "World of Continuum" apps; Continuum itself is the separate repository `LoneWolfDen/project_onion`.
 
 **Where things are.**
 * Git root: `/Users/wolf/Developer/project_finance_engine`.
 * App root: `finance-engine-v3.5/`. Backlog paths are relative to it.
-* Branch: `assessment/pwa-readiness-2026-10`. HEAD `991cacf`.
-* The planning documents may be uncommitted. Check `git status`, and if they are, the next action is BAS-001 (owner).
+* Branch: `assessment/pwa-readiness-2026-10`. HEAD `ea12a3a` after the overnight run (may not be pushed yet; check `git status`).
 
-**Current state.** No application code has been changed yet. The legacy app is `finance-engine-v3.5/index.html` plus `server.py` (until SHL-004 moves it to `legacy/index.html`; check `PROJECT_STATE.md`). Assessment, architecture, an 88-item backlog, validation and continuity are complete.
+**Current state.** Phase 0 is done except DAT-001…006 (backups confirmed 2026-10-05, DEC-036: may proceed) and owner-side checks (probe, managed laptop). The legacy app is `finance-engine-v3.5/index.html` plus `server.py` (until SHL-004 moves it to `legacy/index.html`). Tests: `node tests/run-node.js`, `python3 -m unittest discover -s tests/server`, `tests/index.html`. Run all three before every commit.
 
 **Read these files, in this order:**
 1. `finance-engine-v3.5/docs/continuity/PROJECT_STATE.md` (state, blockers, backlog status, probe results)
@@ -21,7 +20,7 @@ For a model starting with no conversation history. Last updated 2026-10-04.
 6. `finance-engine-v3.5/docs/continuity/DECISIONS.md` (latest decisions; "-R1" rows supersede the originals)
 7. Only as cited by the item: `docs/architecture/*`, `docs/assessment/*`
 
-**Next action.** The first non-Done row of `NEXT_ACTIONS.md`. As of this briefing that is BAS-001 (owner commit), then DOC-001, BAS-002 and SEC-001. Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
+**Next action.** The first Model row of `NEXT_ACTIONS.md` whose owner prerequisites are done (DAT-001 is unblocked: DEC-036). Execute a coding item with `.claude/prompts/IMPLEMENT_ONE_ITEM_TEMPLATE.md`, filling in the item ID.
 
 **Key decisions to keep in mind.**
 * Reference ID = the first opportunity number entered, trimmed, whitespace removed, upper-cased, permanent. **No regex, no suffix.**

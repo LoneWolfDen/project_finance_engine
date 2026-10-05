@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-10-04 (overnight run: after BLD-002)
+Last updated: 2026-10-05 (end of overnight run, after BLD-002)
 
 ## Repository
 
@@ -9,26 +9,28 @@ Last updated: 2026-10-04 (overnight run: after BLD-002)
 | Repository | `LoneWolfDen/project_finance_engine` (GitHub; private, to become public). Local: `/Users/wolf/Developer/project_finance_engine` |
 | App root | `finance-engine-v3.5/` (all backlog paths are relative to it; DEC-008) |
 | Branch | `assessment/pwa-readiness-2026-10` (tracks `origin/assessment/pwa-readiness-2026-10`) |
-| Commit | See `git log --oneline` on this branch. Overnight run started from `60ea319` (BAS-002 follow-up); items committed one per commit (DEC-034) |
-| Uncommitted | None between items. During the overnight run (DEC-034) each item is committed locally on its own (`<ID>: <title>`), never pushed. See `git log` |
+| Commit | HEAD `ea12a3a` (BLD-002). Overnight run (DEC-034): 15 local commits after `60ea319`, **not pushed**. Note: `d96c227` is labelled "SEC-001" but contains only the DEC-034 row in DECISIONS.md; SEC-001 itself is the owner's commit `a9b34df` (history not rewritten) |
+| Uncommitted | Nothing |
 | Related repository | Continuum: `LoneWolfDen/project_onion` (public; separate; not assessed) |
 
-## Current implementation state (unchanged since the assessment; no code has been modified)
+## Current implementation state (legacy app hardened in Phase 0; see Backlog status)
 
-* **Legacy app file:** `index.html` (SHL-004 not done). The legacy server is `server.py`.
+* **Legacy app file:** `index.html` (SHL-004 not done). The legacy server is `server.py`. Shared code starts in `app/continuum-core/` (`html.js`, `CORE_VERSION.js` 0.1.0).
 * **What runs:** a single 2,279-line hand-written `index.html` (no framework, not minified) plus Python stdlib `server.py` with SQLite. Four parallel copies exist (v1, v2, v3, v3.5).
 * **Works today:** dashboard, forecast, imports and exports. Confirmed on the work laptop when opened from `file://` (Downloads), with CDN libraries loading (OD-5a).
 * **Not working or unsafe:**
   - ~~server open on all interfaces with wildcard CORS (SEC-01/02, BLOCKER)~~ **mitigated (legacy) by SEC-001 on 2026-10-04**: loopback bind, no CORS, Host/Origin/Content-Type checks, 25 MB body limit;
-  - unescaped HTML (XSS);
+  - unescaped HTML (XSS) outside the chat (chat fixed by SEC-002; rest is SEC-003/004);
   - silent data-loss paths (D-01…D-10), including a broken Factory Reset;
-  - incomplete backup;
+  - ~~incomplete backup~~ **fixed by BAK-001** (complete, checksummed backup + validated import);
   - time-zone defect C-01;
-  - no tests;
+  - ~~no tests~~ **TST-001…004**: Node + browser harness, legacy sandbox, synthetic fixtures, 60 legacy golden files;
   - no PWA features;
-  - runtime CDN dependency;
-  - "Copilot" mode is an iframe placeholder; the PIN is cosmetic.
-* **Where the owner's real legacy data may live:** browser storage of each origin used (`http://localhost:3005`, `file://` copies such as Downloads, possibly Codespaces) plus `finance_engine.db`. Not yet backed up (BAK-001).
+  - ~~runtime CDN dependency~~ **fixed by BLD-001** (vendored); SheetJS upgraded to 0.20.3 (BLD-002);
+  - ~~"Copilot" iframe and Ollama modes~~ **off by default (CHT-002)**; the PIN is cosmetic;
+  - sample DEFAULTS data is now labelled everywhere (MIG-001); chat answers carry a scope line (CHT-001);
+  - pre-existing chart error L-01 (see Findings).
+* **Where the owner's real legacy data may live:** browser storage of each origin used (`http://localhost:3005`, `file://` copies such as Downloads, possibly Codespaces) plus `finance_engine.db`. **Not yet backed up**: the owner exports a backup from every origin with the new Export Full Config (BAK-001 checkpoint).
 
 Full detail: `docs/assessment/CURRENT_IMPLEMENTATION_ASSESSMENT.md`.
 
@@ -82,7 +84,7 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 | Date | ID | Status | Files changed | Tests | Unverified checks |
 |---|---|---|---|---|---|
 | 2026-10-04 | BAS-002 | **Partial**: probe built and pre-checked; acceptance criterion 4 (managed-laptop Edge results recorded) waits for the owner | New `tools/probe/index.html`, `probe.js`, `probe.css`, `second.html`, `data/probe-data.js`, `README.md` | `node --check tools/probe/probe.js` → OK. Developer pre-check in headless Chrome on macOS; owner run in Chrome on macOS; reload-persistence fix verified headless (see Probe results) | All of the probe on the managed laptop: owner runs `tools/probe/README.md` from the synced Teams channel folder |
-| 2026-10-04 | SEC-001 | Done (committed `d96c227`; follow-up fix `bee586c` reads rejected bodies before replying, which removed a flaky connection-reset test failure) | `server.py`, `Dockerfile`, `/README.md`, new `tests/server/test_server.py` | `python3 -m unittest discover -s tests/server -v` → Ran 18 tests, OK. Manual 1 (headless Chrome, temp DB, port 3099): app loaded, POST 200, round-trip OK. Manual 2: socket listens on `127.0.0.1` only; connecting through the Mac's LAN IP failed; LAN-style Host → 421 | Owner: run `python3 server.py` with the real database, open `http://localhost:3005`, save, reload, check data persists. Codespaces: the forwarded Host value is not verified; set `ALLOWED_HOSTS` if it returns 421 (test data only, DEC-032). Docker image not built here |
+| 2026-10-04 | SEC-001 | Done (owner commit `a9b34df`; follow-up fix `bee586c` reads rejected bodies before replying, which removed a flaky connection-reset test failure) | `server.py`, `Dockerfile`, `/README.md`, new `tests/server/test_server.py` | `python3 -m unittest discover -s tests/server -v` → Ran 18 tests, OK. Manual 1 (headless Chrome, temp DB, port 3099): app loaded, POST 200, round-trip OK. Manual 2: socket listens on `127.0.0.1` only; connecting through the Mac's LAN IP failed; LAN-style Host → 421 | Owner: run `python3 server.py` with the real database, open `http://localhost:3005`, save, reload, check data persists. Codespaces: the forwarded Host value is not verified; set `ALLOWED_HOSTS` if it returns 421 (test data only, DEC-032). Docker image not built here |
 | 2026-10-04 | BLD-004 | Done | `server.py` (`_serve_static`, static path rules), `Dockerfile` (COPY app, vendor), new `tests/server/test_static.py`, `app/.keep`, `vendor/.keep` | TEST-SERVER: Ran 28 tests, OK. Manual: `/vendor/.keep` → 404; app loads and renders through the server (headless Chrome screenshot) | None (Docker image not built here) |
 | 2026-10-04 | BLD-001 | Done (criterion 4 UNVERIFIED: managed laptop) | `index.html` lines 4–9 only (six `<script src>` → `vendor/…`), new `vendor/<lib>-<ver>/` (6 libraries + 6 licence files), `vendor/VENDOR.md`, `tests/server/test_static.py` (hash + path tests). `server.py` unchanged (amendment V-01); Dockerfile COPY vendor already added by BLD-004 | TEST-SERVER: Ran 32 tests, OK (incl. SHA-256 of all 12 files vs VENDOR.md). Manual (headless Chrome, CDN hosts blocked), via server and via file://: all six libraries defined; all 11 tabs render with no new errors; Excel, PDF (4 pages) and PPTX exports downloaded and are valid files; only hosts contacted: localhost / file:. `grep https:// index.html` → only the GitHub profile link. Integrity: datalabels and xlsx match jsDelivr's published npm hashes; chart.umd.min.js is jsDelivr's auto-minified build (noted in VENDOR.md) | Owner: open the app on the managed laptop with DevTools → Network and confirm no CDN hosts (acceptance criterion 4) |
 | 2026-10-04 | TST-001 | Done | New `tests/harness.js`, `tests/run-node.js`, `tests/index.html` (styles inline: no CSS file is listed), `tests/browser-suites.js`, `tests/unit/harness.test.js`, `tests/README.md`. Sandbox and smoke test moved to TST-004 (V-03) | `node tests/run-node.js` → 10 passed, 0 failed, All suites passed (exit 0). `--suite` and `--tz` work. A temporary failing test made it exit 1 (removed). `tests/index.html` via file:// in headless Chrome → "All suites passed (10 tests)" | Owner: open `tests/index.html` from Finder/Explorer in Edge and see "All suites passed" |
@@ -99,6 +101,8 @@ DEC-001-R1 and `SOURCE_OF_TRUTH.md` already take precedence over them. They need
 <!-- overnight-rows -->
 
 Assessment findings **SEC-01 and SEC-02: mitigated (legacy)** by SEC-001. SEC-11 and SEC-16 partially closed (fixed error texts; body limit).
+
+**Backups confirmed (2026-10-05, DEC-036):** the owner exported a backup from every origin; DAT-001…DAT-006 are released (DEC-035 closed). Managed-laptop checks are deferred until the owner can use the work laptop (DEC-038).
 
 Everything else is **Not started**.
 
@@ -159,6 +163,9 @@ Not decided by these runs (needs the managed laptop): DEC-020, DEC-023, DEC-026,
 
 ## Next task
 
-The owner reviews and commits BAS-002 (`tools/probe/`), then runs the probe on the work laptop from the synced Teams channel folder (`tools/probe/README.md`) and pastes the results above. SEC-001 is done (uncommitted). Next model item: **BLD-004** (F0.3).
+Owner (in order):
+1. Review the overnight commits (`git log --oneline 60ea319..HEAD`), run the app once (`python3 server.py` → http://localhost:3005), then push when happy.
+2. **Back up every origin** with Export Full Config (BAK-001 checkpoint): `http://localhost:3005`, each `file://` copy, any Codespaces URL. This unblocks DAT-001…006.
+3. On the work laptop: run the BAS-002 probe from the synced Teams channel folder; open the app and confirm no CDN requests (BLD-001 criterion 4); open an Excel export in Excel (BLD-002 criterion 2).
 
-When the results arrive, a model records them and marks the DEPENDENCY_MAP §3 alternatives they point to as **Proposed** in `DECISIONS.md` (append-only; `docs/backlog/` stays unchanged under MNC-STD). The owner confirms them.
+Model: after step 2, DAT-001 → DAT-006 (F0.7). Phase 0 is otherwise complete.
