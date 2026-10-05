@@ -1,6 +1,7 @@
 // SRC-001: CFE.calc.calendar (HOLIDAYS_BY_LOC, isWorkingDay). Runs in Node and in the browser.
 (function () {
   if (typeof CFE === 'undefined') (0, eval)(CFE_NODE.readFile('app/cfe.js'));
+  if (!CFE.data.calendars) (0, eval)(CFE_NODE.readFile('app/data/calendars.js'));
   if (!CFE.calc.calendar) (0, eval)(CFE_NODE.readFile('app/calc/calendar.js'));
   var T = CFE_TEST, assert = T.assert, C = CFE.calc.calendar;
   // Noon UTC is the same calendar day in London, New York and Kolkata.
