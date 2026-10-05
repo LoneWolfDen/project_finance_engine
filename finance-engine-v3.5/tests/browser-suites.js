@@ -12,7 +12,8 @@
     'app/calc/dates.js',
     'app/calc/calendar.js',
     'app/calc/fx.js',
-    'app/calc/forecast.js'
+    'app/calc/forecast.js',
+    'app/calc/actuals.js'
   ];
 
   // Browser-safe test files.
@@ -22,7 +23,8 @@
     'unit/calc-dates.test.js',
     'unit/calc-calendar.test.js',
     'unit/calc-fx.test.js',
-    'unit/calc-forecast.test.js'
+    'unit/calc-forecast.test.js',
+    'unit/calc-actuals.test.js'
   ];
 
   function loadScript(src) {

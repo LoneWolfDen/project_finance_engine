@@ -9,9 +9,8 @@ Last updated: 2026-10-05 (after DAT-006; Phase 0 code complete; managed-laptop c
 | 3 | BLD-001 | On the work laptop, open the app with DevTools → Network: no CDN hosts | Owner (later: DEC-038) |
 | 4 | BLD-002 | Open an Excel export from the app in Microsoft Excel: no repair prompt | Owner (can be done on the Mac if Excel is installed) |
 | 5 | BAS-002 | Record the probe results; append DEC-020/023/026 outcomes as Proposed | Model |
-| 6 | SRC-003 | Phase 1 (F1.2) | Model |
-| 7 | SRC-004 | Phase 1 (F1.2) | Model |
-| 8 | BLD-003 | Phase 1 (F1.3) | Model |
-| 9 | REP-001 | Phase 1 (F1.3) | Model |
-| 10 | STO-002 | Phase 1 (F1.4) | Model |
-| 11 | IMP-001 | Phase 1 (F1.4) | Model |
+| 6 | SRC-004 | Phase 1 (F1.2) | Model |
+| 7 | BLD-003 | Phase 1 (F1.3) | Model |
+| 8 | REP-001 | Phase 1 (F1.3) | Model |
+| 9 | STO-002 | Phase 1 (F1.4) | Model |
+| 10 | IMP-001 | Phase 1 (F1.4) | Model |
