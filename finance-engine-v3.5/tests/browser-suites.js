@@ -7,13 +7,20 @@
   // app/** scripts the browser suites need, in load order.
   var APP_SCRIPTS = [
     'app/continuum-core/CORE_VERSION.js',
-    'app/continuum-core/html.js'
+    'app/continuum-core/html.js',
+    'app/cfe.js',
+    'app/calc/dates.js',
+    'app/calc/calendar.js',
+    'app/calc/fx.js'
   ];
 
   // Browser-safe test files.
   var SUITES = [
     'unit/harness.test.js',
-    'unit/html.test.js'
+    'unit/html.test.js',
+    'unit/calc-dates.test.js',
+    'unit/calc-calendar.test.js',
+    'unit/calc-fx.test.js'
   ];
 
   function loadScript(src) {

@@ -107,9 +107,17 @@ td[contenteditable]:focus{border-color:#2196f3;outline:none;background:#e3f2fd}
 <div class="content" id="app"></div>
 <script src="app/continuum-core/CORE_VERSION.js"></script>
 <script src="app/continuum-core/html.js"></script>
+<script src="app/cfe.js"></script>
+<script src="app/calc/dates.js"></script>
+<script src="app/calc/calendar.js"></script>
+<script src="app/calc/fx.js"></script>
 <script>
 // SEC-003: escape every data-derived value placed into HTML (Continuum.html, loaded above).
 const esc=Continuum.html.escape;
+// SRC-001: date, calendar and FX helpers live in app/calc/ (loaded above); the old global names stay as aliases.
+var parseDate=CFE.calc.dates.parseDate,parseValidityEnd=CFE.calc.dates.parseValidityEnd;
+var HOLIDAYS_BY_LOC=CFE.calc.calendar.HOLIDAYS_BY_LOC,HOLIDAY_SETS=CFE.calc.calendar.HOLIDAY_SETS,isWorkingDay=CFE.calc.calendar.isWorkingDay;
+var fxRateAsOf=CFE.calc.fx.fxRateAsOf,otMultiplier=CFE.calc.fx.otMultiplier;
 // ─── DEFAULTS ───────────────────────────────────────────────────────────────
 const DEFAULTS={
 po_details:[
@@ -135,20 +143,6 @@ invoices:[]
 };
 const MASTER_PIN='1234'; // Change this PIN
 
-// Parse PO_Validity "mm-yy" → end-of-month Date; also supports legacy year (2025) and "mm-yyyy"
-function parseValidityEnd(v){
-  if(!v)return new Date('2025-12-31');
-  const s=String(v).trim();
-  if(/^\d{4}$/.test(s))return new Date(parseInt(s),11,31); // legacy: year only
-  const parts=s.split('-');
-  if(parts.length===2){
-    let mm=parseInt(parts[0]),yy=parts[1];
-    if(yy.length===2)yy='20'+yy;
-    const yr=parseInt(yy);
-    return new Date(yr,mm,0); // last day of month mm in year yr
-  }
-  return new Date('2025-12-31');
-}
 // Format validity for display
 function fmtValidity(v){return v||'—';}
 
@@ -274,24 +268,6 @@ async function initFromServer(){
 initFromServer();
 
 // ─── FORECAST ENGINE ────────────────────────────────────────────────────────
-// Bank Holidays by location (from Burndown_Template_v4.7.xlsx)
-const HOLIDAYS_BY_LOC={"UK":["2025-01-01","2025-04-18","2025-04-21","2025-05-05","2025-05-26","2025-06-14","2025-08-25","2025-12-25","2025-12-26","2026-01-01","2026-04-03","2026-04-06","2026-05-04","2026-05-25","2026-06-13","2026-08-31","2026-12-25","2026-12-26"],"India":["2025-01-01","2025-01-14","2025-01-26","2025-03-14","2025-03-30","2025-03-31","2025-05-01","2025-08-15","2025-10-02","2025-10-21","2025-12-25","2026-01-01","2026-01-14","2026-01-26","2026-03-04","2026-03-19","2026-03-21","2026-05-01","2026-08-15","2026-10-02","2026-11-08","2026-12-25"],"Germany":["2025-01-01","2025-01-06","2025-04-18","2025-04-21","2025-05-01","2025-05-29","2025-06-09","2025-06-19","2025-08-15","2025-10-03","2025-10-31","2025-11-01","2025-11-19","2025-12-25","2025-12-26","2026-01-01","2026-01-06","2026-04-03","2026-04-06","2026-05-01","2026-05-14","2026-05-25","2026-06-04","2026-08-15","2026-10-03","2026-10-31","2026-11-01","2026-11-18","2026-12-25","2026-12-26"],"France":["2025-01-01","2025-04-21","2025-05-01","2025-05-08","2025-05-29","2025-06-09","2025-07-14","2025-08-15","2025-11-01","2025-11-11","2025-12-25","2026-01-01","2026-04-06","2026-05-01","2026-05-08","2026-05-14","2026-05-25","2026-07-14","2026-08-15","2026-11-01","2026-11-11","2026-12-25"],"Canada":["2025-01-01","2025-04-18","2025-04-21","2025-05-19","2025-07-01","2025-08-04","2025-09-01","2025-09-30","2025-10-13","2025-11-11","2025-12-25","2025-12-26","2026-01-01","2026-04-03","2026-04-06","2026-05-18","2026-07-01","2026-08-03","2026-09-07","2026-09-30","2026-10-12","2026-11-11","2026-12-25","2026-12-26"],"Ireland":["2025-01-01","2025-03-17","2025-04-21","2025-05-05","2025-06-02","2025-08-04","2025-10-27","2025-12-25","2025-12-26","2026-01-01","2026-03-17","2026-04-06","2026-05-04","2026-06-01","2026-08-03","2026-10-26","2026-12-25","2026-12-26"],"Netherlands":["2025-01-01","2025-04-18","2025-04-21","2025-04-27","2025-05-05","2025-05-29","2025-06-09","2025-12-25","2025-12-26","2026-01-01","2026-04-03","2026-04-06","2026-04-27","2026-05-05","2026-05-14","2026-05-25","2026-12-25","2026-12-26"],"Spain":["2025-01-01","2025-01-06","2025-03-19","2025-04-17","2025-04-18","2025-04-21","2025-05-01","2025-06-09","2025-06-24","2025-07-25","2025-08-15","2025-10-12","2025-11-01","2025-12-06","2025-12-08","2025-12-25","2025-12-26","2026-01-01","2026-01-06","2026-03-19","2026-04-02","2026-04-03","2026-04-06","2026-05-01","2026-05-25","2026-06-24","2026-07-25","2026-08-15","2026-10-12","2026-11-01","2026-12-06","2026-12-08","2026-12-25","2026-12-26"]};
-const HOLIDAY_SETS={};Object.entries(HOLIDAYS_BY_LOC).forEach(([k,v])=>{HOLIDAY_SETS[k]=new Set(v);});
-
-function isWorkingDay(d,location){
-  const dow=d.getDay();
-  if(dow===0||dow===6)return false;
-  const hols=HOLIDAY_SETS[location||'UK']||HOLIDAY_SETS['UK'];
-  return !hols.has(d.toISOString().slice(0,10));
-}
-
-// Effective-dated FX lookup: latest rate on or before asOfDate
-function fxRateAsOf(fxRates,code,asOfDate){
-  let best=null,bestDt='';
-  fxRates.forEach(r=>{if(r.code===code&&r.effective<=asOfDate&&r.effective>bestDt){best=r.rate;bestDt=r.effective;}});
-  return best||1;
-}
-
 // Effective-dated rate lookup for a resource: find the rule where start<=date<=end
 function findResourceRule(resources,emplId,poTeam,asOfDate){
   // Find the rule with latest start date that is <= asOfDate and end >= asOfDate
@@ -302,38 +278,6 @@ function findResourceRule(resources,emplId,poTeam,asOfDate){
     }
   });
   return best;
-}
-
-// OT multiplier lookup
-function otMultiplier(otParams,poTeam,otType,asOfDate){
-  let best=null,bestDt='';
-  otParams.forEach(r=>{if(r.type===otType&&r.effective<=asOfDate&&r.effective>bestDt){best=r.multiplier;bestDt=r.effective;}});
-  return best||1;
-}
-
-// Parse date: handles dd/mm/yyyy, mm/dd/yyyy, yyyy-mm-dd, m/d/yyyy
-// format hint: 'uk'=dd/mm/yyyy, 'us'=mm/dd/yyyy, auto=detect
-function parseDate(s,format){
-  if(!s)return '';
-  s=String(s).trim();
-  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10); // already ISO
-  const parts=s.split(/[\/\-]/);
-  if(parts.length===3){
-    let a=parseInt(parts[0]),b=parseInt(parts[1]),y=parts[2];
-    if(y.length===2)y='20'+y;
-    if(y.length===4){
-      if(format==='uk')return `${y}-${String(b).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
-      if(format==='us')return `${y}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
-      // Auto-detect: if first part > 12, it must be day (dd/mm)
-      if(a>12)return `${y}-${String(b).padStart(2,'0')}-${String(a).padStart(2,'0')}`;
-      // If second part > 12, first must be month (mm/dd)
-      if(b>12)return `${y}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
-      // Ambiguous: default to US (m/d/yyyy) since timesheets are larger dataset
-      return `${y}-${String(a).padStart(2,'0')}-${String(b).padStart(2,'0')}`;
-    }
-  }
-  const d=new Date(s);
-  return isNaN(d)?'':d.toISOString().slice(0,10);
 }
 
 function computeForecast(cfg,filterPoTeams){
