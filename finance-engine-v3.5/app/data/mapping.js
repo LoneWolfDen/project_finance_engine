@@ -5,7 +5,8 @@
 //
 //   var p = CFE.data.mappings['peoplesoft-timesheet-v1'];
 //   var r = CFE.data.mapping.apply(p, csv.header, csv.rows);
-//   // → {records, errors:[{row, column, message}], warnings, unmappedColumns, droppedColumns}
+//   // → {records, recordRows, errors:[{row, column, message}], warnings, unmappedColumns, droppedColumns}
+//   //   recordRows[i] is the file row number of records[i] (header = row 1), for provenance (IMP-005)
 //   CFE.data.mapping.detect(csv.header)   // → profiles ranked by how many required columns are present
 //
 // Profile: {id, version, sourceSystem, entity, dropUnmapped, columns: {<field>: {aliases:[…], type, required,
@@ -109,7 +110,7 @@
     checkProfile(profile);
     header = header || []; rows = rows || [];
     var m = matchHeader(profile, header);
-    var out = { records: [], errors: [], warnings: m.warnings, unmappedColumns: m.unmapped, droppedColumns: profile.dropUnmapped ? m.unmapped.slice() : [] };
+    var out = { records: [], recordRows: [], errors: [], warnings: m.warnings, unmappedColumns: m.unmapped, droppedColumns: profile.dropUnmapped ? m.unmapped.slice() : [] };
 
     Object.keys(profile.columns).forEach(function (field) {
       if (profile.columns[field].required && !m.map[field]) {
@@ -140,7 +141,7 @@
         rec._extra = {};
         m.unmapped.forEach(function (h) { rec._extra[h] = row[h]; });
       }
-      if (ok) out.records.push(rec);
+      if (ok) { out.records.push(rec); out.recordRows.push(rowNumber); }
     });
     return out;
   }

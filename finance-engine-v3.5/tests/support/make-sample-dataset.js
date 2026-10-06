@@ -80,9 +80,10 @@ function build() {
     rollover_allowed: !!d.rollover_allowed, approval_status: d.WO_Approval_Status, src: src('po_details', i)
   }));
 
+  // rule_id as CFE.store.buildDataset makes it: person, PO team, start.
   const resource_rules = cfg.resources.map((r, i) => {
     const rule = {
-      rule_id: 'RR-' + pad(i + 1), ref: refOfTeam[r.po_team], person_key: person(r.empl_id), role: r.role, location: r.location,
+      rule_id: person(r.empl_id) + '@' + r.po_team.replace(/\s+/g, '') + '@' + r.start, ref: refOfTeam[r.po_team], person_key: person(r.empl_id), role: r.role, location: r.location,
       start: r.start, end: r.end, bill_rate: r.bill_rate, currency: 'GBP', rate_unit: 'hour', allocation: r.alloc,
       po_team_identifier: r.po_team, src: src('resources', i)
     };

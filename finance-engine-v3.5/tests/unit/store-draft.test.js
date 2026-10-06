@@ -16,7 +16,7 @@
   function entries() {
     return [
       { name: 'ts.csv', profile: { id: 'peoplesoft-timesheet-v1', entity: 'actuals' }, provenance: { file_id: 'aaaaaaaaaaaa', name: 'ts.csv', rows_read: 2, rows_used: 2, mapping_profile: 'peoplesoft-timesheet-v1' },
-        result: { records: [{ employee_id: '1001', regular_hours: 8 }, { employee_id: '1002', regular_hours: 7.5 }], errors: [], warnings: [] } },
+        result: { records: [{ employee_id: '1001', regular_hours: 8 }, { employee_id: '1002', regular_hours: 7.5 }], recordRows: [2, 4], errors: [], warnings: [] } },
       { name: 'rr.csv', profile: { id: 'resource-rules-v1', entity: 'resource_rules' }, provenance: { file_id: 'bbbbbbbbbbbb', name: 'rr.csv', rows_read: 1, rows_used: 1, mapping_profile: 'resource-rules-v1' },
         result: { records: [{ employee_id: '1001', bill_rate: 180 }], errors: [], warnings: [] } },
       { name: 'bad.txt', parsed: { problems: ['x'] }, result: null, profile: null, provenance: null }
@@ -29,7 +29,7 @@
       assert.equal(d.schema_version, 1);
       assert.ok(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(d.saved_utc));
       assert.deepEqual(d.files.map(function (f) { return f.file_id; }), ['aaaaaaaaaaaa', 'bbbbbbbbbbbb']);
-      assert.deepEqual(d.records.actuals[1], { employee_id: '1002', regular_hours: 7.5, _file: 'aaaaaaaaaaaa' });
+      assert.deepEqual(d.records.actuals[1], { employee_id: '1002', regular_hours: 7.5, _file: 'aaaaaaaaaaaa', _row: 4 });
       assert.equal(d.records.resource_rules.length, 1);
     });
 

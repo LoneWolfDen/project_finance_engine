@@ -109,7 +109,7 @@ window.CFE_PUBLISHED_DATASET = {
   ],
   "resource_rules": [
     {
-      "rule_id": "RR-01",
+      "rule_id": "E1001@111111_ProjectAlpha_AWS@2025-07-01",
       "ref": "O-0000001",
       "person_key": "E1001",
       "role": "Technical Lead",
@@ -128,7 +128,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-02",
+      "rule_id": "E1002@111111_ProjectAlpha_AWS@2025-07-01",
       "ref": "O-0000001",
       "person_key": "E1002",
       "role": "Solutions Architect",
@@ -147,7 +147,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-03",
+      "rule_id": "E1002@111111_ProjectAlpha_AWS@2025-10-01",
       "ref": "O-0000001",
       "person_key": "E1002",
       "role": "Solutions Architect",
@@ -166,7 +166,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-04",
+      "rule_id": "E1002@111111_ProjectAlpha_AWS@2025-11-01",
       "ref": "O-0000001",
       "person_key": "E1002",
       "role": "Solutions Architect",
@@ -185,7 +185,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-05",
+      "rule_id": "E1003@111111_ProjectAlpha_AWS@2025-08-01",
       "ref": "O-0000001",
       "person_key": "E1003",
       "role": "Cloud Engineer(Mid)",
@@ -204,7 +204,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-06",
+      "rule_id": "E1004@111111_ProjectAlpha_AWS@2025-07-01",
       "ref": "O-0000001",
       "person_key": "E1004",
       "role": "Engagement Manager",
@@ -223,7 +223,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-07",
+      "rule_id": "E1005@111111_ProjectAlpha_AWS@2025-09-15",
       "ref": "O-0000001",
       "person_key": "E1005",
       "role": "DevOps Engineer",
@@ -242,7 +242,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-08",
+      "rule_id": "E2001@222222_ProjectBeta_GCP@2025-03-01",
       "ref": "O-0000002",
       "person_key": "E2001",
       "role": "Java Developer",
@@ -261,7 +261,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-09",
+      "rule_id": "E2002@222222_ProjectBeta_GCP@2025-04-01",
       "ref": "O-0000002",
       "person_key": "E2002",
       "role": "QA Engineer",
@@ -280,7 +280,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-10",
+      "rule_id": "E2003@222222_ProjectBeta_GCP@2025-08-15",
       "ref": "O-0000002",
       "person_key": "E2003",
       "role": "Consultant",
@@ -299,7 +299,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-11",
+      "rule_id": "E3001@333333_ProjectGamma_Azure@2025-04-01",
       "ref": "O-0000002",
       "person_key": "E3001",
       "role": "Full Stack Dev",
@@ -318,7 +318,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-12",
+      "rule_id": "E3002@333333_ProjectGamma_Azure@2025-04-01",
       "ref": "O-0000002",
       "person_key": "E3002",
       "role": "Architect",
@@ -337,7 +337,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-13",
+      "rule_id": "E3002@333333_ProjectGamma_Azure@2025-09-01",
       "ref": "O-0000002",
       "person_key": "E3002",
       "role": "Architect",
@@ -356,7 +356,7 @@ window.CFE_PUBLISHED_DATASET = {
       }
     },
     {
-      "rule_id": "RR-14",
+      "rule_id": "E3003@333333_ProjectGamma_Azure@2025-05-01",
       "ref": "O-0000002",
       "person_key": "E3003",
       "role": "Backend Dev",

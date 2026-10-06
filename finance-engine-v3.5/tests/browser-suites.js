@@ -39,6 +39,7 @@
     'app/store/state.js',
     'app/store/dataset-loader.js',
     'app/store/draft.js',
+    'app/store/build-dataset.js',
     'app/views/shell.js',
     'app/views/diagnostics.js',
     'app/views/about.js',
@@ -70,7 +71,8 @@
     'unit/about-view.test.js',
     'unit/store-loader.test.js',
     'unit/views-publish.test.js',
-    'unit/store-draft.test.js'
+    'unit/store-draft.test.js',
+    'unit/store-build-dataset.test.js'
   ];
 
   function loadScript(src) {

@@ -14,6 +14,9 @@
 // load ("Draft from … restored") and offers **Discard draft**. Keep needs every file free of errors
 // (remove a file to drop it) and its warnings acknowledged. If storage is full, the page says so and
 // offers **Save draft to file**; **Load draft from file…** reads such a file back.
+// **Check the dataset** (IMP-005) builds the dataset from the draft (CFE.store.buildDataset) and shows
+// the counts, rows left out (warnings to acknowledge; they block nothing), schema problems and the
+// changes against the published data. Publishing itself arrives in PUB-001.
 //
 // Pure parts, also used by tests:
 //   CFE.views.publish.parse({name, bytes, sheet}) → {parser, parserVersion, sheets, sheet, header, rows, problems}
@@ -175,8 +178,42 @@
     return String(t`<section class="draft" aria-label="Draft">
 <p><strong>${state.draftNote || 'Draft from ' + when(d.saved_utc)}</strong>: ${d.files.length} ${d.files.length === 1 ? 'file' : 'files'}${raw(counts ? String(t`; ${counts}`) : '')}.</p>
 <ul>${raw(d.files.map(function (f) { return String(t`<li>${f.name} · ${f.mapping_profile} · ${f.rows_used} of ${f.rows_read} rows</li>`); }).join(''))}</ul>
-<p><button type="button" class="btn btn-danger" data-action="discard-draft">Discard draft</button> The draft holds the imported rows on this computer until you discard it.</p>
+<p><button type="button" class="btn" data-action="build-dataset">Check the dataset</button> <button type="button" class="btn btn-danger" data-action="discard-draft">Discard draft</button> The draft holds the imported rows on this computer until you discard it.</p>
+${raw(buildHtml(state))}
 </section>`);
+  }
+
+  var FIELD_LABELS = { po_value: 'PO value', actual_cost: 'Actual cost', invoiced: 'Invoiced', expenses: 'Expenses' };
+
+  function money(n) { return (Math.round(n * 100) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function buildHtml(state) {
+    var t = H().t, raw = H().raw, b = state.build;
+    if (!b) return '';
+    var rep = b.report, c = rep.counts;
+    var unmatched = Object.keys(rep.unmatched);
+    var errors = rep.schema.errors;
+    var rows = [['Projects (references)', c.references], ['Purchase orders', c.po], ['Resource rules', c.resource_rules], ['People', c.people],
+      ['Timesheet rows read', c.actual_rows_in], ['Timesheet rows costed', c.actual_rows_costed], ['Monthly actuals published', c.actual_aggregates],
+      ['Invoices', c.invoices], ['Expenses', c.expenses], ['FX rates', c.fx_rates], ['OT rules', c.ot_rules]];
+    var diff = rep.diff;
+    return String(t`<div class="report" aria-label="Dataset check">
+<h3>Dataset check</h3>
+<p class="${errors.length ? 'errors' : ''}"><strong>${errors.length ? errors.length + ' schema ' + (errors.length === 1 ? 'problem' : 'problems') + ': this dataset cannot be published yet.' : 'The dataset is valid.'}</strong> Data as of ${CFE.calc && CFE.calc.dates ? CFE.calc.dates.toDisplayDate(b.dataset.data_as_of) : b.dataset.data_as_of}.</p>
+${raw(errors.length ? String(t`<ul class="errors">${raw(errors.slice(0, 20).map(function (e) { return String(t`<li>${e.path}: ${e.message}</li>`); }).join(''))}</ul>`) : '')}
+${raw(rep.problems.length ? String(t`<ul class="errors">${raw(rep.problems.map(function (p) { return String(t`<li>${p}</li>`); }).join(''))}</ul>`) : '')}
+<table class="simple"><tbody>${raw(rows.map(function (r) { return String(t`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`); }).join(''))}</tbody></table>
+${raw(unmatched.length ? String(t`<div class="warnings"><p>Rows left out because they match no project or rule:</p><ul>${raw(unmatched.map(function (e) {
+      var u = rep.unmatched[e];
+      return String(t`<li>${e.replace(/_/g, ' ')}: ${u.count}<ul>${raw(u.examples.map(function (x) { return String(t`<li>${x}</li>`); }).join(''))}</ul></li>`);
+    }).join(''))}</ul><label><input type="checkbox" data-action="acknowledge-build"${raw(state.buildAck ? ' checked' : '')}> I have read these warnings</label></div>`) : '')}
+${raw(diff ? String(t`<h3>Changes against the published data</h3>${raw(diff.changes ? String(t`<table class="simple"><thead><tr><th>Project</th><th>Figure</th><th>Published</th><th>New</th><th>Change</th></tr></thead><tbody>${raw(diff.kpis.map(function (k) {
+      return String(t`<tr><td>${k.ref}</td><td>${FIELD_LABELS[k.field]}</td><td>${money(k.before)}</td><td>${money(k.after)}</td><td>${(k.delta > 0 ? '+' : '') + money(k.delta)}</td></tr>`);
+    }).join(''))}</tbody></table><p>${Object.keys(diff.entities).filter(function (e) { return diff.entities[e].added || diff.entities[e].removed; }).map(function (e) {
+      var x = diff.entities[e]; return e.replace(/_/g, ' ') + ': ' + x.added + ' added, ' + x.removed + ' removed';
+    }).join('; ')}</p>`) : '<p>No changes.</p>')}`) : '<p>No published data loaded, so there is nothing to compare with.</p>')}
+<p>${rep.notes.join(' ')}</p>
+</div>`);
   }
 
   function cardHtml(f, i) {
@@ -268,7 +305,7 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
       state.pending = d;
       return store.save(d).then(function (r) {
         if (r.ok) {
-          state.draft = d; state.draftNote = 'Draft saved ' + when(d.saved_utc); state.message = 'Kept in draft.'; state.saveFailed = ''; state.pending = null;
+          state.draft = d; state.build = null; state.draftNote = 'Draft saved ' + when(d.saved_utc); state.message = 'Kept in draft.'; state.saveFailed = ''; state.pending = null;
           Continuum.log.info('publish', 'Draft saved', { files: d.files.length });
         } else {
           state.saveFailed = r.error.kind === 'quota' ? 'the browser storage is full' : r.error.kind === 'unavailable' ? 'browser storage is not available' : 'unexpected storage error';
@@ -279,11 +316,20 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
       });
     }
 
+    function checkDataset() {
+      if (!state.draft) return null;
+      state.build = CFE.require('store.buildDataset')(state.draft, { publisher: 'Publisher' });
+      state.buildAck = false;
+      Continuum.log.info('publish', 'Dataset checked', { errors: state.build.report.schema.errors.length, unmatched: Object.keys(state.build.report.unmatched).length });
+      draw();
+      return state.build;
+    }
+
     function discardDraft() {
       var win = doc.defaultView || window;
       if (win.confirm && !win.confirm('Discard the draft? The imported rows are removed from this computer. Your source files are not changed.')) return Promise.resolve();
       return store.discard().then(function (r) {
-        if (r.ok) { state.draft = null; state.message = 'Draft discarded.'; Continuum.log.info('publish', 'Draft discarded'); }
+        if (r.ok) { state.draft = null; state.build = null; state.message = 'Draft discarded.'; Continuum.log.info('publish', 'Draft discarded'); }
         else state.message = 'The draft could not be discarded: ' + r.error.message;
         draw();
       });
@@ -338,6 +384,7 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
       var a = el.getAttribute('data-action');
       if (a === 'keep-draft') keep();
       else if (a === 'discard-draft') discardDraft();
+      else if (a === 'build-dataset') checkDataset();
       else if (a === 'save-draft-file') saveToFile();
       else if (a === 'remove-file') { files.splice(+el.getAttribute('data-file'), 1); draw(); }
     }
@@ -348,6 +395,7 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
       else if (a === 'choose-profile') redo(i, { profileId: e.target.value || null, sheet: files[i].parsed.sheet });
       else if (a === 'choose-sheet') redo(i, { sheet: e.target.value });
       else if (a === 'acknowledge') { files[i].acknowledged = e.target.checked; draw(); }
+      else if (a === 'acknowledge-build') state.buildAck = e.target.checked;
     }
     function onDragOver(e) { if (e.target.closest('[data-action="drop-files"]')) e.preventDefault(); }
     function onDrop(e) {
@@ -367,7 +415,7 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
     };
     draw();
     return { addFiles: addFiles, files: function () { return files; }, restored: restored, keep: keep, discardDraft: discardDraft,
-      saveToFile: saveToFile, loadFromFile: loadFromFile, state: state };
+      saveToFile: saveToFile, loadFromFile: loadFromFile, checkDataset: checkDataset, state: state };
   }
 
   CFE.views.publish = { render: render, discard: discard, parse: parse, mapFile: mapFile, processFile: processFile, previewRows: PREVIEW_ROWS,

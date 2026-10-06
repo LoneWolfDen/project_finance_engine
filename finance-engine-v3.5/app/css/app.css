@@ -43,6 +43,8 @@ label.btn:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; }
 .btn-danger { border-color: var(--not-ready-text); color: var(--not-ready-text); }
 .draft { background: var(--bg); border-radius: var(--radius); padding: var(--space-2) var(--space-3); margin: var(--space-3) 0; }
 .draft ul { margin: var(--space-1) 0; }
+.report { border-top: 1px solid var(--border); margin-top: var(--space-3); padding-top: var(--space-2); }
+.report h3 { font-size: 1rem; }
 .offscreen { position: fixed; left: -9999px; top: 0; }
 
 @media (max-width: 40rem) {

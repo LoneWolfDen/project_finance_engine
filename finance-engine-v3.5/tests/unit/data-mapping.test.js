@@ -37,6 +37,7 @@
     T.test('dates are never guessed: other formats and impossible dates are row errors', function () {
       var r = map('peoplesoft-timesheet-v1', TS + '\nR1,1001,2025-07-01,1,,,,8,,,\nR1,1001,2/30/2025,1,,,,8,,,\nR1,1001,7/1/25,1,,,,8,,,\nR1,1001,7/2/2025,1,,,,8,,,\n');
       assert.deepEqual(r.errors.map(function (e) { return e.row; }), [2, 3, 4]);
+      assert.deepEqual(r.recordRows, [5], 'the kept record came from file row 5');
       assert.ok(/expected a date as M\/D\/YYYY/.test(r.errors[0].message));
       assert.ok(/not a real date/.test(r.errors[1].message));
       assert.equal(r.records.length, 1, 'rows with errors are left out');

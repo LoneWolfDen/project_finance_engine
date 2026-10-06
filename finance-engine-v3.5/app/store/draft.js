@@ -9,7 +9,8 @@
 //   CFE.store.draft.fromFileText(text)   // → Promise of {ok:true, draft} or {ok:false, message}
 //   CFE.store.draft.create(appKey)       // another instance (tests use their own key)
 //
-// Draft (schema_version 1): {schema_version, saved_utc, files:[provenance record], records:{<entity>:[record + _file]}}.
+// Draft (schema_version 1): {schema_version, saved_utc, files:[provenance record], records:{<entity>:[record + _file + _row]}}
+// (_file: the provenance file_id; _row: the row number in that file, header = row 1).
 // Stored in IndexedDB "continuum-<appKey>", store "drafts", key "current". It holds raw imported
 // rows, so the Publish page makes Discard prominent.
 (function (CFE) {
@@ -23,7 +24,9 @@
       if (!e.result || !e.provenance || !e.profile) return;
       draft.files.push(Object.assign({}, e.provenance));
       var list = draft.records[e.profile.entity] || (draft.records[e.profile.entity] = []);
-      e.result.records.forEach(function (r) { list.push(Object.assign({}, r, { _file: e.provenance.file_id })); });
+      e.result.records.forEach(function (r, i) {
+        list.push(Object.assign({}, r, { _file: e.provenance.file_id, _row: e.result.recordRows ? e.result.recordRows[i] : null }));
+      });
     });
     return draft;
   }
