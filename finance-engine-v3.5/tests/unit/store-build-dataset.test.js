@@ -98,6 +98,7 @@
       var d2 = DIFF(b.dataset, after);
       assert.deepEqual(d2.entities.actuals, { before: 2, after: 1, added: 0, removed: 1 });
       assert.deepEqual(d2.kpis, [{ ref: 'O-1', field: 'actual_cost', before: 1300, after: 100, delta: -1200 }]);
+      assert.deepEqual(CFE.store.datasetTotals(b.dataset), { 'O-1': { po_value: 0, actual_cost: 1300, invoiced: 0, expenses: 0 } });
       var b2 = B(smallDraft(), { nowUtc: NOW, published: { dataset: b.dataset } });
       assert.equal(b2.report.diff.changes, 0, 'built against the same published data');
     });

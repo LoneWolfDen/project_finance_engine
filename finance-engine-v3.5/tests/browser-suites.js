@@ -40,6 +40,7 @@
     'app/store/dataset-loader.js',
     'app/store/draft.js',
     'app/store/build-dataset.js',
+    'app/store/legacy-import.js',
     'app/views/shell.js',
     'app/views/diagnostics.js',
     'app/views/about.js',

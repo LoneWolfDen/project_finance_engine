@@ -17,6 +17,8 @@
 // **Check the dataset** (IMP-005) builds the dataset from the draft (CFE.store.buildDataset) and shows
 // the counts, rows left out (warnings to acknowledge; they block nothing), schema problems and the
 // changes against the published data. Publishing itself arrives in PUB-001.
+// **Import a legacy backup…** (IMP-006) turns a backup from the legacy app into one card per section
+// (CFE.store.legacyImport); add a references file in the same session so the rows match projects.
 //
 // Pure parts, also used by tests:
 //   CFE.views.publish.parse({name, bytes, sheet}) → {parser, parserVersion, sheets, sheet, header, rows, problems}
@@ -187,6 +189,18 @@ ${raw(buildHtml(state))}
 
   function money(n) { return (Math.round(n * 100) / 100).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+  // PO value, actual cost, invoiced and expenses per project, to compare with the legacy Overview.
+  function totalsHtml(dataset) {
+    var t = H().t, raw = H().raw, tot = CFE.require('store.datasetTotals')(dataset), refs = Object.keys(tot).sort();
+    var names = {};
+    dataset.references.forEach(function (r) { names[r.ref] = r.name; });
+    var sum = { po_value: 0, actual_cost: 0, invoiced: 0, expenses: 0 };
+    refs.forEach(function (r) { Object.keys(sum).forEach(function (f) { sum[f] += tot[r][f]; }); });
+    return String(t`<table class="simple totals"><thead><tr><th>Project</th>${raw(Object.keys(FIELD_LABELS).map(function (f) { return String(t`<th>${FIELD_LABELS[f]}</th>`); }).join(''))}</tr></thead><tbody>${raw(refs.map(function (r) {
+      return String(t`<tr><td>${r} ${names[r] || ''}</td>${raw(Object.keys(FIELD_LABELS).map(function (f) { return String(t`<td>${money(tot[r][f])}</td>`); }).join(''))}</tr>`);
+    }).join(''))}<tr><td><strong>All projects</strong></td>${raw(Object.keys(FIELD_LABELS).map(function (f) { return String(t`<td><strong>${money(sum[f])}</strong></td>`); }).join(''))}</tr></tbody></table>`);
+  }
+
   function buildHtml(state) {
     var t = H().t, raw = H().raw, b = state.build;
     if (!b) return '';
@@ -212,6 +226,7 @@ ${raw(diff ? String(t`<h3>Changes against the published data</h3>${raw(diff.chan
     }).join(''))}</tbody></table><p>${Object.keys(diff.entities).filter(function (e) { return diff.entities[e].added || diff.entities[e].removed; }).map(function (e) {
       var x = diff.entities[e]; return e.replace(/_/g, ' ') + ': ' + x.added + ' added, ' + x.removed + ' removed';
     }).join('; ')}</p>`) : '<p>No changes.</p>')}`) : '<p>No published data loaded, so there is nothing to compare with.</p>')}
+<h3>Totals per project</h3>${raw(totalsHtml(b.dataset))}
 <p>${rep.notes.join(' ')}</p>
 </div>`);
   }
@@ -220,7 +235,7 @@ ${raw(diff ? String(t`<h3>Changes against the published data</h3>${raw(diff.chan
     var t = H().t, raw = H().raw;
     var p = f.parsed, r = f.result;
     var profiles = Object.keys(CFE.data.mappings).sort();
-    var profileSelect = t`<label>Mapping <select data-action="choose-profile" data-file="${i}">${raw(profiles.map(function (id) {
+    var profileSelect = f.legacy ? t`Mapping: ${f.profile.id} (from the legacy backup) ` : t`<label>Mapping <select data-action="choose-profile" data-file="${i}">${raw(profiles.map(function (id) {
       return String(t`<option value="${id}"${raw(f.profile && f.profile.id === id ? ' selected' : '')}>${id}</option>`);
     }).join(''))}${raw(f.profile ? '' : '<option value="" selected>(none matches)</option>')}</select></label>`;
     var sheetSelect = p.sheets.length > 1 ? t` <label>${p.parser === 'json' ? 'List' : 'Sheet'} <select data-action="choose-sheet" data-file="${i}">${raw(p.sheets.map(function (s) {
@@ -253,7 +268,8 @@ ${raw(f.provenanceError ? String(t`<p class="errors">Provenance could not be rec
 <p>Choose the files exported from PeopleSoft and the other sources. Each file is checked and previewed here. Nothing is saved until you click <strong>Keep in draft</strong>: leaving this page discards the preview.</p>
 ${raw(draftHtml(state))}
 <div class="dropzone" data-action="drop-files"><p><label class="btn">Choose files…<input type="file" multiple accept=".csv,.xlsx,.json" class="visually-hidden" data-action="pick-files"></label> or drop files here (.csv, .xlsx, .json).</p></div>
-<p class="draft-file"><label class="btn btn-small">Load draft from file…<input type="file" accept=".json" class="visually-hidden" data-action="load-draft-file"></label></p>
+<p class="draft-file"><label class="btn btn-small">Import a legacy backup…<input type="file" accept=".json" class="visually-hidden" data-action="pick-legacy"></label> <label class="btn btn-small">Load draft from file…<input type="file" accept=".json" class="visually-hidden" data-action="load-draft-file"></label></p>
+${raw(state.notices.length ? String(t`<ul class="warnings">${raw(state.notices.map(function (n) { return String(t`<li>${n}</li>`); }).join(''))}</ul>`) : '')}
 ${raw(state.busy ? '<p role="status">Reading files…</p>' : '')}
 ${raw(files.map(cardHtml).join(''))}
 ${raw(files.length ? String(t`<p class="keep"><button type="button" class="btn" data-action="keep-draft"${raw(blocker ? ' disabled' : '')}>Keep in draft</button> ${blocker}</p>`) : '')}
@@ -290,7 +306,7 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
   function render(doc, opts) {
     discard();   // a fresh page: nothing is carried over
     var main = doc.getElementById('main');
-    var state = { busy: false, draft: null, draftNote: '', message: '', saveFailed: '', pending: null };
+    var state = { busy: false, draft: null, draftNote: '', message: '', saveFailed: '', pending: null, notices: [] };
     var store = (opts && opts.store) || CFE.require('store.draft');
     function draw() { H().setHtml(main, pageHtml(state)); }
 
@@ -314,6 +330,28 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
         }
         draw();
       });
+    }
+
+    function addLegacy(file) {
+      if (!file) return Promise.resolve();
+      state.busy = true; draw();
+      return readBytes(file).then(function (bytes) {
+        return Continuum.hash.sha256Hex(bytes).then(function (sha) {
+          return CFE.require('store.legacyImport')(utf8(bytes), { name: file.name, size: file.size, lastModified: file.lastModified, sha256: sha });
+        });
+      }).then(function (r) {
+        state.busy = false;
+        state.notices = (r.notices || []).slice();
+        if (r.ok) {
+          r.entries.forEach(function (e) { files.push(e); });
+          state.message = 'Legacy backup read: ' + r.entries.length + ' sections. Add your references file so the rows match projects.';
+          Continuum.log.info('publish', 'Legacy backup read', { sections: r.entries.length, notices: state.notices.length });
+        } else {
+          state.message = r.message;
+          Continuum.log.warn('publish', 'Legacy backup refused');
+        }
+        draw();
+      }, function () { state.busy = false; state.message = 'The file could not be read. Choose it again.'; draw(); });
     }
 
     function checkDataset() {
@@ -392,6 +430,7 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
       var a = e.target.getAttribute('data-action'), i = +e.target.getAttribute('data-file');
       if (a === 'pick-files') addFiles(e.target.files);
       else if (a === 'load-draft-file') loadFromFile(e.target.files && e.target.files[0]);
+      else if (a === 'pick-legacy') addLegacy(e.target.files && e.target.files[0]);
       else if (a === 'choose-profile') redo(i, { profileId: e.target.value || null, sheet: files[i].parsed.sheet });
       else if (a === 'choose-sheet') redo(i, { sheet: e.target.value });
       else if (a === 'acknowledge') { files[i].acknowledged = e.target.checked; draw(); }
@@ -415,7 +454,7 @@ ${raw(state.saveFailed ? String(t`<p class="errors">The draft could not be saved
     };
     draw();
     return { addFiles: addFiles, files: function () { return files; }, restored: restored, keep: keep, discardDraft: discardDraft,
-      saveToFile: saveToFile, loadFromFile: loadFromFile, checkDataset: checkDataset, state: state };
+      saveToFile: saveToFile, loadFromFile: loadFromFile, checkDataset: checkDataset, addLegacy: addLegacy, state: state };
   }
 
   CFE.views.publish = { render: render, discard: discard, parse: parse, mapFile: mapFile, processFile: processFile, previewRows: PREVIEW_ROWS,

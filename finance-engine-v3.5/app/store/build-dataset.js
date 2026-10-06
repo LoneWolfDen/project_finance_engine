@@ -4,6 +4,7 @@
 //
 //   var b = CFE.store.buildDataset(draft, {nowUtc, publisher, reportingCurrency, displayName, published})
 //   // → {dataset, manifestDraft, report}
+//   CFE.store.datasetTotals(dataset)   // → {<ref>: {po_value, actual_cost, invoiced, expenses}}
 //
 // (a) references come from references-crosswalk-v1 records (ref normalised by Continuum.ref);
 // (b) POs, resource rules, timesheet rows, invoices and expenses are matched to a ref through the
@@ -236,6 +237,7 @@
     return out;
   }
 
+  CFE.store.datasetTotals = totals;
   CFE.store.buildDataset = buildDataset;
   CFE.store.diffDatasets = diffDatasets;
 })(CFE);
