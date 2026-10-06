@@ -59,6 +59,7 @@
       opportunity_numbers: ['textList', O], links: ['object', O], src: ['src', O] } },
     purchase_orders: { key: ['po_number', 'ref'], fields: {
       po_number: ['text', R], ref: ['ref', R], po_team_identifier: ['text', R], value: ['money', R], currency: ['currency', R],
+      normalized_currency: ['currency', O],   // second display currency of the PO value (legacy Normalized_Currency_Code; UI-007)
       start: ['date', R], validity_end: ['date', R], rollover_allowed: ['bool', R], approval_status: ['text', R], src: ['src', R] } },
     resource_rules: { key: ['rule_id'], fields: {
       rule_id: ['text', R], ref: ['ref', R], person_key: ['text', R], role: ['text', O], location: ['text', R],

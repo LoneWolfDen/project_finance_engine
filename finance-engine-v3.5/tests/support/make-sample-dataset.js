@@ -76,7 +76,7 @@ function build() {
 
   const purchase_orders = cfg.po_details.map((d, i) => ({
     po_number: String(d.PO_WO_Number), ref: refOfTeam[d.PO_Team_Identifier], po_team_identifier: d.PO_Team_Identifier,
-    value: d.PO_WO_value, currency: d.PO_Currency_Code, start: d.WO_StartDate, validity_end: validityEnd(d.PO_Validity),
+    value: d.PO_WO_value, currency: d.PO_Currency_Code, normalized_currency: d.Normalized_Currency_Code, start: d.WO_StartDate, validity_end: validityEnd(d.PO_Validity),
     rollover_allowed: !!d.rollover_allowed, approval_status: d.WO_Approval_Status, src: src('po_details', i)
   }));
 

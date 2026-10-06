@@ -41,6 +41,7 @@
     'app/store/draft.js',
     'app/store/build-dataset.js',
     'app/store/legacy-import.js',
+    'app/store/legacy-cfg-adapter.js',
     'app/views/shell.js',
     'app/views/diagnostics.js',
     'app/views/about.js',
@@ -73,7 +74,8 @@
     'unit/store-loader.test.js',
     'unit/views-publish.test.js',
     'unit/store-draft.test.js',
-    'unit/store-build-dataset.test.js'
+    'unit/store-build-dataset.test.js',
+    'unit/store-adapter.test.js'
   ];
 
   function loadScript(src) {

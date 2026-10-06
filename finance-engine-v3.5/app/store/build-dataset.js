@@ -87,9 +87,10 @@
       if (!ref) { miss('purchase_orders', rec, 'PO ' + rec.po_number + ' (team ' + rec.po_team_identifier + ') matches no project'); return; }
       var end = validityEnd(rec);
       if (!end) { miss('purchase_orders', rec, 'PO ' + rec.po_number + ' has no validity (mm-yy or year)'); return; }
-      purchase_orders.push({ po_number: String(rec.po_number), ref: ref, po_team_identifier: teamKey(rec.po_team_identifier), value: rec.value,
-        currency: rec.currency, start: rec.start, validity_end: end, rollover_allowed: rec.rollover_allowed === true,
-        approval_status: rec.approval_status, src: src(rec) });
+      var po = { po_number: String(rec.po_number), ref: ref, po_team_identifier: teamKey(rec.po_team_identifier), value: rec.value, currency: rec.currency };
+      if (rec.normalized_currency) po.normalized_currency = rec.normalized_currency;
+      purchase_orders.push(Object.assign(po, { start: rec.start, validity_end: end, rollover_allowed: rec.rollover_allowed === true,
+        approval_status: rec.approval_status, src: src(rec) }));
     });
 
     // (d) people, and resource rules

@@ -68,6 +68,7 @@ Key (must be unique): `po_number` + `ref`
 | `po_team_identifier` | text | yes |
 | `value` | number (amount) | yes |
 | `currency` | currency code (3 letters) | yes |
+| `normalized_currency` | currency code (3 letters) | no |
 | `start` | date YYYY-MM-DD | yes |
 | `validity_end` | date YYYY-MM-DD | yes |
 | `rollover_allowed` | true/false | yes |
@@ -194,6 +195,7 @@ Key (must be unique): `location`
 Notes:
 * `purchase_orders.validity_end` is the last day the PO is valid. It replaces the legacy `mm-yy` text.
 * `resource_rules.rate_unit` says whether `bill_rate` is per `hour` or per `day`. This replaces the ambiguous legacy `hour_mult`.
+* `purchase_orders.normalized_currency` is the second currency the PO value is also shown in (legacy `Normalized_Currency_Code`, e.g. the "PO value (USD)" card). Added 2026-10-06 (UI-007); optional, so older v1 data stays valid.
 * `expenses.converted_amount` and `converted_currency` hold the amount in the reporting currency, and `fx_rate_used` holds the rate applied.
 * `fx_rates.rate` is the number of units of `currency` per 1 unit of the reporting currency (`manifest.deployment.reporting_currency`), effective from `effective`.
 * `calendars` follow `app/data/calendars.js`: `source` and `valid_years` say where the holidays come from and which years they cover.

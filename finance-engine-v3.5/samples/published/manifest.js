@@ -8,7 +8,7 @@ window.CFE_PUBLISHED_MANIFEST = {
   "app_version": "sample-generator 1",
   "dataset_schema_version": 1,
   "data_as_of": "2025-12-19",
-  "payload_sha256": "1e5fafcd071dce8c5b975c1133f21fc5817a64465202770ca4feeb47463a30f2",
+  "payload_sha256": "5e65154ab7e070072f0e65284d92d2bd94ca826a7ba8c7ee299aee8a28cd6355",
   "sources": [
     {
       "file_id": "7d9ec8aa3e66",
