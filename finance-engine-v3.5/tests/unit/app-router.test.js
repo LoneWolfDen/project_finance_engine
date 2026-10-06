@@ -114,8 +114,10 @@
       T.test('render fills #main, sets the title and marks the current link', function () {
         var doc = page();
         CFE.views.shell.mount(doc, function () {});
-        CFE.views.shell.render(CFE.app.parse('#/portfolio'), doc);
-        assert.ok(/Views arrive in UI-001/.test(doc.getElementById('main').textContent));
+        var savedPublished = CFE.state.published;
+        CFE.state.published = null;
+        try { CFE.views.shell.render(CFE.app.parse('#/portfolio'), doc); } finally { CFE.state.published = savedPublished; }
+        assert.ok(/No published data is loaded/.test(doc.getElementById('main').textContent), 'the portfolio view (UI-001) without data');
         assert.ok(doc.querySelector('#main a[href="legacy/index.html"]'), 'link to the current app');
         assert.equal(doc.title, 'Portfolio – Finance Engine');
         assert.equal(doc.querySelector('#nav [aria-current="page"]').dataset.route, 'portfolio');

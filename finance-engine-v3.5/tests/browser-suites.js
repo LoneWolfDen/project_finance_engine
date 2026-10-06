@@ -6,6 +6,8 @@
 
   // app/** scripts the browser suites need, in load order.
   var APP_SCRIPTS = [
+    'vendor/chart.js-4.4.0/chart.umd.min.js',
+    'vendor/chartjs-plugin-datalabels-2.2.0/chartjs-plugin-datalabels.min.js',
     'vendor/xlsx-0.20.3/xlsx.full.min.js',
     'app/VERSION.js',
     'app/config.js',
@@ -43,6 +45,14 @@
     'app/store/legacy-import.js',
     'app/store/legacy-cfg-adapter.js',
     'app/views/shell.js',
+    'app/views/format.js',
+    'app/views/chart-block.js',
+    'app/views/model.js',
+    'app/views/filters.js',
+    'app/views/overview.js',
+    'app/views/burndown.js',
+    'app/views/variance.js',
+    'app/views/portfolio.js',
     'app/views/diagnostics.js',
     'app/views/about.js',
     'app/views/publish.js',
@@ -75,7 +85,8 @@
     'unit/views-publish.test.js',
     'unit/store-draft.test.js',
     'unit/store-build-dataset.test.js',
-    'unit/store-adapter.test.js'
+    'unit/store-adapter.test.js',
+    'unit/views-overview.test.js'
   ];
 
   function loadScript(src) {

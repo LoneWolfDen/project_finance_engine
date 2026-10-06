@@ -27,7 +27,9 @@
   var OWN_VIEWS = {
     diagnostics: { module: 'views.diagnostics', title: 'Diagnostics' },   // SHL-003
     about: { module: 'views.about', title: 'About' },                     // REL-001
-    publish: { module: 'views.publish', title: 'Publish' }                // IMP-004
+    publish: { module: 'views.publish', title: 'Publish' },               // IMP-004
+    portfolio: { module: 'views.portfolio', title: 'Portfolio', withRoute: true },   // UI-001
+    ref: { module: 'views.portfolio', title: 'Project', withRoute: true }            // UI-001
   };
 
   function H() { return Continuum.html; }
@@ -51,19 +53,20 @@
     switch (route.name) {
       case 'ref':
         if (!route.ref) return { title: 'Project not found', html: t`<h1>Project reference not recognised</h1><p>${route.error}</p><p><a href="#/portfolio" data-action="navigate" data-route="portfolio">Back to the portfolio</a></p>` };
-        return { title: route.ref, html: t`<h1>Project ${route.ref}</h1><p>${refLine(route.ref)}</p>` };
+        return { title: route.ref, html: t`<h1>Project ${route.ref}</h1>` };   // drawn by views/portfolio.js
       default:
-        return { title: 'Portfolio', html: t`<h1>Portfolio</h1><p>Views arrive in UI-001.</p>${H().raw(countsLine() ? String(t`<p class="counts">${countsLine()}</p>`) : '')}<p>The current app is still available: <a href="legacy/index.html">open the Finance Engine (current app)</a>.</p>` };
+        return { title: 'Portfolio', html: t`<h1>Portfolio</h1>` };   // drawn by views/portfolio.js
     }
   }
 
   function render(route, doc) {
     // Leaving Publish drops its in-memory preview (IMP-004: nothing is kept without "Keep in draft").
     if (route.name !== 'publish' && CFE.views.publish) CFE.views.publish.discard();
+    if (route.name !== 'portfolio' && route.name !== 'ref' && CFE.views.portfolio) CFE.views.portfolio.cleanup();
     var own = OWN_VIEWS[route.name];
-    if (own) {   // routes with their own view file
-      CFE.require(own.module).render(doc);
+    if (own && !(route.name === 'ref' && !route.ref)) {   // routes with their own view file
       doc.title = own.title + ' – Finance Engine';
+      if (own.withRoute) CFE.require(own.module).render(doc, route); else CFE.require(own.module).render(doc);
     } else {
       var c = content(route, doc);
       H().setHtml(doc.getElementById('main'), c.html);
@@ -84,27 +87,6 @@
       ? t` <label class="btn btn-small">Open dataset.json…<input type="file" accept=".json" multiple class="visually-hidden" data-action="open-dataset-files" aria-label="Open dataset.json and manifest.json"></label>`
       : '';
     H().setHtml(el, t`<span class="banner-icon" aria-hidden="true">${lv.icon}</span> <strong>${lv.label}:</strong> ${status.title} <a href="#/diagnostics">Details</a>${files}`);
-  }
-
-  // "Loaded: 2 references, 4 purchase orders, …" for the placeholders (views arrive in UI-001).
-  function countsLine() {
-    var p = CFE.state && CFE.state.published;
-    if (!p) return '';
-    var d = p.dataset;
-    return 'Loaded: ' + [[d.references, 'reference', 'references'], [d.purchase_orders, 'purchase order', 'purchase orders'],
-      [d.resource_rules, 'resource rule', 'resource rules'], [d.people, 'person', 'people'], [d.actuals, 'actuals month', 'actuals months'],
-      [d.invoices, 'invoice', 'invoices'], [d.expenses, 'expense', 'expenses']].map(function (c) {
-      return c[0].length + ' ' + (c[0].length === 1 ? c[1] : c[2]);
-    }).join(', ') + '.';
-  }
-
-  function refLine(ref) {
-    var p = CFE.state && CFE.state.published;
-    if (!p) return 'Project pages arrive in UI-001.';
-    var r = Continuum.ref.resolve(ref, p.dataset.references);
-    if (r.status === 'not-found') return 'This project is not in the published data.';
-    if (r.status === 'conflict') return 'This reference matches more than one project.';
-    return (r.record.name || r.record.ref) + (r.status === 'superseded' ? ' (now ' + r.record.ref + ')' : '') + '. Project pages arrive in UI-001.';
   }
 
   CFE.views.shell = { mount: mount, render: render, renderBanner: renderBanner, levels: Object.keys(LEVELS), nav: NAV.map(function (n) { return n.route; }) };
