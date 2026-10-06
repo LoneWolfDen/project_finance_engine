@@ -17,7 +17,7 @@ Last updated: 2026-10-04. When documents disagree, the higher rank wins. A lower
 | 9 | `docs/architecture/*` (TARGET, DATA_AND_STORAGE, ONEDRIVE_SHAREPOINT, COPILOT_AND_CHAT, MINIFIED_CODE_MIGRATION_STRATEGY, ADR_REGISTER) | Design intent. Where superseded by DEC rows, the DEC rows win until DOC-001 updates them |
 | 10 | `docs/assessment/*` | Evidence about the 2026-10-01 baseline (`5d453d1`). Historical; never edited |
 | 11 | The code itself | What actually happens. When it differs from rank 9 or 10, report it and do not assume the documents are right |
-| 12 | Root `README.md`, `finance-engine-v1/2/README.md` | Not authoritative (the assessment found inaccuracies) |
+| 12 | Root `README.md` (the v1/v2 READMEs are in the archive tag only) | Not authoritative (the assessment found inaccuracies) |
 
 ## 2. Where things live
 
@@ -47,7 +47,7 @@ Last updated: 2026-10-04. When documents disagree, the higher rank wins. A lower
 | `docs/architecture/TARGET_ARCHITECTURE.md` OD-5 ("proxy blocks CDNs") | **Superseded** | OD-5a |
 | `docs/architecture/COPILOT_AND_CHAT_ARCHITECTURE.md` §4 V2 (SharePoint folder as knowledge) | **Partially superseded** | DEC-033 (user-chosen Teams channel folder) |
 | Root `README.md` ("Three independent versions", server run instructions) | Inaccurate / to be replaced | REP-002, SRV-001, DOC-002 |
-| `finance-engine-v1/`, `-v2/`, `-v3/` | Superseded code | Archived by REP-002 |
+| `finance-engine-v1/`, `-v2/`, `-v3/` | Superseded code | Removed by REP-002 (2026-10-06); kept in the tag `archive/v1-v3-2026-10` |
 | `docs/assessment/*` | Historical evidence (accurate for `5d453d1`), except the statement that CDNs are blocked, which was never in the assessment; it came from OD-5 | — |
 
 The architecture documents are updated in place only by item DOC-001 (and later DOCUMENTATION items), which add "Superseded" notes rather than deleting text.

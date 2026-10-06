@@ -139,4 +139,5 @@ Full text in `docs/architecture/ADR_REGISTER.md`. All were written on 2026-10-04
 | Edge "Ask where to save each file" | 2026-10-04 | Off and disabled (policy); default folder can be changed | Owner |
 | F1.6 legacy data after SHL-004 | 2026-10-05 | **PASS**: after `git push`, restarting `server.py` and refreshing, the existing data is all there | Owner |
 | New shell (SHL-001…003) in Edge | 2026-10-05 | **PASS**: "UI is looking fine in Edge as well" (Diagnostics text not pasted yet) | Owner |
+| Archive tag `archive/v1-v3-2026-10` | 2026-10-06 | **Created and pushed by the owner** on commit `6c8c64c` (IMP-006), before REP-002 removed the folders; `git show archive/v1-v3-2026-10:finance-engine-v1/README.md` works | Owner + model check |
 | OV-1…OV-6, CSP under `file://`, storage origin, save picker, from a **synced** folder | — | **Not yet run** (needs BAS-002) | — |

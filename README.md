@@ -1,8 +1,18 @@
 ﻿# Project Finance Portfolio Engine
 
-Three independent versions. Each runs standalone.
+The app lives in `finance-engine-v3.5/`:
 
-Built by Vamsi Yedlapalli | github.com/LoneWolfDen
+* `finance-engine-v3.5/legacy/index.html` is the current app (v3.5), served by `server.py` as described below.
+* `finance-engine-v3.5/index.html` is the new app, opened directly from a folder (no server). It is being built step by step.
+
+Built by Vamsi Yedlapalli | github.com/LoneWolfDen. MIT licence (`LICENSE`).
+
+## Earlier versions (v1, v2, v3)
+
+The earlier versions were removed from this branch on 2026-10-06. They are kept unchanged in the git tag `archive/v1-v3-2026-10`:
+
+* on GitHub, open the branch menu, choose **Tags**, then `archive/v1-v3-2026-10`, and browse the folders;
+* or in a terminal: `git show archive/v1-v3-2026-10:finance-engine-v1/README.md`, or `git checkout archive/v1-v3-2026-10` to look around (then `git checkout -` to come back).
 
 ## Run finance-engine-v3.5
 

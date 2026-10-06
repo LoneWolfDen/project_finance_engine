@@ -1,8 +1,9 @@
-﻿__pycache__/
+﻿# One ignore file for the repository (CL-16). finance-engine-v3.5/.gitignore adds the
+# exception for the synthetic Excel test fixtures.
+__pycache__/
 *.pyc
 *.db
 *.xlsx
-dashboard_config.json
 # Published data and the import drop folder hold real data: never commit them (STO-003, ADR-017).
 finance-engine-v3.5/published/
 Finance-Drop/
