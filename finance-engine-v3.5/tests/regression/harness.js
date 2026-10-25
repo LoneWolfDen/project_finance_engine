@@ -35,8 +35,14 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
   await page.clock.setFixedTime(new Date("2025-11-15T10:00:00Z"));
   page.on("pageerror", (e) => out.errors.push(e.message));
   page.on("dialog", (d) => d.accept(d.type() === "prompt" ? "1234" : undefined));
+  // Wait on the page's own timer queue: a timer scheduled now fires after every shorter
+  // timer the app already scheduled (e.g. drawCharts at 60ms, re-render at 400ms), however slow the machine.
+  const settle = async () => {
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 450)));
+    await page.waitForLoadState("networkidle");
+  };
   await page.goto(`http://localhost:${port}/`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(400);
+  await settle();
 
   // Chart.js rewrites canvas size attributes in timing-dependent order; keep only the id
   const norm = (html) => html.replace(/<canvas[^>]*?id="([^"]*)"[^>]*>/g, '<canvas id="$1">');
@@ -44,11 +50,12 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
     const res = {};
     for (const t of tabs) {
       await page.evaluate((t) => show(t), t);
-      await page.waitForTimeout(250);
+      await settle();
       res[t] = await page.evaluate(() => ({
         nav: document.getElementById("nav").innerHTML,
         app: document.getElementById("app").innerHTML.replace(/<canvas[^>]*?id="([^"]*)"[^>]*>/g, '<canvas id="$1">'),
-        charts: Object.values(Chart.instances).map((c) => ({
+        // only charts on the page (a draw timer from an earlier render can leave a detached one)
+        charts: Object.values(Chart.instances).filter((c) => c.canvas.isConnected).map((c) => ({
           type: c.config.type,
           labels: c.data.labels,
           datasets: c.data.datasets.map((d) => ({ label: d.label, data: d.data, type: d.type })),
@@ -57,12 +64,23 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
     }
     out.snaps[name] = res;
   };
-  // Uploads re-render 400ms after showing their report, so grab the report as soon as it appears
+  // An upload writes a report into #uploadPreview, then re-renders the page (which drops it).
+  // Record the report with a MutationObserver and wait for that re-render to finish.
   const upload = async (selector, file, key) => {
+    await page.evaluate(() => {
+      const el = document.getElementById("uploadPreview");
+      window.__previewEl = el;
+      window.__preview = "";
+      new MutationObserver(() => {
+        if (el.innerHTML.length > 50) window.__preview = el.innerHTML;
+      }).observe(el, { childList: true, subtree: true, characterData: true });
+    });
     await page.setInputFiles(selector, path.join(appDir, file));
-    await page.waitForFunction(() => (document.getElementById("uploadPreview")?.innerHTML || "").length > 50, null, { timeout: 3000, polling: 20 });
-    out.snaps[key] = await page.evaluate(() => document.getElementById("uploadPreview").innerHTML);
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => window.__preview.length > 50 && !document.contains(window.__previewEl), null, {
+      timeout: 10000,
+    });
+    out.snaps[key] = await page.evaluate(() => window.__preview);
+    await page.waitForLoadState("networkidle");
   };
   const download = async (name, fn) => {
     const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 15000 }), page.evaluate(fn)]);
@@ -95,20 +113,27 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
       await page.evaluate((t) => (document.getElementById("cfgImportTarget").value = t), target);
       await page.setInputFiles("#cfgImportFile", fs.existsSync(path.join(__dirname, "fixtures", file)) ? path.join(__dirname, "fixtures", file) : path.join(appDir, file));
       await page.evaluate(() => cfgImportFile());
-      await page.waitForTimeout(500);
+      // the file is read asynchronously; save only once it is in the textarea
+      await page.waitForFunction(() => document.getElementById("cfgImportStatus").textContent.includes("loaded into"), null, {
+        timeout: 10000,
+      });
       await page.evaluate((t) => doSave(t), target);
-      await page.waitForTimeout(300);
+      await settle(); // doSave re-renders after 400ms
     });
   }
   await snap("2_uploaded");
 
   // Filters
   await step("labels", () => page.evaluate(() => { showDataLabels = true; render(); }));
+  await settle();
   await step("year", () => page.evaluate(() => setYear("2025")));
+  await settle();
   await snap("3_year_labels", ["overview", "burndown", "monthly", "utilization"]);
   await step("slicer", () => page.evaluate(() => { setYear(""); const D = buildData(); togglePoTeam(D.allPoTeams[0], true); }));
+  await settle();
   await snap("4_slicer", ["overview", "burndown", "monthly", "po", "invoices", "resources", "utilization", "expenses"]);
   await step("slicer reset", () => page.evaluate(() => { selectAllPO(); showDataLabels = false; render(); }));
+  await settle();
 
   // Sort a table + group toggles
   await step("sort", async () => {
@@ -120,7 +145,7 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
   // Resources editing: add row, then save
   await step("res edit", async () => {
     await page.evaluate(() => { show("resources"); addResRow(); saveResTable(); });
-    await page.waitForTimeout(300);
+    await settle();
   });
   await snap("5_res_added", ["resources", "overview", "utilization"]);
 
@@ -129,9 +154,9 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
     await page.evaluate(() => show("scenarios"));
     await page.fill("#scenName", "BaseCase");
     await page.evaluate(() => saveScenario());
-    await page.waitForTimeout(200);
+    await settle();
     await page.evaluate(() => typeof compareScenarios === "function" && compareScenarios());
-    await page.waitForTimeout(200);
+    await settle();
     out.snaps.scenarios = await page.evaluate(() => document.getElementById("app").innerHTML);
   });
 
@@ -147,7 +172,7 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
     for (const q of ["budget", "burn rate", "R1_Lead", "invoices"]) {
       await page.fill("#chatIn", q);
       await page.evaluate(() => sendChat());
-      await page.waitForTimeout(300);
+      await settle();
     }
     out.snaps.chat = await page.evaluate(() => document.getElementById("chatMsgs").innerHTML);
   });
@@ -157,7 +182,9 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
     await page.evaluate(() => show("upload"));
     await page.setInputFiles("#solutionExcel", path.join(__dirname, "fixtures/solution.xlsx"));
     await page.evaluate(() => parseSolutionExcel());
-    await page.waitForTimeout(800);
+    await page.waitForFunction(() => document.getElementById("solutionPreview").innerHTML.length > 50, null, {
+      timeout: 10000,
+    });
     out.snaps.solution = await page.evaluate(() => document.getElementById("solutionPreview").innerHTML);
   });
   await step("factory modal", async () => {
@@ -169,7 +196,7 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
   // Master save (PIN) + factory reset paths
   await step("master", async () => {
     await page.evaluate(() => promptMasterSave());
-    await page.waitForTimeout(200);
+    await settle();
     out.snaps.masterModal = await page.evaluate(() => document.body.lastElementChild.outerHTML);
   });
 
