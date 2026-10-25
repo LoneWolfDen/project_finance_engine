@@ -30,6 +30,9 @@ funding figures (cost from today, funded until, days covered, additional needed)
 independent count of UK working days.
 `robustness-check.js` covers bank-holiday warnings and editing, duplicate resource rules,
 the server refusing writes from other websites, and save history with restore.
+`excel-check.js` exports the Excel workbook (sheets, native charts, currency formats), imports it
+back into a fresh app unchanged (also with the repo's test files), imports edits made in Excel,
+rejects invalid data and checks the fallback without openpyxl. Needs `python3` with openpyxl.
 Use it for refactors, where the output should not change at all.
 
 `fixtures/solution.xlsx` is a small Solution Excel for the Smart Parser.

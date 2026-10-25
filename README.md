@@ -58,6 +58,11 @@ and the additional amount needed. Versions are stored in the config (server and 
 The server builds it with `openpyxl` (`pip install -r requirements.txt`; the Docker image includes it).
 Without it the app falls back to a simpler workbook without charts or configuration.
 
+To make changes in Excel: edit the configuration sheets (keep the column headers; dates as
+yyyy-mm-dd or Excel dates), then **Data & Reports → Import Excel workbook → Preview import**.
+The preview shows the rows per sheet and blocks invalid data; **Apply import** replaces those
+sections, and the previous config stays in **Settings → Save history**.
+
 ## Run finance-engine-v3.5
 
 ### Option 1: Run with Python
