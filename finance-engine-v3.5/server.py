@@ -2,6 +2,7 @@
 Project Finance Portfolio Engine v3.5 — SQLite-backed server.
 Finance Engine – Version 3.5
 GET  /           → serves index.html
+GET  /css/*, /js/*, /data/* → serves the page's static .css/.js files
 GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
 POST /api/config → saves config JSON to SQLite
@@ -26,6 +27,8 @@ OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 BASE_DIR = Path(__file__).parent
 HTML_FILE = BASE_DIR / "index.html"
 DB_FILE = BASE_DIR / "finance_engine.db"
+STATIC_DIRS = ('/css/', '/js/', '/data/')
+STATIC_TYPES = {'.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8'}
 
 DEFAULT_CONFIG = {
     "summary": {"total_budget": 0, "used": 0, "remaining": 0},
@@ -77,6 +80,18 @@ class Handler(BaseHTTPRequestHandler):
             data = json.dumps(data)
         self.wfile.write(data.encode())
 
+    def send_static(self, url_path):
+        file = (BASE_DIR / url_path.lstrip('/')).resolve()
+        # Only serve known file types from inside BASE_DIR (no ../ escapes)
+        if BASE_DIR.resolve() not in file.parents or file.suffix not in STATIC_TYPES or not file.is_file():
+            self.send_json({"error": "Not found"}, 404)
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", STATIC_TYPES[file.suffix])
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.end_headers()
+        self.wfile.write(file.read_bytes())
+
     def do_GET(self):
         if self.path == '/api/config':
             data = load_config('working')
@@ -88,6 +103,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"source": "finance-engine-v3 working ✅"})
         elif self.path == '/api/health':
             self.send_json({"status": "ok", "version": "3.0"})
+        elif self.path.split('?')[0].startswith(STATIC_DIRS):
+            self.send_static(self.path.split('?')[0])
         else:
             if HTML_FILE.exists():
                 self.send_response(200)

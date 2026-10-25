@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 *.db
 *.xlsx
+tests/regression/node_modules
+!tests/regression/fixtures/*.xlsx

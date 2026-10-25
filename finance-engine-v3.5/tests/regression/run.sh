@@ -1,0 +1,22 @@
+#!/bin/bash
+# Compare the working tree's finance-engine-v3.5 against a git ref (default HEAD).
+# The ref's rendered output is the baseline; any difference in any tab, chart,
+# export, chat reply or modal is printed and the script exits non-zero.
+#   ./run.sh            # working tree vs last commit
+#   ./run.sh main       # working tree vs main
+set -e
+REF=${1:-HEAD}
+HERE=$(cd "$(dirname "$0")" && pwd)
+APP=$(cd "$HERE/../.." && pwd)
+REPO=$(git -C "$APP" rev-parse --show-toplevel)
+APP_REL=${APP#"$REPO"/}
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+[ -d "$HERE/node_modules" ] || (cd "$HERE" && npm install --silent)
+git -C "$REPO" archive "$REF" "$APP_REL" | tar -x -C "$TMP"
+cd "$HERE"
+echo "Baseline: $REF"
+node harness.js "$TMP/$APP_REL" 3201 "$TMP/base.json"
+echo "Working tree:"
+node harness.js "$APP" 3202 "$TMP/new.json"
+node compare.js "$TMP/base.json" "$TMP/new.json"
