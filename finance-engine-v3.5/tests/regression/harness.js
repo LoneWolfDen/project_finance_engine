@@ -15,11 +15,26 @@ const CDN = {
   "jspdf.plugin.autotable.min.js": "jspdf-autotable/dist/jspdf.plugin.autotable.min.js",
   "pptxgen.bundle.js": "pptxgenjs/dist/pptxgen.bundle.js",
 };
-const TABS = ["overview","burndown","monthly","po","invoices","resources","utilization","expenses","scenarios","upload","config"];
+const TABS = [
+  "overview",
+  "burndown",
+  "monthly",
+  "po",
+  "invoices",
+  "resources",
+  "utilization",
+  "expenses",
+  "scenarios",
+  "upload",
+  "config",
+];
 
 (async () => {
   // Refuse to run against a server that is already up (it would have stale data)
-  const inUse = await fetch(`http://localhost:${port}/api/health`).then(() => true, () => false);
+  const inUse = await fetch(`http://localhost:${port}/api/health`).then(
+    () => true,
+    () => false,
+  );
   if (inUse) throw new Error(`port ${port} is already in use; stop that server first`);
   fs.rmSync(path.join(appDir, "finance_engine.db"), { force: true });
   const srv = spawn("python3", ["server.py"], { cwd: appDir, env: { ...process.env, PORT: port }, stdio: "ignore" });
@@ -55,11 +70,44 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
         nav: document.getElementById("nav").innerHTML,
         app: document.getElementById("app").innerHTML.replace(/<canvas[^>]*?id="([^"]*)"[^>]*>/g, '<canvas id="$1">'),
         // only charts on the page (a draw timer from an earlier render can leave a detached one)
-        charts: Object.values(Chart.instances).filter((c) => c.canvas.isConnected).map((c) => ({
-          type: c.config.type,
-          labels: c.data.labels,
-          datasets: c.data.datasets.map((d) => ({ label: d.label, data: d.data, type: d.type })),
-        })),
+        charts: Object.values(Chart.instances)
+          .filter((c) => c.canvas.isConnected)
+          .map((c) => {
+            // Full config as written by the app: every dataset property and option.
+            // Functions (label formatters, tick callbacks) are compared by their output on sample values.
+            const samples = [null, 0, 999.4, 1234.5, 98765, -5000];
+            const plain = (v) => {
+              if (typeof v === "function")
+                return (
+                  "fn: " +
+                  samples
+                    .map((s) => {
+                      try {
+                        return String(v(s));
+                      } catch (e) {
+                        return "throws";
+                      }
+                    })
+                    .join(" | ")
+                );
+              if (Array.isArray(v)) return v.map(plain);
+              if (v && typeof v === "object")
+                return Object.fromEntries(
+                  Object.keys(v)
+                    .sort()
+                    .map((k) => [k, plain(v[k])]),
+                );
+              return v;
+            };
+            const cfg = c.config._config;
+            return {
+              canvas: c.canvas.id,
+              type: cfg.type,
+              labels: plain(cfg.data.labels),
+              datasets: plain(cfg.data.datasets.map(({ _meta, ...d }) => d)),
+              options: plain(cfg.options),
+            };
+          }),
       }));
     }
     out.snaps[name] = res;
@@ -89,12 +137,18 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
     let content = buf.length;
     if (name === "excel") {
       const wb = XLSX.read(buf);
-      content = Object.fromEntries(wb.SheetNames.map((s) => [s, XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1 })]));
+      content = Object.fromEntries(
+        wb.SheetNames.map((s) => [s, XLSX.utils.sheet_to_json(wb.Sheets[s], { header: 1 })]),
+      );
     } else if (name === "config") content = JSON.parse(buf.toString());
     out.downloads[name] = { file: dl.suggestedFilename(), content };
   };
   const step = async (label, fn) => {
-    try { await fn(); } catch (e) { out.errors.push(`[harness] ${label}: ${e.message.split("\n")[0]}`); }
+    try {
+      await fn();
+    } catch (e) {
+      out.errors.push(`[harness] ${label}: ${e.message.split("\n")[0]}`);
+    }
   };
 
   await snap("1_defaults");
@@ -107,16 +161,29 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
     await upload("input[onchange*=\"'actuals'\"]", "test_Timesheet.csv", "preview_actuals");
   });
   // Settings: import PO details, invoices, expenses into textareas and save each
-  for (const [target, file] of [["po_details","test_PO_Details.json"],["invoices","test_Invoices.json"],["expenses","test_Expenses.json"]]) {
+  for (const [target, file] of [
+    ["po_details", "test_PO_Details.json"],
+    ["invoices", "test_Invoices.json"],
+    ["expenses", "test_Expenses.json"],
+  ]) {
     await step("cfg " + target, async () => {
       await page.evaluate(() => show("config"));
       await page.evaluate((t) => (document.getElementById("cfgImportTarget").value = t), target);
-      await page.setInputFiles("#cfgImportFile", fs.existsSync(path.join(__dirname, "fixtures", file)) ? path.join(__dirname, "fixtures", file) : path.join(appDir, file));
+      await page.setInputFiles(
+        "#cfgImportFile",
+        fs.existsSync(path.join(__dirname, "fixtures", file))
+          ? path.join(__dirname, "fixtures", file)
+          : path.join(appDir, file),
+      );
       await page.evaluate(() => cfgImportFile());
       // the file is read asynchronously; save only once it is in the textarea
-      await page.waitForFunction(() => document.getElementById("cfgImportStatus").textContent.includes("loaded into"), null, {
-        timeout: 10000,
-      });
+      await page.waitForFunction(
+        () => document.getElementById("cfgImportStatus").textContent.includes("loaded into"),
+        null,
+        {
+          timeout: 10000,
+        },
+      );
       await page.evaluate((t) => doSave(t), target);
       // what the save reported: validation errors, or the success toast
       out.snaps["save_" + target] = await page.evaluate(
@@ -151,15 +218,32 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
   });
 
   // Filters
-  await step("labels", () => page.evaluate(() => { showDataLabels = true; render(); }));
+  await step("labels", () =>
+    page.evaluate(() => {
+      showDataLabels = true;
+      render();
+    }),
+  );
   await settle();
   await step("year", () => page.evaluate(() => setYear("2025")));
   await settle();
   await snap("3_year_labels", ["overview", "burndown", "monthly", "utilization"]);
-  await step("slicer", () => page.evaluate(() => { setYear(""); const D = buildData(); togglePoTeam(D.allPoTeams[0], true); }));
+  await step("slicer", () =>
+    page.evaluate(() => {
+      setYear("");
+      const D = buildData();
+      togglePoTeam(D.allPoTeams[0], true);
+    }),
+  );
   await settle();
   await snap("4_slicer", ["overview", "burndown", "monthly", "po", "invoices", "resources", "utilization", "expenses"]);
-  await step("slicer reset", () => page.evaluate(() => { selectAllPO(); showDataLabels = false; render(); }));
+  await step("slicer reset", () =>
+    page.evaluate(() => {
+      selectAllPO();
+      showDataLabels = false;
+      render();
+    }),
+  );
   await settle();
 
   // Sort a table + group toggles
@@ -171,7 +255,11 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
 
   // Resources editing: add row, then save
   await step("res edit", async () => {
-    await page.evaluate(() => { show("resources"); addResRow(); saveResTable(); });
+    await page.evaluate(() => {
+      show("resources");
+      addResRow();
+      saveResTable();
+    });
     await settle();
   });
   await snap("5_res_added", ["resources", "overview", "utilization"]);
@@ -233,7 +321,9 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
   });
 
   fs.writeFileSync(outFile, JSON.stringify(out, null, 1));
-  console.log(`errors=${out.errors.length} snaps=${Object.keys(out.snaps).length} downloads=${Object.keys(out.downloads).join(",")}`);
+  console.log(
+    `errors=${out.errors.length} snaps=${Object.keys(out.snaps).length} downloads=${Object.keys(out.downloads).join(",")}`,
+  );
   out.errors.forEach((e) => console.log("  ", e));
   await browser.close();
   srv.kill();
