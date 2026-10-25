@@ -15,10 +15,13 @@ function renderInvoices(model) {
   const paid = invs.filter((i) => i.status === "Paid");
   const submitted = invs.filter((i) => i.status === "Submitted");
   const draft = invs.filter((i) => i.status === "Draft");
-  const totalInv = invs.reduce((s, i) => s + i.amount, 0);
-  const totalPaid = paid.reduce((s, i) => s + i.amount, 0);
+  // invoice amounts are in their team's PO currency; totals are converted to the model currency
+  const teamCur = (i) => model.teamCurrency[(i.po_team || "").replace(/\s+/g, "")];
+  const teamSym = (i) => currencySymbol(teamCur(i));
+  const sumAmount = (list) => list.reduce((s, i) => s + model.toBase(i.amount, teamCur(i)), 0);
+  const totalInv = sumAmount(invs);
+  const totalPaid = sumAmount(paid);
 
-  const sumAmount = (list) => list.reduce((s, i) => s + i.amount, 0);
   let html = '<div class="cards">';
   html += statCard("b", "Total Invoices", invs.length);
   html += statCard("g", "Total Invoiced", fmtMoney(totalInv));
@@ -56,7 +59,7 @@ function renderInvoices(model) {
         const barStyle = `left:${left}%;width:${width}%;background:${statusColor[i.status] || "#666"}`;
         html += '<div class="tl-row">';
         html += `<span class="nm" style="min-width:160px;font-size:.65rem">${i.invoice_number}</span>`;
-        html += `<div class="ba"><div class="br" style="${barStyle}">${fmtMoney(i.amount)} · ${i.status}</div></div>`;
+        html += `<div class="ba"><div class="br" style="${barStyle}">${fmtMoney(i.amount, teamSym(i))} · ${i.status}</div></div>`;
         html += "</div>";
       });
       html += "</div>";
@@ -76,7 +79,8 @@ function renderInvoices(model) {
     invGroups[t].push(i);
   });
   Object.entries(invGroups).forEach(([team, items]) => {
-    html += groupHeaderRow(8, `${team} (${items.length} invoices, ${fmtMoney(sumAmount(items))})`);
+    const teamTotal = items.reduce((s, i) => s + i.amount, 0);
+    html += groupHeaderRow(8, `${team} (${items.length} invoices, ${fmtMoney(teamTotal, teamSym(items[0]))})`);
     html += `<tr class="grp-rows"><td colspan="8" style="padding:0"><table style="width:100%;margin:0;box-shadow:none"><tbody>`;
     items.forEach((i) => {
       const statusStyle =
@@ -86,7 +90,7 @@ function renderInvoices(model) {
         i.invoice_number,
         i.period_from,
         i.period_to,
-        fmtMoney(i.amount),
+        fmtMoney(i.amount, teamSym(i)),
         cell(i.status, statusStyle + ";font-weight:600"),
         i.paid_date || "—",
         i.notes || "",

@@ -150,7 +150,7 @@ function exportPDF() {
       head: [["Metric", "Value"]],
       body: [
         ["PO Value (" + model.fc.currency + ")", fmtMoney(model.fc.totalPOValue)],
-        ["PO Value (" + model.fc.normCurrency + ")", fmtMoney(model.fc.normPO, "$")],
+        ["PO Value (" + model.fc.normCurrency + ")", fmtMoney(model.fc.normPO, currencySymbol(model.fc.normCurrency))],
         ["Total Forecast", fmtMoney(model.fc.total)],
         ["Total Actuals", fmtMoney(model.totalActuals)],
         ["Expenses", fmtMoney(model.totalExpenses)],
@@ -197,7 +197,7 @@ function exportPDF() {
     doc.text("Resources (" + res.length + ")", 14, 18);
     doc.autoTable({
       startY: 22,
-      head: [["Name", "Role", "PO_Team", "Start", "End", "Rate", "Alloc", "£/Day"]],
+      head: [["Name", "Role", "PO_Team", "Start", "End", "Rate", "Alloc", "Cost/Day"]],
       body: res
         .slice(0, 40)
         .map((r) => [
@@ -206,9 +206,9 @@ function exportPDF() {
           r.po_team || "",
           r.start,
           r.end,
-          "£" + r.bill_rate,
+          rateSymbol(model, r) + r.bill_rate,
           r.alloc * 100 + "%",
-          "£" + (r.bill_rate * r.alloc * 8).toFixed(0),
+          rateSymbol(model, r) + (r.bill_rate * r.alloc * 8).toFixed(0),
         ]),
       theme: "striped",
       styles: { fontSize: 6 },
@@ -306,7 +306,7 @@ function exportPPTX() {
     );
     const summaryRows = [
       ["PO Value (" + model.fc.currency + ")", fmtMoney(model.fc.totalPOValue)],
-      ["PO Value (" + model.fc.normCurrency + ")", fmtMoney(model.fc.normPO, "$")],
+      ["PO Value (" + model.fc.normCurrency + ")", fmtMoney(model.fc.normPO, currencySymbol(model.fc.normCurrency))],
       ["Total Forecast", fmtMoney(model.fc.total)],
       ["Total Actuals", fmtMoney(model.totalActuals)],
       ["Expenses", fmtMoney(model.totalExpenses)],
@@ -433,7 +433,7 @@ function exportPPTX() {
       { text: "End", options: hdrOpts },
       { text: "Rate", options: hdrOpts },
       { text: "Alloc", options: hdrOpts },
-      { text: "£/Day", options: hdrOpts },
+      { text: "Cost/Day", options: hdrOpts },
     ];
     const rRows = res.slice(0, 20).map((r) => [
       { text: r.name, options: cellOpts },
@@ -441,9 +441,9 @@ function exportPPTX() {
       { text: r.po_team || "", options: { fontSize: 7 } },
       { text: r.start, options: cellOpts },
       { text: r.end, options: cellOpts },
-      { text: "£" + r.bill_rate, options: cellOpts },
+      { text: rateSymbol(model, r) + r.bill_rate, options: cellOpts },
       { text: r.alloc * 100 + "%", options: cellOpts },
-      { text: "£" + (r.bill_rate * r.alloc * 8).toFixed(0), options: cellOpts },
+      { text: rateSymbol(model, r) + (r.bill_rate * r.alloc * 8).toFixed(0), options: cellOpts },
     ]);
     slide.addTable([rHdr, ...rRows], {
       x: 0.2,

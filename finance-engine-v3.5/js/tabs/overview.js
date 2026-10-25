@@ -21,7 +21,12 @@ function renderOverview(model) {
   const statusBadge = `<span class="badge ${risk === "Low" ? "badge-low" : "badge-over"}">${model.fc.status} · ${risk}</span>`;
   html += '<div class="cards">';
   html += statCard("b", `PO Value (${model.fc.currency})`, fmtMoney(model.fc.totalPOValue));
-  html += statCard("p", `PO Value (${model.fc.normCurrency})`, fmtMoney(model.fc.normPO, "$"));
+  if (model.fc.normCurrency !== model.fc.currency)
+    html += statCard(
+      "p",
+      `PO Value (${model.fc.normCurrency})`,
+      fmtMoney(model.fc.normPO, currencySymbol(model.fc.normCurrency)),
+    );
   html += statCard("g", "Total Actuals", fmtMoney(model.totalActuals));
   html += statCard("o", "Remaining Budget", fmtMoney(model.remaining));
   html += statCard("r", "Burn Rate/Day", fmtMoney(model.fc.rate));
@@ -74,7 +79,9 @@ function renderOverview(model) {
   html += '<span style="color:#e65100">🟠 85-100%</span> At Risk · ';
   html += '<span style="color:#c62828">🔴 &gt;100%</span> Over Budget</p>';
   html += '<div class="cards">';
+  // each team's PO value and forecast are in that team's PO currency
   Object.entries(teamBudgets).forEach(([team, data]) => {
+    const sym = currencySymbol(model.teamCurrency[team]);
     const teamFc = fcPerTeam[team] || 0;
     const overBudget = teamFc > data.po;
     const pct = data.po ? Math.round((teamFc / data.po) * 100) : 0;
@@ -82,9 +89,9 @@ function renderOverview(model) {
     const statusMsg = overBudget ? `${data.status} · Over Budget` : `${data.status} · On Track`;
     html += `<div class="card ${color}">`;
     html += `<h3 style="font-size:.68rem">${team}</h3>`;
-    html += `<div class="v" style="font-size:1rem">${fmtMoney(data.po)}</div>`;
+    html += `<div class="v" style="font-size:1rem">${fmtMoney(data.po, sym)}</div>`;
     html += `<div style="font-size:.7rem;margin-top:3px">`;
-    html += `<span class="badge ${overBudget ? "badge-over" : "badge-low"}">${statusMsg}</span> · Fc: ${pct}% (${fmtMoney(teamFc)})`;
+    html += `<span class="badge ${overBudget ? "badge-over" : "badge-low"}">${statusMsg}</span> · Fc: ${pct}% (${fmtMoney(teamFc, sym)})`;
     html += `</div></div>`;
   });
   html += "</div></div>";
@@ -100,8 +107,16 @@ function drawOverviewCharts(model) {
     data: {
       labels: months.map((m) => m.month),
       datasets: [
-        { label: "Forecast (£)", data: months.map((m) => m.forecast || null), backgroundColor: "rgba(33,150,243,0.7)" },
-        { label: "Actuals (£)", data: months.map((m) => m.actuals || null), backgroundColor: "rgba(76,175,80,0.7)" },
+        {
+          label: `Forecast (${moneySymbol})`,
+          data: months.map((m) => m.forecast || null),
+          backgroundColor: "rgba(33,150,243,0.7)",
+        },
+        {
+          label: `Actuals (${moneySymbol})`,
+          data: months.map((m) => m.actuals || null),
+          backgroundColor: "rgba(76,175,80,0.7)",
+        },
       ],
     },
     options: {

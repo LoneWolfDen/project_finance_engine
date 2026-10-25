@@ -70,14 +70,44 @@ function render() {
     '<label style="margin-left:8px;font-size:.72rem;cursor:pointer;white-space:nowrap"><input type="checkbox" ' +
     (showDataLabels ? "checked" : "") +
     ' onchange="showDataLabels=this.checked;render()"> Show Data Labels</label>';
+  navHtml += normCurrencySelect(model);
   document.getElementById("nav").innerHTML = navHtml;
-  document.getElementById("app").innerHTML = `<div class="tab active">${renderTab(tab, model)}</div>`;
+  document.getElementById("app").innerHTML =
+    `<div class="tab active">${fxWarningBanner(model)}${renderTab(tab, model)}</div>`;
   // Cancel a draw still pending from an earlier render (e.g. at startup, when the server
   // data arrives right after the first render): it would draw stale data onto this canvas
   clearTimeout(drawChartsTimer);
   drawChartsTimer = setTimeout(() => drawTabCharts(tab, model), 60);
 }
 
+// Normalised currency picker: every currency in the FX rates or the POs
+function normCurrencySelect(model) {
+  const codes = [
+    ...new Set([...model.cfg.fx_rates.map((r) => r.code), ...model.fc.poCurrencies, model.fc.normCurrency]),
+  ].sort();
+  const options = codes
+    .map((c) => `<option value="${c}"${c === model.fc.normCurrency ? " selected" : ""}>${c}</option>`)
+    .join("");
+  return (
+    '<label style="margin-left:8px;font-size:.72rem;white-space:nowrap" title="Totals and charts are converted to this currency">' +
+    `Normalised: <select id="normCurrency" onchange="setNormalizedCurrency(this.value)" style="font-size:.72rem">${options}</select></label>`
+  );
+}
+function setNormalizedCurrency(code) {
+  const cfg = loadWork();
+  cfg.normalized_currency = code;
+  saveWork(cfg);
+  render();
+}
+// Currencies with no FX rate would silently convert at 1
+function fxWarningBanner(model) {
+  if (!model.fxWarnings.length) return "";
+  return (
+    '<div class="val-err" style="margin-bottom:.8rem">⚠️ No FX rate for ' +
+    model.fxWarnings.join(", ") +
+    " in Settings → FX Rates (as of today), so those amounts are not converted. Add a rate to fix the totals.</div>"
+  );
+}
 function setYear(y) {
   selectedYear = y;
   selectedPoTeams = [];
@@ -154,7 +184,12 @@ function show(id) {
 // Charts for the tab with this id, drawn once its HTML (with the canvases) is on the page.
 // Looked up at call time because the tab files load after this one.
 function drawTabCharts(id, model) {
-  const draw = { overview: drawOverviewCharts, burndown: drawBurndownCharts, monthly: drawVarianceCharts }[id];
+  const draw = {
+    overview: drawOverviewCharts,
+    burndown: drawBurndownCharts,
+    monthly: drawVarianceCharts,
+    resources: drawResourceCharts,
+  }[id];
   if (draw) draw(model);
 }
 // HTML for the tab with this id (see TABS)
@@ -174,8 +209,10 @@ function renderTab(id, model) {
   }[id](model);
 }
 
-// 1234.5 -> "£1,235"; null/undefined -> "—". Pass "$" etc. for other currencies.
-function fmtMoney(n, c = "£") {
+// Symbol of the currency the model reports in (set by buildData)
+let moneySymbol = "£";
+// 1234.5 -> "£1,235"; null/undefined -> "—". Pass a symbol for other currencies (see currencySymbol).
+function fmtMoney(n, c = moneySymbol) {
   return n != null ? c + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—";
 }
 
@@ -202,8 +239,10 @@ document.addEventListener("click", function (e) {
   rows.sort((a, b) => {
     let av = a.cells[col] ? a.cells[col].textContent.trim() : "",
       bv = b.cells[col] ? b.cells[col].textContent.trim() : "";
-    const an = parseFloat(av.replace(/[£$,%—]/g, "")),
-      bn = parseFloat(bv.replace(/[£$,%—]/g, ""));
+    // strip currency symbols/codes, thousands separators and % before comparing numbers
+    const num = (s) => parseFloat(s.replace(/^[A-Z]{3} /, "").replace(/[£$€₹¥,%—]|[A-Z]\$/g, ""));
+    const an = num(av),
+      bn = num(bv);
     if (!isNaN(an) && !isNaN(bn)) return dir === "asc" ? an - bn : bn - an;
     const ad = new Date(av),
       bd = new Date(bv);

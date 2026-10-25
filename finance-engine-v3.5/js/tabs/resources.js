@@ -25,7 +25,7 @@ const RES_TABLE_COLS = [
   "Rate ⇅",
   "HrMult",
   "Alloc ⇅",
-  "Fc £/day",
+  "Fc/day",
   "Del",
 ];
 
@@ -68,6 +68,7 @@ function renderResources(model) {
   html += statCard("o", "Forecast Days", model.fc.days);
   html += statCard("r", "Total Forecast", fmtMoney(model.fc.total));
   html += "</div>";
+  html += renderResourceVersions(model);
   html += '<div style="margin-bottom:.5rem;display:flex;gap:.5rem;align-items:center">';
   html += '<button class="btn btn-blue" onclick="saveResTable()">💾 Save All (recalculates forecast)</button>';
   html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
@@ -91,9 +92,9 @@ function renderResources(model) {
     html += "</div>";
     html += `<div class="tw"><table class="resGrpTable" id="res_${tid}">${tableHead(RES_TABLE_COLS)}<tbody>`;
     members.forEach((r) => {
-      const dailyCost = r.bill_rate * r.alloc * 8;
+      const dailyCost = r.bill_rate * r.alloc * 8; // in the team's PO currency
       const values = { ...r, empl_id: r.empl_id || 0, projectID: r.projectID || "" };
-      html += `<tr>${editableResCells(values)}<td style="font-weight:600">${fmtMoney(dailyCost)}</td><td>${RES_DELETE_BTN}</td></tr>`;
+      html += `<tr>${editableResCells(values)}<td style="font-weight:600">${fmtMoney(dailyCost, rateSymbol(model, r))}</td><td>${RES_DELETE_BTN}</td></tr>`;
     });
     html += `</tbody></table></div></div>`;
   });
@@ -155,7 +156,11 @@ function saveResTable() {
     });
   });
   const cfg = loadWork();
-  cfg.resources = resources;
+  // With the PO_Team slicer on only the selected teams' tables are on screen; keep the other teams' rules
+  const norm = (t) => (t || "").replace(/\s+/g, "");
+  const shown = selectedPoTeams.length ? selectedPoTeams.map(norm) : null;
+  const hidden = shown ? cfg.resources.filter((r) => !shown.includes(norm(r.po_team))) : [];
+  cfg.resources = [...hidden, ...resources];
   saveWork(cfg);
   toast("✓ Resources saved — forecast recalculated!");
   setTimeout(render, 400);

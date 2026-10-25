@@ -83,3 +83,10 @@ function varianceStyle(v) {
 function pctColor(pct) {
   return pct > 90 ? "#c62828" : pct > 70 ? "#e65100" : "#2e7d32";
 }
+// Text typed by users (names, notes) -> safe to put in HTML
+function escapeHtml(s) {
+  return String(s ?? "").replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
+}

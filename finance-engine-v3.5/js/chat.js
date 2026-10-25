@@ -81,7 +81,7 @@ function smartAnswer(msg, model) {
       .slice(0, 10)
       .map((n) => {
         const rules = fRes.filter((r) => r.name === n);
-        return `${n} (${rules[0].role}, £${rules[0].bill_rate}/hr, ${rules[0].alloc * 100}%)`;
+        return `${n} (${rules[0].role}, ${rateSymbol(model, rules[0])}${rules[0].bill_rate}/hr, ${rules[0].alloc * 100}%)`;
       })
       .join("<br>");
     return `👥 <strong>${people.length} people</strong> in ${[...new Set(fRes.map((r) => r.po_team))].length} team(s):<br>${summary}${people.length > 10 ? "<br>...and " + (people.length - 10) + " more" : ""}`;
@@ -115,7 +115,7 @@ function smartAnswer(msg, model) {
       const d = Math.round((new Date(r.end) - new Date(r.start)) / 86400000);
       return s + d;
     }, 0);
-    return `👤 <strong>${personMatch}</strong>: ${rules.length} allocation rule(s). Role: ${rules[0].role}. Rate: £${rules[0].bill_rate}/hr. Period: ${rules[0].start} → ${rules[rules.length - 1].end}. Daily cost: £${(rules[0].bill_rate * rules[0].alloc * 8).toFixed(0)}/day.`;
+    return `👤 <strong>${personMatch}</strong>: ${rules.length} allocation rule(s). Role: ${rules[0].role}. Rate: ${rateSymbol(model, rules[0])}${rules[0].bill_rate}/hr. Period: ${rules[0].start} → ${rules[rules.length - 1].end}. Daily cost: ${rateSymbol(model, rules[0])}${(rules[0].bill_rate * rules[0].alloc * 8).toFixed(0)}/day.`;
   }
 
   // Expenses
@@ -159,7 +159,7 @@ async function sendChat() {
   // Ollama mode
   const ctx = `Dashboard context: PO Value=${model.fc.totalPOValue}, Forecast=${model.fc.total}, Actuals=${model.totalActuals}, Remaining=${model.remaining}, Resources=${model.cfg.resources.length}, Year=${selectedYear || "All"}, Teams=${model.allPoTeams.join(",")}. Top resources: ${model.cfg.resources
     .slice(0, 8)
-    .map((r) => r.name + "(" + r.po_team + ",£" + r.bill_rate + ")")
+    .map((r) => r.name + "(" + r.po_team + "," + rateSymbol(model, r) + r.bill_rate + ")")
     .join("; ")}`;
   try {
     msgs.innerHTML += `<div class="chat-msg ai" id="chatLoading">⏳ Thinking...</div>`;

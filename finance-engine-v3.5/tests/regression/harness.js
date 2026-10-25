@@ -320,6 +320,20 @@ const TABS = [
     out.snaps.masterModal = await page.evaluate(() => document.body.lastElementChild.outerHTML);
   });
 
+  // Save All on the Resources tab with the PO_Team slicer on must keep the other teams' rules
+  await step("slicer save", async () => {
+    out.snaps.slicerSave = await page.evaluate(() => {
+      const before = loadWork().resources.length;
+      selectedPoTeams = [buildData().allPoTeams[0]];
+      show("resources");
+      saveResTable();
+      const after = loadWork().resources;
+      selectedPoTeams = [];
+      return { before, after: after.length, teams: [...new Set(after.map((r) => r.po_team))].sort() };
+    });
+    await settle();
+  });
+
   fs.writeFileSync(outFile, JSON.stringify(out, null, 1));
   console.log(
     `errors=${out.errors.length} snaps=${Object.keys(out.snaps).length} downloads=${Object.keys(out.downloads).join(",")}`,

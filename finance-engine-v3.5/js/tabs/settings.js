@@ -153,6 +153,8 @@ function exportFullConfig() {
     expenses: cfg.expenses,
     invoices: cfg.invoices || [],
     actuals_monthly: cfg.actuals_monthly,
+    normalized_currency: cfg.normalized_currency,
+    resource_versions: cfg.resource_versions || [],
   };
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -201,6 +203,14 @@ function importFullConfig() {
         loaded.push(k + " (" + data[k].length + ")");
       }
     });
+    if (typeof data.normalized_currency === "string") {
+      cfg.normalized_currency = data.normalized_currency;
+      loaded.push("normalized_currency (" + data.normalized_currency + ")");
+    }
+    if (Array.isArray(data.resource_versions)) {
+      cfg.resource_versions = data.resource_versions;
+      loaded.push("resource_versions (" + data.resource_versions.length + ")");
+    }
     if (!loaded.length) {
       status.innerHTML =
         '<span style="color:#c62828">❌ No recognized sections found. Expected: ' + keys.join(", ") + "</span>";
