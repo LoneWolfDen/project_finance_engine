@@ -5,20 +5,12 @@ const { chromium } = require("playwright");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const L = path.join(__dirname, "node_modules");
-const M = {
-  "chart.umd.min.js": "chart.js/dist/chart.umd.js",
-  "chartjs-plugin-datalabels.min.js": "chartjs-plugin-datalabels/dist/chartjs-plugin-datalabels.min.js",
-  "xlsx.full.min.js": "xlsx/dist/xlsx.full.min.js",
-  "jspdf.umd.min.js": "jspdf/dist/jspdf.umd.min.js",
-  "jspdf.plugin.autotable.min.js": "jspdf-autotable/dist/jspdf.plugin.autotable.min.js",
-  "pptxgen.bundle.js": "pptxgenjs/dist/pptxgen.bundle.js",
-};
 const app = process.argv[2],
   port = process.argv[3];
 fs.rmSync(app + "/finance_engine.db", { force: true });
 (async () => {
   const srv = spawn("python3", ["server.py"], { cwd: app, env: { ...process.env, PORT: port }, stdio: "ignore" });
+  process.on("exit", () => srv.kill()); // also when the run fails part-way
   await new Promise((r) => setTimeout(r, 1200));
   const b = await chromium.launch();
   try {
@@ -32,9 +24,6 @@ fs.rmSync(app + "/finance_engine.db", { force: true });
       const p = await ctx.newPage();
       const errs = [];
       p.on("pageerror", (e) => errs.push(e.message));
-      await p.route(/cdn\.jsdelivr|cdnjs/, (r) =>
-        r.fulfill({ path: path.join(L, M[r.request().url().split("/").pop()]), contentType: "text/javascript" }),
-      );
       // put the test POs on the server
       await p.goto(`http://localhost:${port}`, { waitUntil: "networkidle" });
       await p.evaluate(

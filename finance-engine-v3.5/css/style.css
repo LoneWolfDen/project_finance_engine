@@ -606,3 +606,50 @@ td[contenteditable]:focus {
   cursor: pointer;
   font-size: 0.75rem;
 }
+
+/* Settings → Edit data (table editors) */
+.tblEdit td {
+  padding: 2px 3px;
+}
+.tblEdit input,
+.tblEdit select {
+  width: 100%;
+  min-width: 70px;
+  font-size: 0.72rem;
+  padding: 3px 4px;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
+  background: #fff;
+}
+.tblEdit input[type="checkbox"] {
+  width: auto;
+  min-width: 0;
+}
+.tblEdit input:focus,
+.tblEdit select:focus {
+  border-color: #2196f3;
+  outline: none;
+}
+.tblEdit .te-err {
+  border-color: #c62828;
+  background: #ffebee;
+}
+.te-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.te-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+.te-status {
+  font-size: 0.7rem;
+  color: #888;
+}
+.te-dirty .te-status {
+  color: #e65100;
+  font-weight: 600;
+}

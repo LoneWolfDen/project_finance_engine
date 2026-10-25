@@ -6,15 +6,6 @@ const { chromium } = require("playwright");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const L = path.join(__dirname, "node_modules");
-const CDN = {
-  "chart.umd.min.js": "chart.js/dist/chart.umd.js",
-  "chartjs-plugin-datalabels.min.js": "chartjs-plugin-datalabels/dist/chartjs-plugin-datalabels.min.js",
-  "xlsx.full.min.js": "xlsx/dist/xlsx.full.min.js",
-  "jspdf.umd.min.js": "jspdf/dist/jspdf.umd.min.js",
-  "jspdf.plugin.autotable.min.js": "jspdf-autotable/dist/jspdf.plugin.autotable.min.js",
-  "pptxgen.bundle.js": "pptxgenjs/dist/pptxgen.bundle.js",
-};
 const [appDir, port] = process.argv.slice(2);
 const TODAY = "2025-11-15";
 const TEAM = "500000_Plan_GBP";
@@ -90,6 +81,7 @@ function expectedCoverage(rules) {
 (async () => {
   fs.rmSync(path.join(appDir, "finance_engine.db"), { force: true });
   const srv = spawn("python3", ["server.py"], { cwd: appDir, env: { ...process.env, PORT: port }, stdio: "ignore" });
+  process.on("exit", () => srv.kill()); // also when the run fails part-way
   await new Promise((r) => setTimeout(r, 1200));
   const browser = await chromium.launch();
   const failures = [];
@@ -100,12 +92,6 @@ function expectedCoverage(rules) {
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("dialog", (d) => d.accept());
-    await page.route(/cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com/, (route) =>
-      route.fulfill({
-        path: path.join(L, CDN[route.request().url().split("/").pop()]),
-        contentType: "text/javascript",
-      }),
-    );
     await page.goto(`http://localhost:${port}/`, { waitUntil: "networkidle" });
     const settle = () => page.evaluate(() => new Promise((r) => setTimeout(r, 450)));
     // One PO with £2,000 of actuals and £500 of expenses, and one resource

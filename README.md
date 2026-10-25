@@ -46,6 +46,14 @@ and save again. Every version shows, for the PO_Teams in view, its cost from tod
 working days the budget left (PO value − actuals − expenses) covers, the date funding runs out,
 and the additional amount needed. Versions are stored in the config (server and Full Config export).
 
+## Editing data
+
+**Settings → Edit data** has a table per section: PO Details, Invoices, Expenses, FX Rates, OT Params
+and Holidays (resources are edited on the Resources tab). Inputs are typed (dates, numbers, currency
+codes, PO_Team lists); add or delete rows and save. Problems are highlighted and nothing is saved
+until they are fixed; earlier versions stay in Save history. Bulk edits as JSON are under
+**Advanced: edit as JSON**.
+
 ## Excel workbook
 
 **Data & Reports → Excel (.xlsx)** downloads one workbook with:
@@ -62,6 +70,11 @@ To make changes in Excel: edit the configuration sheets (keep the column headers
 yyyy-mm-dd or Excel dates), then **Data & Reports → Import Excel workbook → Preview import**.
 The preview shows the rows per sheet and blocks invalid data; **Apply import** replaces those
 sections, and the previous config stays in **Settings → Save history**.
+
+## Offline
+
+The app needs no internet access: its libraries (Chart.js, SheetJS, jsPDF, PptxGenJS) are in
+`finance-engine-v3.5/vendor/` (versions and licences in `vendor/README.md`).
 
 ## Run finance-engine-v3.5
 

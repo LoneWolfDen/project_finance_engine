@@ -50,13 +50,19 @@ function renderSettings(model) {
     { key: "actuals_monthly", label: "Monthly Actuals", data: model.cfg.actuals_monthly, tall: true },
     { key: "holidays", label: "Holidays", data: model.cfg.holidays || HOLIDAYS_BY_LOC, tall: true },
   ];
-  sections.forEach((s, i) => {
+  html += renderDataTables();
+  html +=
+    '<details class="cfg-section" style="margin-top:1rem"><summary>🧾 Advanced: edit as JSON</summary><div class="inner">';
+  html +=
+    '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">For bulk changes: paste or edit JSON, or fill a section from a file with "Import XLSX/CSV → JSON" above.</p>';
+  sections.forEach((s) => {
     const textareaStyle = s.tall ? ' style="min-height:350px"' : "";
-    html += `<details class="cfg-section"${i === 0 ? " open" : ""}><summary>${s.label}</summary><div class="inner">`;
+    html += `<details class="cfg-section"><summary>${s.label}</summary><div class="inner">`;
     html += `<textarea id="cfg_${s.key}"${textareaStyle}>${JSON.stringify(s.data, null, 2)}</textarea>`;
     html += `<button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button>`;
     html += "</div></details>";
   });
+  html += "</div></details>";
   html +=
     '<details class="cfg-section" ontoggle="if (this.open) loadHistory()"><summary>🕘 Save history</summary><div class="inner">';
   html +=
@@ -234,6 +240,11 @@ function importFullConfig() {
   });
 }
 
+// Open the (nested) sections around a JSON textarea so a filled-in import is visible
+function revealTextarea(ta) {
+  for (let d = ta.closest("details"); d; d = d.parentElement.closest("details")) d.open = true;
+  ta.scrollIntoView({ block: "center" });
+}
 function cfgImportFile() {
   const file = document.getElementById("cfgImportFile").files[0];
   const target = document.getElementById("cfgImportTarget").value;
@@ -250,6 +261,7 @@ function cfgImportFile() {
         const ta = document.getElementById("cfg_" + target);
         if (ta) {
           ta.value = JSON.stringify(d, null, 2);
+          revealTextarea(ta);
           status.innerHTML = `<span style="color:#2e7d32">✅ ${Array.isArray(d) ? d.length + " rows" : "object"} loaded into ${target}. Click Save to apply.</span>`;
         } else {
           status.innerHTML = '<span style="color:#c62828">Open the "' + target + '" section first</span>';
@@ -277,6 +289,7 @@ function cfgImportFile() {
       const ta = document.getElementById("cfg_" + target);
       if (ta) {
         ta.value = JSON.stringify(data, null, 2);
+        revealTextarea(ta);
         status.innerHTML = `<span style="color:#2e7d32">✅ ${data.length} rows from CSV loaded into ${target}. Click Save to apply.</span>`;
       } else {
         status.innerHTML = '<span style="color:#c62828">Open the "' + target + '" section first</span>';
@@ -290,6 +303,7 @@ function cfgImportFile() {
       const ta = document.getElementById("cfg_" + target);
       if (ta) {
         ta.value = JSON.stringify(data, null, 2);
+        revealTextarea(ta);
         status.innerHTML = `<span style="color:#2e7d32">✅ ${data.length} rows from sheet "${wb.SheetNames[0]}" loaded into ${target}. Click Save to apply.</span>`;
       } else {
         status.innerHTML = '<span style="color:#c62828">Open the "' + target + '" section first</span>';
