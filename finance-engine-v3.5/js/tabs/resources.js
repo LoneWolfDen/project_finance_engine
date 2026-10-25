@@ -155,7 +155,11 @@ function saveResTable() {
     });
   });
   const cfg = loadWork();
-  cfg.resources = resources;
+  // With the PO_Team slicer on only the selected teams' tables are on screen; keep the other teams' rules
+  const norm = (t) => (t || "").replace(/\s+/g, "");
+  const shown = selectedPoTeams.length ? selectedPoTeams.map(norm) : null;
+  const hidden = shown ? cfg.resources.filter((r) => !shown.includes(norm(r.po_team))) : [];
+  cfg.resources = [...hidden, ...resources];
   saveWork(cfg);
   toast("✓ Resources saved — forecast recalculated!");
   setTimeout(render, 400);
