@@ -10,6 +10,7 @@ const app = process.argv[2],
 fs.rmSync(app + "/finance_engine.db", { force: true });
 (async () => {
   const srv = spawn("python3", ["server.py"], { cwd: app, env: { ...process.env, PORT: port }, stdio: "ignore" });
+  process.on("exit", () => srv.kill()); // also when the run fails part-way
   await new Promise((r) => setTimeout(r, 1200));
   const b = await chromium.launch();
   try {

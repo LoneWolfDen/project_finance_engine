@@ -83,6 +83,7 @@ const timesheet = config.resources.flatMap((r) =>
 (async () => {
   fs.rmSync(path.join(appDir, "finance_engine.db"), { force: true });
   const srv = spawn("python3", ["server.py"], { cwd: appDir, env: { ...process.env, PORT: port }, stdio: "ignore" });
+  process.on("exit", () => srv.kill()); // also when the run fails part-way
   await new Promise((r) => setTimeout(r, 1200));
   const browser = await chromium.launch();
   const failures = [];

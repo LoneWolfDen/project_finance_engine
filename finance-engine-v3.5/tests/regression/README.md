@@ -10,7 +10,8 @@ Drives the app in headless Chromium and snapshots what it renders:
 
 The clock is fixed at 2025-11-15 so dates in the output don't change between runs.
 The app serves its libraries from `vendor/`; `offline-check.js` blocks every request outside localhost
-and checks all tabs, charts and exports still work.
+and checks all tabs, charts and exports still work. `tables-check.js` covers the Settings → Edit data tables:
+unchanged saves keep the config identical, edits through the inputs are saved, invalid values are blocked.
 
 First time: `npm install && npx playwright install chromium` in this folder.
 

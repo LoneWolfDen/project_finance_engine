@@ -31,3 +31,4 @@ node versions-check.js "$APP" 3205 | tail -1
 node robustness-check.js "$APP" 3207 | tail -1
 node excel-check.js "$APP" 3208 | tail -1
 node offline-check.js "$APP" 3209 | tail -1
+node tables-check.js "$APP" 3210 | tail -1
