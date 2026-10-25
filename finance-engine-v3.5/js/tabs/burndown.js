@@ -175,7 +175,7 @@ function burndownChartConfig(s, { suffix, symbol, actualsSpanGaps, conv }) {
     },
     options: {
       responsive: true,
-      plugins: { legend: { position: "top" }, datalabels: kLabels({ size: 9 }) },
+      plugins: { legend: { position: "top" }, datalabels: kLabels({ size: 9, symbol }) },
       scales: {
         y: {
           position: "left",
