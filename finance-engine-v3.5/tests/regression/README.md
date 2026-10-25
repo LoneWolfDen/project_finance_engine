@@ -24,6 +24,9 @@ Prints `IDENTICAL` when nothing changed, otherwise the first differences. It the
 charts shown after page load must match the server data.
 `currency-check.js` loads POs in GBP, INR and USD and checks that every total equals the
 per-team figures converted to the selected normalised currency.
+`versions-check.js` saves, compares, applies and deletes resource versions and checks the
+funding figures (cost from today, funded until, days covered, additional needed) against an
+independent count of UK working days.
 Use it for refactors, where the output should not change at all.
 
 `fixtures/solution.xlsx` is a small Solution Excel for the Smart Parser.

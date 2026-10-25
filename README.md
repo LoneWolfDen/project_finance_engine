@@ -13,12 +13,14 @@ Built by Vamsi Yedlapalli | github.com/LoneWolfDen
 | `data/defaults.js` | Default config (POs, resources, FX rates, actuals) used when the server has no saved data |
 | `data/holidays.js` | Bank holidays by location |
 | `js/core/storage.js` | Load/save working and master config (server API, localStorage fallback) |
-| `js/core/forecast.js` | Forecast engine: working days, FX, OT multipliers, resource rules |
+| `js/core/forecast.js` | Forecast engine: working days, FX and currency conversion, OT multipliers, resource rules |
 | `js/core/model.js` | Year / PO_Team filters, `buildData()` (the model every tab renders from), `mergeMonthly()` |
+| `js/core/coverage.js` | How far the budget left funds a resource plan, and the additional amount needed |
 | `js/ui/shell.js` | Nav bar, filters, `render()`, `fmtMoney()`, toasts, sortable tables |
 | `js/ui/html.js` | HTML helpers shared by the tabs (`tableHead`, `tableRow`, `statCard`, ...) |
 | `js/ui/chart-helpers.js` | Chart.js helpers shared by the tabs (`addChart`, `kLabels`, `moneyTicks`) |
 | `js/tabs/*.js` | One file per tab: `overview`, `burndown`, `variance`, `po-details`, `invoices`, `resources`, `utilization`, `expenses`, `scenarios`, `data-reports`, `settings`. A tab with charts also draws them there (`drawOverviewCharts`, ...) |
+| `js/tabs/resource-versions.js` | Resource versions panel on the Resources tab (save, compare, apply, funding chart) |
 | `js/exports.js` | Excel, PDF and PowerPoint exports |
 | `js/main.js` | Startup (loaded last) |
 | `js/chat.js` | AI assistant panel |
@@ -28,6 +30,21 @@ Built by Vamsi Yedlapalli | github.com/LoneWolfDen
 The `js/` files are plain scripts sharing one global scope (no build step). Keep the
 `<script>` order in `index.html`: CDN libraries and `data/` first (they are read at load
 time), `main.js` last; the order of the files in between does not matter.
+
+## Currencies
+
+Each PO has a `PO_Currency_Code`; resource bill rates, timesheet costs and invoices are in their
+PO_Team's currency, and each expense has its own `currency`. Rates in **Settings → FX Rates** are
+units per 1 GBP, effective-dated. Pick the **Normalised** currency in the nav bar: totals and charts
+are shown in the selected POs' own currency when they all share one, otherwise converted to the
+normalised currency (at today's rates). A banner warns when a currency has no FX rate.
+
+## Resource versions
+
+On the **Resources** tab, save the current resource rules as a named version, change the rules,
+and save again. Every version shows, for the PO_Teams in view, its cost from today, how many
+working days the budget left (PO value − actuals − expenses) covers, the date funding runs out,
+and the additional amount needed. Versions are stored in the config (server and Full Config export).
 
 ## Run finance-engine-v3.5
 

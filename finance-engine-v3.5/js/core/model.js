@@ -93,6 +93,8 @@ function buildData() {
     toBase,
     teamCurrency,
     fxWarnings,
+    projToTeam,
+    money,
   };
 }
 

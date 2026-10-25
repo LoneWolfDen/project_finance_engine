@@ -184,7 +184,12 @@ function show(id) {
 // Charts for the tab with this id, drawn once its HTML (with the canvases) is on the page.
 // Looked up at call time because the tab files load after this one.
 function drawTabCharts(id, model) {
-  const draw = { overview: drawOverviewCharts, burndown: drawBurndownCharts, monthly: drawVarianceCharts }[id];
+  const draw = {
+    overview: drawOverviewCharts,
+    burndown: drawBurndownCharts,
+    monthly: drawVarianceCharts,
+    resources: drawResourceCharts,
+  }[id];
   if (draw) draw(model);
 }
 // HTML for the tab with this id (see TABS)

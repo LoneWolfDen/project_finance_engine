@@ -68,6 +68,7 @@ function renderResources(model) {
   html += statCard("o", "Forecast Days", model.fc.days);
   html += statCard("r", "Total Forecast", fmtMoney(model.fc.total));
   html += "</div>";
+  html += renderResourceVersions(model);
   html += '<div style="margin-bottom:.5rem;display:flex;gap:.5rem;align-items:center">';
   html += '<button class="btn btn-blue" onclick="saveResTable()">💾 Save All (recalculates forecast)</button>';
   html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
