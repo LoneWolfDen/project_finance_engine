@@ -85,7 +85,7 @@ function drawCharts(tab, model) {
       poArr.forEach((p) => {
         const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
         if (normFilter2 && !normFilter2.includes(t)) return;
-        const poEnd2 = parseValidityEnd(p.PO_Validity || p.PO_Validity_Year);
+        const poEnd2 = parseValidityEnd(poValidity(p));
         if (new Date(p.WO_StartDate) <= monthEnd && poEnd2 >= monthEnd) total += p.PO_WO_value;
       });
       return total;

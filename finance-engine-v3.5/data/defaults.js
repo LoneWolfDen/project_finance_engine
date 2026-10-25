@@ -7,7 +7,7 @@ const DEFAULTS = {
       PO_Currency_Code: "GBP",
       Normalized_Currency_Code: "USD",
       Normalized_Currency_RateMultiplier: 1.36,
-      PO_Validity: "12-25",
+      PO_Validity_Year: 2025,
       rollover_allowed: false,
       WO_StartDate: "2025-06-30",
       WO_Approval_Status: "Approved",

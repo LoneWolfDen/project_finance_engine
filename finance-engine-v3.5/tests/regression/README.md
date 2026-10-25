@@ -22,6 +22,4 @@ cd finance-engine-v3.5/tests/regression
 Prints `IDENTICAL` when nothing changed, otherwise the first differences.
 Use it for refactors, where the output should not change at all.
 
-`fixtures/test_PO_Details.json` is the repo's `test_PO_Details.json` with
-`PO_Validity` in `mm-yy` form, which the Settings import validation requires.
 `fixtures/solution.xlsx` is a small Solution Excel for the Smart Parser.
