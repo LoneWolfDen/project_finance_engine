@@ -175,6 +175,11 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
       await settle();
     }
     out.snaps.chat = await page.evaluate(() => document.getElementById("chatMsgs").innerHTML);
+    // Ollama mode: builds a context string from the model, then calls /api/chat (no Ollama here -> error reply)
+    await page.evaluate(() => switchChatMode());
+    await page.fill("#chatIn", "summarise the budget");
+    await page.evaluate(() => sendChat());
+    out.snaps.chatOllama = await page.evaluate(() => document.getElementById("chatMsgs").lastElementChild.outerHTML);
   });
 
   // Smart Solution Excel parser preview
