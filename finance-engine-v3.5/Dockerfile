@@ -1,6 +1,8 @@
 FROM python:3.11-slim
 WORKDIR /app
-COPY server.py index.html ./
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY server.py excel_export.py index.html ./
 COPY css ./css
 COPY js ./js
 COPY data ./data

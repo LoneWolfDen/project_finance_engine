@@ -7,6 +7,7 @@ GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
 GET  /api/history → earlier versions of the working config (newest first)
 POST /api/history/<id>/restore → make that version the working config
+POST /api/export/xlsx → Excel workbook (with native charts) from a spec built by the page
 POST /api/config → saves config JSON to SQLite
 POST /api/chat   → proxies to local Ollama LLM
 """
@@ -213,6 +214,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Ollama not running"}, 503)
             except Exception as e:
                 self.send_json({"error": str(e)}, 500)
+
+        elif self.path == '/api/export/xlsx':
+            length = int(self.headers.get('Content-Length', 0))
+            try:
+                spec = json.loads(self.rfile.read(length).decode())
+            except json.JSONDecodeError as e:
+                self.send_json({"error": str(e)}, 400)
+                return
+            try:
+                from excel_export import build_workbook  # needs openpyxl (requirements.txt)
+            except ImportError:
+                self.send_json({"error": "Excel export with charts needs openpyxl: pip install -r requirements.txt"}, 501)
+                return
+            data = build_workbook(spec)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
 
         elif self.path.startswith('/api/history/') and self.path.endswith('/restore'):
             try:

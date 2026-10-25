@@ -46,11 +46,23 @@ and save again. Every version shows, for the PO_Teams in view, its cost from tod
 working days the budget left (PO value − actuals − expenses) covers, the date funding runs out,
 and the additional amount needed. Versions are stored in the config (server and Full Config export).
 
+## Excel workbook
+
+**Data & Reports → Excel (.xlsx)** downloads one workbook with:
+
+- report sheets for the current filters (Summary, Monthly, Burndown, PO Teams, Version Funding,
+  Version Budget, PO Rollover) with **native Excel charts** you can edit in Excel;
+- every configuration section as its own sheet (PO Details, Resources, Invoices, Expenses,
+  FX Rates, OT Params, Monthly Actuals, Timesheet, Holidays, Resource Versions, Settings).
+
+The server builds it with `openpyxl` (`pip install -r requirements.txt`; the Docker image includes it).
+Without it the app falls back to a simpler workbook without charts or configuration.
+
 ## Run finance-engine-v3.5
 
 ### Option 1: Run with Python
 
-Requirements: Python 3.11 or later.
+Requirements: Python 3.11 or later, and `pip install -r requirements.txt` (openpyxl, for the Excel workbook).
 
 1. Open a terminal in the project directory:
 
