@@ -45,21 +45,21 @@ function showCopilotSetup() {
 }
 
 // ─── SMART ASSISTANT (rule-based, no model needed) ───
-function smartAnswer(msg, D) {
+function smartAnswer(msg, model) {
   const q = msg.toLowerCase();
-  const res = D.cfg.resources || [];
+  const res = model.cfg.resources || [];
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const fRes = normFilter ? res.filter((r) => normFilter.includes((r.po_team || "").replace(/\s+/g, ""))) : res;
   const people = [...new Set(fRes.map((r) => r.name))];
 
   // Budget/remaining
   if (q.match(/budget|remaining|left|how much/)) {
-    return `💰 PO Value: ${f(D.fc.totalPOValue)} | Actuals: ${f(D.tAct)} | Expenses: ${f(D.tExp)} | <strong>Remaining: ${f(D.rem)}</strong> | Burn rate: ${f(D.fc.rate)}/day${D.rem > 0 ? ` (~${Math.round(D.rem / D.fc.rate)} working days left)` : " ⚠️ Over budget!"}`;
+    return `💰 PO Value: ${fmtMoney(model.fc.totalPOValue)} | Actuals: ${fmtMoney(model.totalActuals)} | Expenses: ${fmtMoney(model.totalExpenses)} | <strong>Remaining: ${fmtMoney(model.remaining)}</strong> | Burn rate: ${fmtMoney(model.fc.rate)}/day${model.remaining > 0 ? ` (~${Math.round(model.remaining / model.fc.rate)} working days left)` : " ⚠️ Over budget!"}`;
   }
 
   // Burn rate
   if (q.match(/burn\s*rate|daily\s*cost|per\s*day/)) {
-    return `🔥 Current burn rate: <strong>${f(D.fc.rate)}/day</strong> across ${people.length} people. Total forecast: ${f(D.fc.total)} over ${D.fc.days} working days.`;
+    return `🔥 Current burn rate: <strong>${fmtMoney(model.fc.rate)}/day</strong> across ${people.length} people. Total forecast: ${fmtMoney(model.fc.total)} over ${model.fc.days} working days.`;
   }
 
   // Utilization / over-utilized
@@ -89,22 +89,22 @@ function smartAnswer(msg, D) {
 
   // Forecast
   if (q.match(/forecast|predict|project.*cost/)) {
-    return `📈 Total forecast: <strong>${f(D.fc.total)}</strong> over ${D.fc.days} working days. PO Value: ${f(D.fc.totalPOValue)}. Variance from budget: ${f(D.fc.totalPOValue - D.fc.total)} ${D.fc.total > D.fc.totalPOValue ? "⚠️ OVER" : "✅ Under"}.`;
+    return `📈 Total forecast: <strong>${fmtMoney(model.fc.total)}</strong> over ${model.fc.days} working days. PO Value: ${fmtMoney(model.fc.totalPOValue)}. Variance from budget: ${fmtMoney(model.fc.totalPOValue - model.fc.total)} ${model.fc.total > model.fc.totalPOValue ? "⚠️ OVER" : "✅ Under"}.`;
   }
 
   // Actuals / spent
   if (q.match(/actual|spent|spend|cost so far/)) {
-    const months = D.actuals || [];
+    const months = model.actuals || [];
     const latest = months.length ? months[months.length - 1] : null;
-    return `📊 Total actuals: <strong>${f(D.tAct)}</strong> across ${months.length} months. ${latest ? `Latest: ${latest.month} = ${f(latest.actuals)}` : ""} Expenses: ${f(D.tExp)}.`;
+    return `📊 Total actuals: <strong>${fmtMoney(model.totalActuals)}</strong> across ${months.length} months. ${latest ? `Latest: ${latest.month} = ${fmtMoney(latest.actuals)}` : ""} Expenses: ${fmtMoney(model.totalExpenses)}.`;
   }
 
   // Invoices
   if (q.match(/invoice|paid|submitted|billing/)) {
-    const invs = D.cfg.invoices || [];
+    const invs = model.cfg.invoices || [];
     const paid = invs.filter((i) => i.status === "Paid");
     const sub = invs.filter((i) => i.status === "Submitted");
-    return `🧾 ${invs.length} invoices total. Paid: ${paid.length} (${f(paid.reduce((s, i) => s + i.amount, 0))}). Submitted: ${sub.length} (${f(sub.reduce((s, i) => s + i.amount, 0))}). Draft: ${invs.length - paid.length - sub.length}.`;
+    return `🧾 ${invs.length} invoices total. Paid: ${paid.length} (${fmtMoney(paid.reduce((s, i) => s + i.amount, 0))}). Submitted: ${sub.length} (${fmtMoney(sub.reduce((s, i) => s + i.amount, 0))}). Draft: ${invs.length - paid.length - sub.length}.`;
   }
 
   // Specific person
@@ -120,9 +120,9 @@ function smartAnswer(msg, D) {
 
   // Expenses
   if (q.match(/expense|claim|travel/)) {
-    return `💳 Total expenses: <strong>${f(D.tExp)}</strong> (${D.filteredExpenses.length} claims). ${D.filteredExpenses
+    return `💳 Total expenses: <strong>${fmtMoney(model.totalExpenses)}</strong> (${model.filteredExpenses.length} claims). ${model.filteredExpenses
       .slice(0, 3)
-      .map((e) => `${e.name}: ${f(e.amount)} (${e.desc})`)
+      .map((e) => `${e.name}: ${fmtMoney(e.amount)} (${e.desc})`)
       .join(", ")}.`;
   }
 
@@ -142,11 +142,11 @@ async function sendChat() {
   const msgs = document.getElementById("chatMsgs");
   msgs.innerHTML += `<div class="chat-msg user">${msg}</div>`;
   msgs.scrollTop = msgs.scrollHeight;
-  const D = buildData();
+  const model = buildData();
 
   // Smart mode (rule-based)
   if (chatMode === "smart") {
-    const answer = smartAnswer(msg, D);
+    const answer = smartAnswer(msg, model);
     if (answer) {
       msgs.innerHTML += `<div class="chat-msg ai">${answer}</div>`;
     } else {
@@ -157,7 +157,7 @@ async function sendChat() {
   }
 
   // Ollama mode
-  const ctx = `Dashboard context: PO Value=${D.fc.totalPOValue}, Forecast=${D.fc.total}, Actuals=${D.tAct}, Remaining=${D.rem}, Resources=${D.cfg.resources.length}, Year=${selectedYear || "All"}, Teams=${D.allPoTeams.join(",")}. Top resources: ${D.cfg.resources
+  const ctx = `Dashboard context: PO Value=${model.fc.totalPOValue}, Forecast=${model.fc.total}, Actuals=${model.totalActuals}, Remaining=${model.remaining}, Resources=${model.cfg.resources.length}, Year=${selectedYear || "All"}, Teams=${model.allPoTeams.join(",")}. Top resources: ${model.cfg.resources
     .slice(0, 8)
     .map((r) => r.name + "(" + r.po_team + ",£" + r.bill_rate + ")")
     .join("; ")}`;

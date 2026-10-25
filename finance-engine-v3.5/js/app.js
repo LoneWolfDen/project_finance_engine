@@ -323,6 +323,11 @@ function computeForecast(cfg, filterPoTeams) {
 // ─── SLICER STATE ───────────────────────────────────────────────────────────
 let selectedPoTeams = []; // empty = all
 
+// Builds the model every tab renders from, for the current Year and PO_Team filters:
+//   cfg            working config limited to the selected year's POs
+//   fc             forecast from computeForecast() (totals, burndown, rate, days, ...)
+//   actuals        monthly actuals; totalActuals / totalExpenses / remaining are summed from them
+//   filteredExpenses, allPoTeams, allYears
 function buildData() {
   const cfg = loadWork();
   // Year filter: filter PO_details by selected year before computing
@@ -363,13 +368,13 @@ function buildData() {
     filteredActuals = cfg.actuals_monthly || [];
   }
 
-  const tAct = filteredActuals.reduce((s, m) => s + (m.actuals || 0), 0);
+  const totalActuals = filteredActuals.reduce((s, m) => s + (m.actuals || 0), 0);
   const normFilterExp = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const filteredExpenses = cfg.expenses.filter((e) => {
     const t = (e.po_team || "").replace(/\s+/g, "");
     return normFilterExp ? normFilterExp.includes(t) : true;
   });
-  const tExp = filteredExpenses.reduce((s, e) => s + e.amount, 0);
+  const totalExpenses = filteredExpenses.reduce((s, e) => s + e.amount, 0);
   const fromPO = (filteredCfg.po_details || [])
     .map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, ""))
     .filter(Boolean);
@@ -377,9 +382,9 @@ function buildData() {
   return {
     cfg: filteredCfg,
     fc,
-    tAct: Math.round(tAct * 100) / 100,
-    tExp: Math.round(tExp * 100) / 100,
-    rem: Math.round((fc.totalPOValue - tAct - tExp) * 100) / 100,
+    totalActuals: Math.round(totalActuals * 100) / 100,
+    totalExpenses: Math.round(totalExpenses * 100) / 100,
+    remaining: Math.round((fc.totalPOValue - totalActuals - totalExpenses) * 100) / 100,
     allPoTeams,
     actuals: filteredActuals,
     filteredExpenses,
@@ -437,17 +442,17 @@ function computeActualsMonthly(cfg, normFilter, projToTeam) {
 
 // ─── UI ─────────────────────────────────────────────────────────────────────
 const TABS = [
-  { id: "overview", l: "📊 Overview" },
-  { id: "burndown", l: "📉 Burndown" },
-  { id: "monthly", l: "📈 Variance" },
-  { id: "po", l: "📑 PO Details" },
-  { id: "invoices", l: "🧾 Invoices" },
-  { id: "resources", l: "👥 Resources" },
-  { id: "utilization", l: "⏱️ Utilization" },
-  { id: "expenses", l: "💳 Expenses" },
-  { id: "scenarios", l: "🔀 Scenarios" },
-  { id: "upload", l: "📤 Data & Reports" },
-  { id: "config", l: "⚙️ Settings" },
+  { id: "overview", label: "📊 Overview" },
+  { id: "burndown", label: "📉 Burndown" },
+  { id: "monthly", label: "📈 Variance" },
+  { id: "po", label: "📑 PO Details" },
+  { id: "invoices", label: "🧾 Invoices" },
+  { id: "resources", label: "👥 Resources" },
+  { id: "utilization", label: "⏱️ Utilization" },
+  { id: "expenses", label: "💳 Expenses" },
+  { id: "scenarios", label: "🔀 Scenarios" },
+  { id: "upload", label: "📤 Data & Reports" },
+  { id: "config", label: "⚙️ Settings" },
 ];
 let tab = "overview",
   charts = [];
@@ -457,52 +462,52 @@ Chart.defaults.plugins.datalabels = { display: false };
 function render() {
   charts.forEach((c) => c.destroy());
   charts = [];
-  const D = buildData();
+  const model = buildData();
   // Nav with Year filter (primary) + PO_Team slicer (secondary)
   // Tabs are grouped Analysis | Planning | Data | Admin, with a separator before tabs 3, 5 and 8
-  let navH = "";
+  let navHtml = "";
   TABS.forEach((t, i) => {
-    if (i === 3 || i === 5 || i === 8) navH += '<span class="sep"></span>';
-    navH += `<button class="${t.id === tab ? "active" : ""}" onclick="show('${t.id}')">${t.l}</button>`;
+    if (i === 3 || i === 5 || i === 8) navHtml += '<span class="sep"></span>';
+    navHtml += `<button class="${t.id === tab ? "active" : ""}" onclick="show('${t.id}')">${t.label}</button>`;
   });
   // Year filter as clickable buttons
-  if (D.allYears.length > 0) {
-    navH += '<div class="filter-bar" style="margin-left:auto">';
-    navH += '<span style="font-size:.7rem;font-weight:600;color:#666">Year:</span>';
-    navH += `<button class="yr-btn ${!selectedYear ? "active" : ""}" onclick="setYear('')">All</button>`;
-    D.allYears.forEach((y) => {
-      navH += `<button class="yr-btn ${selectedYear == y ? "active" : ""}" onclick="setYear('${y}')">${y}</button>`;
+  if (model.allYears.length > 0) {
+    navHtml += '<div class="filter-bar" style="margin-left:auto">';
+    navHtml += '<span style="font-size:.7rem;font-weight:600;color:#666">Year:</span>';
+    navHtml += `<button class="yr-btn ${!selectedYear ? "active" : ""}" onclick="setYear('')">All</button>`;
+    model.allYears.forEach((y) => {
+      navHtml += `<button class="yr-btn ${selectedYear == y ? "active" : ""}" onclick="setYear('${y}')">${y}</button>`;
     });
-    navH += `</div><div class="filter-bar">`;
+    navHtml += `</div><div class="filter-bar">`;
   }
   // PO_Team slicer
-  if (D.allPoTeams.length > 0) {
+  if (model.allPoTeams.length > 0) {
     const selCount = selectedPoTeams.length;
-    const label = selCount === 0 ? "All PO_Teams (" + D.allPoTeams.length + ")" : selCount + " selected";
-    navH += '<div class="slicer-wrap">';
-    navH += `<button class="slicer-btn" onclick="toggleSlicer()">🔍 ${label} ▾</button>`;
-    navH += '<div class="slicer-dd" id="slicerDD">';
-    navH += '<input type="text" placeholder="Search projects..." oninput="filterSlicer(this.value)">';
-    navH += '<div class="opts" id="slicerOpts">';
-    D.allPoTeams.forEach((pt) => {
+    const label = selCount === 0 ? "All PO_Teams (" + model.allPoTeams.length + ")" : selCount + " selected";
+    navHtml += '<div class="slicer-wrap">';
+    navHtml += `<button class="slicer-btn" onclick="toggleSlicer()">🔍 ${label} ▾</button>`;
+    navHtml += '<div class="slicer-dd" id="slicerDD">';
+    navHtml += '<input type="text" placeholder="Search projects..." oninput="filterSlicer(this.value)">';
+    navHtml += '<div class="opts" id="slicerOpts">';
+    model.allPoTeams.forEach((pt) => {
       const checked = selectedPoTeams.includes(pt) ? "checked" : "";
-      navH += `<label><input type="checkbox" value="${pt}" ${checked} onchange="togglePoTeam('${pt}',this.checked)"> ${pt}</label>`;
+      navHtml += `<label><input type="checkbox" value="${pt}" ${checked} onchange="togglePoTeam('${pt}',this.checked)"> ${pt}</label>`;
     });
-    navH += "</div>";
-    navH += '<div class="actions">';
-    navH += '<button onclick="selectAllPO()">All</button>';
-    navH += '<button onclick="selectNonePO()">None</button>';
-    navH += '<button onclick="toggleSlicer()">Close</button>';
-    navH += "</div></div></div>";
+    navHtml += "</div>";
+    navHtml += '<div class="actions">';
+    navHtml += '<button onclick="selectAllPO()">All</button>';
+    navHtml += '<button onclick="selectNonePO()">None</button>';
+    navHtml += '<button onclick="toggleSlicer()">Close</button>';
+    navHtml += "</div></div></div>";
   }
-  if (D.allYears.length > 0) navH += `</div>`;
-  navH +=
+  if (model.allYears.length > 0) navHtml += `</div>`;
+  navHtml +=
     '<label style="margin-left:8px;font-size:.72rem;cursor:pointer;white-space:nowrap"><input type="checkbox" ' +
     (showDataLabels ? "checked" : "") +
     ' onchange="showDataLabels=this.checked;render()"> Show Data Labels</label>';
-  document.getElementById("nav").innerHTML = navH;
-  document.getElementById("app").innerHTML = `<div class="tab active">${rTab(tab, D)}</div>`;
-  setTimeout(() => drawCharts(tab, D), 60);
+  document.getElementById("nav").innerHTML = navHtml;
+  document.getElementById("app").innerHTML = `<div class="tab active">${renderTab(tab, model)}</div>`;
+  setTimeout(() => drawCharts(tab, model), 60);
 }
 function setYear(y) {
   selectedYear = y;
@@ -531,8 +536,8 @@ function selectAllPO() {
   render();
 }
 function selectNonePO() {
-  const D = buildData();
-  selectedPoTeams = [...D.allPoTeams];
+  const model = buildData();
+  selectedPoTeams = [...model.allPoTeams];
   render();
 }
 // Collapse/expand grouped sections
@@ -546,14 +551,14 @@ function toggleGrp(btn) {
 function toggleAllGrps(container, expand) {
   const box = document.getElementById(container);
   if (!box) return;
-  box.querySelectorAll(".grp-hdr").forEach((h) => {
-    const rows = h.nextElementSibling;
+  box.querySelectorAll(".grp-hdr").forEach((html) => {
+    const rows = html.nextElementSibling;
     if (expand) {
       rows.classList.remove("hidden");
-      h.classList.remove("collapsed");
+      html.classList.remove("collapsed");
     } else {
       rows.classList.add("hidden");
-      h.classList.add("collapsed");
+      html.classList.add("collapsed");
     }
   });
 }
@@ -567,22 +572,24 @@ function show(id) {
   tab = id;
   render();
 }
-function rTab(id, D) {
+// HTML for the tab with this id (see TABS)
+function renderTab(id, model) {
   return {
-    overview: rOV,
-    burndown: rBD,
-    monthly: rMo,
-    po: rPO,
-    invoices: rInv,
-    resources: rRes,
-    utilization: rUtil,
-    expenses: rExp,
-    scenarios: rScen,
-    upload: rUpload,
-    config: rCfg,
-  }[id](D);
+    overview: renderOverview,
+    burndown: renderBurndown,
+    monthly: renderVariance,
+    po: renderPODetails,
+    invoices: renderInvoices,
+    resources: renderResources,
+    utilization: renderUtilization,
+    expenses: renderExpenses,
+    scenarios: renderScenarios,
+    upload: renderDataAndReports,
+    config: renderSettings,
+  }[id](model);
 }
-function f(n, c = "£") {
+// 1234.5 -> "£1,235"; null/undefined -> "—". Pass "$" etc. for other currencies.
+function fmtMoney(n, c = "£") {
   return n != null ? c + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—";
 }
 
@@ -632,15 +639,15 @@ function collapsibleHeader(label) {
 // Month labels above a Gantt-style timeline; each label sits at its % offset
 // within the start→end span. labelWidth matches the row-name column width.
 function monthAxis(start, end, span, labelWidth, height) {
-  let h = `<div style="margin-left:${labelWidth}px;position:relative;height:${height}px;font-size:.6rem;color:#888;margin-bottom:4px">`;
-  let md = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (md <= end) {
-    const l = ((md - start) / span) * 100;
+  let html = `<div style="margin-left:${labelWidth}px;position:relative;height:${height}px;font-size:.6rem;color:#888;margin-bottom:4px">`;
+  let monthStart = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (monthStart <= end) {
+    const l = ((monthStart - start) / span) * 100;
     if (l >= 0 && l <= 100)
-      h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
-    md = new Date(md.getFullYear(), md.getMonth() + 1, 1);
+      html += `<span style="position:absolute;left:${l.toFixed(1)}%">${monthStart.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
+    monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
   }
-  return h + "</div>";
+  return html + "</div>";
 }
 // Columns of the "Actuals Date Range by Project" table (Utilization and Data tabs).
 const DATE_RANGE_COLS = [
@@ -693,38 +700,40 @@ document.addEventListener("click", function (e) {
   rows.forEach((r) => tbody.appendChild(r));
 });
 
-function rOV(D) {
-  const risk = D.rem > 0 ? "Low" : "Over Budget";
+function renderOverview(model) {
+  const risk = model.remaining > 0 ? "Low" : "Over Budget";
   // Additional metrics
-  const pctUsed = D.fc.totalPOValue ? Math.round(((D.tAct + D.tExp) / D.fc.totalPOValue) * 100) : 0;
-  const fcVsAct = D.fc.total ? Math.round((D.tAct / D.fc.total) * 100) : 0;
-  const daysRem = D.fc.rate > 0 ? Math.round(D.rem / D.fc.rate) : 0;
-  let h = "";
+  const pctUsed = model.fc.totalPOValue
+    ? Math.round(((model.totalActuals + model.totalExpenses) / model.fc.totalPOValue) * 100)
+    : 0;
+  const fcVsAct = model.fc.total ? Math.round((model.totalActuals / model.fc.total) * 100) : 0;
+  const daysRem = model.fc.rate > 0 ? Math.round(model.remaining / model.fc.rate) : 0;
+  let html = "";
   // Onboarding hint for new users (show if no actuals loaded)
-  if (!D.cfg.raw_actuals || !D.cfg.raw_actuals.length) {
-    h +=
+  if (!model.cfg.raw_actuals || !model.cfg.raw_actuals.length) {
+    html +=
       '<div style="padding:.8rem 1rem;background:#e3f2fd;border-radius:8px;border:1px solid #90caf9;margin-bottom:1rem;font-size:.78rem">';
-    h +=
+    html +=
       "<strong>👋 Welcome!</strong> This dashboard shows sample data. To use your own: go to <strong>📤 Upload</strong> tab → Import your Full Config JSON or upload Resource Rules + Timesheets. ";
-    h +=
+    html +=
       '<a href="#" onclick="show(\'upload\');return false" style="color:#1565c0;font-weight:600">Go to Upload →</a></div>';
   }
-  const statusBadge = `<span class="badge ${risk === "Low" ? "badge-low" : "badge-over"}">${D.fc.status} · ${risk}</span>`;
-  h += '<div class="cards">';
-  h += statCard("b", `PO Value (${D.fc.currency})`, f(D.fc.totalPOValue));
-  h += statCard("p", `PO Value (${D.fc.normCurrency})`, f(D.fc.normPO, "$"));
-  h += statCard("g", "Total Actuals", f(D.tAct));
-  h += statCard("o", "Remaining Budget", f(D.rem));
-  h += statCard("r", "Burn Rate/Day", f(D.fc.rate));
-  h += statCard("b", "Total Forecast", f(D.fc.total));
-  h += statCard("g", "Expenses", f(D.tExp));
-  h += statCard("", "Budget Used", pctUsed + "%", "color:" + pctColor(pctUsed));
-  h += statCard("", "Forecast Accuracy", fcVsAct + "%");
-  h += statCard("", "Days Remaining", daysRem > 0 ? daysRem + " days" : "—");
-  h += statCard("", "Status", statusBadge);
-  h += "</div>";
+  const statusBadge = `<span class="badge ${risk === "Low" ? "badge-low" : "badge-over"}">${model.fc.status} · ${risk}</span>`;
+  html += '<div class="cards">';
+  html += statCard("b", `PO Value (${model.fc.currency})`, fmtMoney(model.fc.totalPOValue));
+  html += statCard("p", `PO Value (${model.fc.normCurrency})`, fmtMoney(model.fc.normPO, "$"));
+  html += statCard("g", "Total Actuals", fmtMoney(model.totalActuals));
+  html += statCard("o", "Remaining Budget", fmtMoney(model.remaining));
+  html += statCard("r", "Burn Rate/Day", fmtMoney(model.fc.rate));
+  html += statCard("b", "Total Forecast", fmtMoney(model.fc.total));
+  html += statCard("g", "Expenses", fmtMoney(model.totalExpenses));
+  html += statCard("", "Budget Used", pctUsed + "%", "color:" + pctColor(pctUsed));
+  html += statCard("", "Forecast Accuracy", fcVsAct + "%");
+  html += statCard("", "Days Remaining", daysRem > 0 ? daysRem + " days" : "—");
+  html += statCard("", "Status", statusBadge);
+  html += "</div>";
   // PO_Team status cards
-  const poArr = D.cfg.po_details || [];
+  const poArr = model.cfg.po_details || [];
   const teamBudgets = {};
   poArr.forEach((p) => {
     const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
@@ -734,13 +743,13 @@ function rOV(D) {
   // Compute forecast per team independently from resource rules
   // Compute PO validity end per team for bounding forecast
   const teamValidityEnd = {};
-  (D.cfg.po_details || []).forEach((p) => {
+  (model.cfg.po_details || []).forEach((p) => {
     const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
     const endDt = parseValidityEnd(p.PO_Validity || p.PO_Validity_Year);
     if (!teamValidityEnd[t] || endDt > teamValidityEnd[t]) teamValidityEnd[t] = endDt;
   });
   const fcPerTeam = {};
-  D.cfg.resources.forEach((r) => {
+  model.cfg.resources.forEach((r) => {
     if (!r.bill_rate) return;
     const t = (r.po_team || "").replace(/\s+/g, "");
     if (!fcPerTeam[t]) fcPerTeam[t] = 0;
@@ -755,41 +764,41 @@ function rOV(D) {
       d = new Date(d.getTime() + 86400000);
     }
   });
-  h += '<div class="box"><h2>PO_Team Budget Status</h2>';
-  h += '<p style="font-size:.72rem;color:#666;margin-bottom:.8rem">';
-  h += "<strong>Fc</strong> = Forecast utilization % of PO value. ";
-  h += "Calculated as: <code>Total Forecast Cost ÷ PO Value × 100</code>. ";
-  h += "Forecast = sum of (BillRate × Allocation × 8hrs × working days) for each resource, ";
-  h += "bounded by PO validity end date. ";
-  h += '<span style="color:#2e7d32">🟢 &lt;85%</span> On Track · ';
-  h += '<span style="color:#e65100">🟠 85-100%</span> At Risk · ';
-  h += '<span style="color:#c62828">🔴 &gt;100%</span> Over Budget</p>';
-  h += '<div class="cards">';
+  html += '<div class="box"><h2>PO_Team Budget Status</h2>';
+  html += '<p style="font-size:.72rem;color:#666;margin-bottom:.8rem">';
+  html += "<strong>Fc</strong> = Forecast utilization % of PO value. ";
+  html += "Calculated as: <code>Total Forecast Cost ÷ PO Value × 100</code>. ";
+  html += "Forecast = sum of (BillRate × Allocation × 8hrs × working days) for each resource, ";
+  html += "bounded by PO validity end date. ";
+  html += '<span style="color:#2e7d32">🟢 &lt;85%</span> On Track · ';
+  html += '<span style="color:#e65100">🟠 85-100%</span> At Risk · ';
+  html += '<span style="color:#c62828">🔴 &gt;100%</span> Over Budget</p>';
+  html += '<div class="cards">';
   Object.entries(teamBudgets).forEach(([team, data]) => {
     const teamFc = fcPerTeam[team] || 0;
     const overBudget = teamFc > data.po;
     const pct = data.po ? Math.round((teamFc / data.po) * 100) : 0;
     const color = overBudget ? "r" : pct > 85 ? "o" : "g";
     const statusMsg = overBudget ? `${data.status} · Over Budget` : `${data.status} · On Track`;
-    h += `<div class="card ${color}">`;
-    h += `<h3 style="font-size:.68rem">${team}</h3>`;
-    h += `<div class="v" style="font-size:1rem">${f(data.po)}</div>`;
-    h += `<div style="font-size:.7rem;margin-top:3px">`;
-    h += `<span class="badge ${overBudget ? "badge-over" : "badge-low"}">${statusMsg}</span> · Fc: ${pct}% (${f(teamFc)})`;
-    h += `</div></div>`;
+    html += `<div class="card ${color}">`;
+    html += `<h3 style="font-size:.68rem">${team}</h3>`;
+    html += `<div class="v" style="font-size:1rem">${fmtMoney(data.po)}</div>`;
+    html += `<div style="font-size:.7rem;margin-top:3px">`;
+    html += `<span class="badge ${overBudget ? "badge-over" : "badge-low"}">${statusMsg}</span> · Fc: ${pct}% (${fmtMoney(teamFc)})`;
+    html += `</div></div>`;
   });
-  h += "</div></div>";
-  h += '<div class="box"><h2>Monthly: Forecast vs Actuals</h2><canvas id="c1" height="80"></canvas></div>';
-  return h;
+  html += "</div></div>";
+  html += '<div class="box"><h2>Monthly: Forecast vs Actuals</h2><canvas id="c1" height="80"></canvas></div>';
+  return html;
 }
-function rBD(D) {
+function renderBurndown(model) {
   // Build merged data for table
   const fcMap = {};
-  D.fc.burndown.forEach((m) => {
+  model.fc.burndown.forEach((m) => {
     fcMap[m.month] = { forecast: m.forecast, forecast_burn: m.forecast_burn };
   });
   const actMap = {};
-  D.actuals.forEach((m) => {
+  model.actuals.forEach((m) => {
     actMap[m.month] = { actuals: m.actuals, actuals_burn: m.actuals_burn };
   });
   const allMonths = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
@@ -797,58 +806,58 @@ function rBD(D) {
   );
 
   const detailCols = ["Month", "Forecast Spend", "Actuals Spend", "Forecast Burn", "Actuals Burn", "Variance"];
-  let h = `<div class="box"><h2>PO Burndown (Local: ${D.fc.currency})</h2>`;
-  h += '<p style="font-size:.75rem;color:#666;margin-bottom:.8rem">';
-  h += "Green=Actuals Burn, Blue=Forecast Burn, Red dashed=Cumulative PO Value available</p>";
-  h += '<canvas id="c2" height="100"></canvas></div>';
-  h += `<div class="box"><h2>Normalized Burndown (${D.fc.normCurrency})</h2><canvas id="c2norm" height="80"></canvas></div>`;
+  let html = `<div class="box"><h2>PO Burndown (Local: ${model.fc.currency})</h2>`;
+  html += '<p style="font-size:.75rem;color:#666;margin-bottom:.8rem">';
+  html += "Green=Actuals Burn, Blue=Forecast Burn, Red dashed=Cumulative PO Value available</p>";
+  html += '<canvas id="c2" height="100"></canvas></div>';
+  html += `<div class="box"><h2>Normalized Burndown (${model.fc.normCurrency})</h2><canvas id="c2norm" height="80"></canvas></div>`;
   // Table
-  h += `<div class="box"><h2>Monthly Detail</h2><div class="tw"><table>${tableHead(detailCols)}<tbody>`;
+  html += `<div class="box"><h2>Monthly Detail</h2><div class="tw"><table>${tableHead(detailCols)}<tbody>`;
   allMonths.forEach((m) => {
     const fc = fcMap[m] || {},
       ac = actMap[m] || {};
     const v = ac.actuals != null && fc.forecast != null ? Math.round((ac.actuals - fc.forecast) * 100) / 100 : null;
-    h += tableRow([
+    html += tableRow([
       `<strong>${m}</strong>`,
-      f(fc.forecast),
-      f(ac.actuals),
-      f(fc.forecast_burn),
-      f(ac.actuals_burn),
-      cell(f(v), varianceStyle(v)),
+      fmtMoney(fc.forecast),
+      fmtMoney(ac.actuals),
+      fmtMoney(fc.forecast_burn),
+      fmtMoney(ac.actuals_burn),
+      cell(fmtMoney(v), varianceStyle(v)),
     ]);
   });
-  h += "</tbody></table></div></div>";
+  html += "</tbody></table></div></div>";
   // Normalized Monthly Detail table
   const today3 = new Date().toISOString().slice(0, 10);
-  const fxFn = fxRateAsOf(D.cfg.fx_rates, D.fc.currency || "GBP", today3);
-  const fxTn = fxRateAsOf(D.cfg.fx_rates, D.fc.normCurrency || "USD", today3);
-  const nx = (v) => (v != null ? Math.round((v / fxFn) * fxTn * 100) / 100 : null);
-  h += `<div class="box"><h2>Normalized Monthly Detail (${D.fc.normCurrency})</h2>`;
-  h += `<div class="tw"><table>${tableHead(detailCols)}<tbody>`;
+  const fxFn = fxRateAsOf(model.cfg.fx_rates, model.fc.currency || "GBP", today3);
+  const fxTn = fxRateAsOf(model.cfg.fx_rates, model.fc.normCurrency || "USD", today3);
+  const toNorm = (v) => (v != null ? Math.round((v / fxFn) * fxTn * 100) / 100 : null);
+  html += `<div class="box"><h2>Normalized Monthly Detail (${model.fc.normCurrency})</h2>`;
+  html += `<div class="tw"><table>${tableHead(detailCols)}<tbody>`;
   allMonths.forEach((m) => {
     const fc = fcMap[m] || {},
       ac = actMap[m] || {};
-    const v = ac.actuals != null && fc.forecast != null ? nx(ac.actuals - fc.forecast) : null;
-    h += tableRow([
+    const v = ac.actuals != null && fc.forecast != null ? toNorm(ac.actuals - fc.forecast) : null;
+    html += tableRow([
       `<strong>${m}</strong>`,
-      f(nx(fc.forecast), "$"),
-      f(nx(ac.actuals), "$"),
-      f(nx(fc.forecast_burn), "$"),
-      f(nx(ac.actuals_burn), "$"),
-      cell(f(v, "$"), varianceStyle(v)),
+      fmtMoney(toNorm(fc.forecast), "$"),
+      fmtMoney(toNorm(ac.actuals), "$"),
+      fmtMoney(toNorm(fc.forecast_burn), "$"),
+      fmtMoney(toNorm(ac.actuals_burn), "$"),
+      cell(fmtMoney(v, "$"), varianceStyle(v)),
     ]);
   });
-  h += "</tbody></table></div></div>";
-  return h;
+  html += "</tbody></table></div></div>";
+  return html;
 }
-function rMo(D) {
+function renderVariance(model) {
   // Merge forecast (from resource rules) and actuals (from timesheets) by month
   const fcMap = {};
-  D.fc.burndown.forEach((m) => {
+  model.fc.burndown.forEach((m) => {
     fcMap[m.month] = { forecast: m.forecast, forecast_burn: m.forecast_burn };
   });
   const actMap = {};
-  D.actuals.forEach((m) => {
+  model.actuals.forEach((m) => {
     actMap[m.month] = { actuals: m.actuals, actuals_burn: m.actuals_burn };
   });
   const allMonths = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
@@ -861,28 +870,30 @@ function rMo(D) {
     actuals_burn: actMap[m] ? actMap[m].actuals_burn : null,
     forecast_burn: fcMap[m] ? fcMap[m].forecast_burn : null,
   }));
-  let h = '<div class="box"><h2>Variance: Actuals − Forecast</h2><canvas id="c3" height="70"></canvas></div>';
+  let html = '<div class="box"><h2>Variance: Actuals − Forecast</h2><canvas id="c3" height="70"></canvas></div>';
   const cols = ["Month", "Forecast", "Actuals", "Variance", "Actuals Burn", "Forecast Burn"];
-  h += `<div class="tw"><table>${tableHead(cols)}<tbody>`;
+  html += `<div class="tw"><table>${tableHead(cols)}<tbody>`;
   merged.forEach((m) => {
     const v = m.actuals != null && m.forecast != null ? Math.round((m.actuals - m.forecast) * 100) / 100 : null;
-    h += tableRow([
+    html += tableRow([
       `<strong>${m.month}</strong>`,
-      f(m.forecast),
-      f(m.actuals),
-      cell(f(v), varianceStyle(v)),
-      f(m.actuals_burn),
-      f(m.forecast_burn),
+      fmtMoney(m.forecast),
+      fmtMoney(m.actuals),
+      cell(fmtMoney(v), varianceStyle(v)),
+      fmtMoney(m.actuals_burn),
+      fmtMoney(m.forecast_burn),
     ]);
   });
-  h += "</tbody></table></div>";
-  return h;
+  html += "</tbody></table></div>";
+  return html;
 }
 
 // ─── INVOICES TAB ───────────────────────────────────────────────────────────
-function rInv(D) {
+function renderInvoices(model) {
   // Filter invoices by year-valid PO_Teams AND PO_Team slicer
-  const validTeamsInv = new Set((D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
+  const validTeamsInv = new Set(
+    (model.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")),
+  );
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const fullCfgInv = loadWork();
   const invs = (fullCfgInv.invoices || []).filter((i) => {
@@ -897,14 +908,14 @@ function rInv(D) {
   const totalPaid = paid.reduce((s, i) => s + i.amount, 0);
 
   const sumAmount = (list) => list.reduce((s, i) => s + i.amount, 0);
-  let h = '<div class="cards">';
-  h += statCard("b", "Total Invoices", invs.length);
-  h += statCard("g", "Total Invoiced", f(totalInv));
-  h += `<div class="card" style="border-left-color:#4caf50"><h3>Paid</h3><div class="v">${f(totalPaid)} (${paid.length})</div></div>`;
-  h += statCard("o", "Submitted", `${f(sumAmount(submitted))} (${submitted.length})`);
-  h += statCard("r", "Draft", `${f(sumAmount(draft))} (${draft.length})`);
-  h += statCard("p", "PO Remaining (uninvoiced)", f(D.fc.totalPOValue - totalInv));
-  h += "</div>";
+  let html = '<div class="cards">';
+  html += statCard("b", "Total Invoices", invs.length);
+  html += statCard("g", "Total Invoiced", fmtMoney(totalInv));
+  html += `<div class="card" style="border-left-color:#4caf50"><h3>Paid</h3><div class="v">${fmtMoney(totalPaid)} (${paid.length})</div></div>`;
+  html += statCard("o", "Submitted", `${fmtMoney(sumAmount(submitted))} (${submitted.length})`);
+  html += statCard("r", "Draft", `${fmtMoney(sumAmount(draft))} (${draft.length})`);
+  html += statCard("p", "PO Remaining (uninvoiced)", fmtMoney(model.fc.totalPOValue - totalInv));
+  html += "</div>";
 
   // Invoice timeline by PO_Team
   if (invs.length) {
@@ -914,9 +925,9 @@ function rInv(D) {
       tEnd = new Date(Math.max(...allEnds));
     const span = tEnd - tStart || 1;
     const statusColor = { Paid: "#4caf50", Submitted: "#ff9800", Draft: "#9e9e9e" };
-    h += `<div class="box" id="invTimeline"><h2>Invoice Timeline ${expandCollapseButtons("invTimeline")}</h2>`;
-    h += '<div class="tl-scroll"><div class="tl-inner">';
-    h += monthAxis(tStart, tEnd, span, 160, 16);
+    html += `<div class="box" id="invTimeline"><h2>Invoice Timeline ${expandCollapseButtons("invTimeline")}</h2>`;
+    html += '<div class="tl-scroll"><div class="tl-inner">';
+    html += monthAxis(tStart, tEnd, span, 160, 16);
     // Group by po_team
     const groups = {};
     invs.forEach((i) => {
@@ -925,28 +936,28 @@ function rInv(D) {
       groups[t].push(i);
     });
     Object.entries(groups).forEach(([team, items]) => {
-      h += `<div class="grp-hdr" onclick="toggleGrp(this)">${team} (${items.length} invoices)</div><div class="grp-rows">`;
+      html += `<div class="grp-hdr" onclick="toggleGrp(this)">${team} (${items.length} invoices)</div><div class="grp-rows">`;
       items.forEach((i) => {
         const rs = new Date(i.period_from),
           re = new Date(i.period_to);
         const left = Math.max(0, ((rs - tStart) / span) * 100).toFixed(1);
         const width = Math.max(2, ((re - rs) / span) * 100).toFixed(1);
         const barStyle = `left:${left}%;width:${width}%;background:${statusColor[i.status] || "#666"}`;
-        h += '<div class="tl-row">';
-        h += `<span class="nm" style="min-width:160px;font-size:.65rem">${i.invoice_number}</span>`;
-        h += `<div class="ba"><div class="br" style="${barStyle}">${f(i.amount)} · ${i.status}</div></div>`;
-        h += "</div>";
+        html += '<div class="tl-row">';
+        html += `<span class="nm" style="min-width:160px;font-size:.65rem">${i.invoice_number}</span>`;
+        html += `<div class="ba"><div class="br" style="${barStyle}">${fmtMoney(i.amount)} · ${i.status}</div></div>`;
+        html += "</div>";
       });
-      h += "</div>";
+      html += "</div>";
     });
-    h +=
+    html +=
       '<div style="margin-top:8px;font-size:.7rem">🟢 Paid &nbsp; 🟠 Submitted &nbsp; ⚪ Draft</div></div></div></div>';
   }
 
   // Table with collapsible PO_Team groups
   const invCols = ["PO_Team", "Invoice #", "From", "To", "Amount", "Status", "Paid Date", "Notes"];
-  h += `<div class="box" id="invTable"><h2>Invoice Details ${expandCollapseButtons("invTable")}</h2>`;
-  h += `<div class="tw"><table id="tblInv">${tableHead(invCols)}<tbody>`;
+  html += `<div class="box" id="invTable"><h2>Invoice Details ${expandCollapseButtons("invTable")}</h2>`;
+  html += `<div class="tw"><table id="tblInv">${tableHead(invCols)}<tbody>`;
   const invGroups = {};
   invs.forEach((i) => {
     const t = i.po_team || "Unknown";
@@ -954,25 +965,26 @@ function rInv(D) {
     invGroups[t].push(i);
   });
   Object.entries(invGroups).forEach(([team, items]) => {
-    h += groupHeaderRow(8, `${team} (${items.length} invoices, ${f(sumAmount(items))})`);
-    h += `<tr class="grp-rows"><td colspan="8" style="padding:0"><table style="width:100%;margin:0;box-shadow:none"><tbody>`;
+    html += groupHeaderRow(8, `${team} (${items.length} invoices, ${fmtMoney(sumAmount(items))})`);
+    html += `<tr class="grp-rows"><td colspan="8" style="padding:0"><table style="width:100%;margin:0;box-shadow:none"><tbody>`;
     items.forEach((i) => {
-      const sc = i.status === "Paid" ? "color:#2e7d32" : i.status === "Submitted" ? "color:#e65100" : "color:#666";
-      h += tableRow([
+      const statusStyle =
+        i.status === "Paid" ? "color:#2e7d32" : i.status === "Submitted" ? "color:#e65100" : "color:#666";
+      html += tableRow([
         cell(i.po_team, "font-size:.65rem"),
         i.invoice_number,
         i.period_from,
         i.period_to,
-        f(i.amount),
-        cell(i.status, sc + ";font-weight:600"),
+        fmtMoney(i.amount),
+        cell(i.status, statusStyle + ";font-weight:600"),
         i.paid_date || "—",
         i.notes || "",
       ]);
     });
-    h += `</tbody></table></td></tr>`;
+    html += `</tbody></table></td></tr>`;
   });
-  h += "</tbody></table></div></div>";
-  return h;
+  html += "</tbody></table></div></div>";
+  return html;
 }
 
 // ─── EDITABLE RESOURCES TABLE ───────────────────────────────────────────────
@@ -1020,11 +1032,11 @@ const RES_DELETE_BTN =
 function editableResCells(values) {
   return RES_FIELDS.map((k) => `<td contenteditable="true" data-field="${k}">${values[k]}</td>`).join("");
 }
-function rRes(D) {
+function renderResources(model) {
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const allRes = normFilter
-    ? D.cfg.resources.filter((r) => normFilter.includes((r.po_team || "").replace(/\s+/g, "")))
-    : D.cfg.resources;
+    ? model.cfg.resources.filter((r) => normFilter.includes((r.po_team || "").replace(/\s+/g, "")))
+    : model.cfg.resources;
   // Deduplicate by unique key: empl_id+projectID+po_team+start+end
   const seen = new Set();
   const res = allRes.filter((r) => {
@@ -1033,17 +1045,17 @@ function rRes(D) {
     seen.add(key);
     return true;
   });
-  let h = '<div class="cards">';
-  h += statCard("b", "People", [...new Set(res.map((r) => r.name))].length);
-  h += statCard("g", "Rules", res.length);
-  h += statCard("o", "Forecast Days", D.fc.days);
-  h += statCard("r", "Total Forecast", f(D.fc.total));
-  h += "</div>";
-  h += '<div style="margin-bottom:.5rem;display:flex;gap:.5rem;align-items:center">';
-  h += '<button class="btn btn-blue" onclick="saveResTable()">💾 Save All (recalculates forecast)</button>';
-  h += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
-  h += '<span style="font-size:.7rem;color:#888">Click cell to edit · Each group has its own Add Row</span>';
-  h += "</div>";
+  let html = '<div class="cards">';
+  html += statCard("b", "People", [...new Set(res.map((r) => r.name))].length);
+  html += statCard("g", "Rules", res.length);
+  html += statCard("o", "Forecast Days", model.fc.days);
+  html += statCard("r", "Total Forecast", fmtMoney(model.fc.total));
+  html += "</div>";
+  html += '<div style="margin-bottom:.5rem;display:flex;gap:.5rem;align-items:center">';
+  html += '<button class="btn btn-blue" onclick="saveResTable()">💾 Save All (recalculates forecast)</button>';
+  html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
+  html += '<span style="font-size:.7rem;color:#888">Click cell to edit · Each group has its own Add Row</span>';
+  html += "</div>";
   // Per-group independent tables with headers, add row, sort
   const resGroups = {};
   res.forEach((r) => {
@@ -1054,26 +1066,27 @@ function rRes(D) {
   Object.entries(resGroups).forEach(([team, members]) => {
     const tid = team.replace(/[^a-zA-Z0-9]/g, "_");
     const people = [...new Set(members.map((r) => r.name))].length;
-    h += '<div class="box" style="margin-bottom:.8rem">';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">';
-    h += `<h2 style="font-size:.85rem;margin:0">${team} <span style="font-size:.7rem;color:#888">(${members.length} rules, ${people} people)</span></h2>`;
-    h += `<div><button class="btn btn-green" style="font-size:.65rem" onclick="addResRowTo('${tid}','${team}')">➕ Add</button> `;
-    h += `<button class="btn btn-blue" style="font-size:.65rem" onclick="saveResTable()">💾 Save</button></div>`;
-    h += "</div>";
-    h += `<div class="tw"><table class="resGrpTable" id="res_${tid}">${tableHead(RES_TABLE_COLS)}<tbody>`;
+    html += '<div class="box" style="margin-bottom:.8rem">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">';
+    html += `<h2 style="font-size:.85rem;margin:0">${team} <span style="font-size:.7rem;color:#888">(${members.length} rules, ${people} people)</span></h2>`;
+    html += `<div><button class="btn btn-green" style="font-size:.65rem" onclick="addResRowTo('${tid}','${team}')">➕ Add</button> `;
+    html += `<button class="btn btn-blue" style="font-size:.65rem" onclick="saveResTable()">💾 Save</button></div>`;
+    html += "</div>";
+    html += `<div class="tw"><table class="resGrpTable" id="res_${tid}">${tableHead(RES_TABLE_COLS)}<tbody>`;
     members.forEach((r) => {
-      const dc = r.bill_rate * r.alloc * 8;
+      const dailyCost = r.bill_rate * r.alloc * 8;
       const values = { ...r, empl_id: r.empl_id || 0, projectID: r.projectID || "" };
-      h += `<tr>${editableResCells(values)}<td style="font-weight:600">${f(dc)}</td><td>${RES_DELETE_BTN}</td></tr>`;
+      html += `<tr>${editableResCells(values)}<td style="font-weight:600">${fmtMoney(dailyCost)}</td><td>${RES_DELETE_BTN}</td></tr>`;
     });
-    h += `</tbody></table></div></div>`;
+    html += `</tbody></table></div></div>`;
   });
-  h += '<details class="cfg-section" style="margin-top:1rem">';
-  h += '<summary style="padding:.8rem 1rem;background:#e8eaf6;font-weight:700">📅 Resource Timeline (Gantt)</summary>';
-  h += '<div class="inner" id="ganttContainer">';
-  h += rTLInline(D);
-  h += "</div></details>";
-  return h;
+  html += '<details class="cfg-section" style="margin-top:1rem">';
+  html +=
+    '<summary style="padding:.8rem 1rem;background:#e8eaf6;font-weight:700">📅 Resource Timeline (Gantt)</summary>';
+  html += '<div class="inner" id="ganttContainer">';
+  html += renderResourceGantt(model);
+  html += "</div></details>";
+  return html;
 }
 function addResRowTo(tid, team) {
   const tbody = document.querySelector("#res_" + tid + " tbody");
@@ -1128,8 +1141,8 @@ function saveResTable() {
 }
 
 // ─── RESOURCE UTILIZATION ────────────────────────────────────────────────────
-function rUtil(D) {
-  const cfg = D.cfg;
+function renderUtilization(model) {
+  const cfg = model.cfg;
   const validTeams = new Set((cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const fullCfg = loadWork();
@@ -1198,19 +1211,20 @@ function rUtil(D) {
   const underUtil = people.filter((p) => p.totalAvail > 0 && p.totalActual > 0 && p.totalActual < p.totalAvail * 0.7);
   const noData = people.filter((p) => p.totalActual === 0);
   const totalHrs = (key) => Math.round(people.reduce((s, p) => s + p[key], 0)).toLocaleString();
-  let h = '<div class="cards">';
-  h += statCard("b", "People", people.length);
-  h += statCard("g", "Total Available Hrs", totalHrs("totalAvail"));
-  h += statCard("o", "Total Actual Hrs", totalHrs("totalActual"));
-  h += statCard("r", "Over-utilized", overUtil.length);
-  h += `<div class="card" style="border-left-color:#ff9800"><h3>Under-utilized (&lt;70%)</h3><div class="v">${underUtil.length}</div></div>`;
-  h += statCard("", "No Actuals Data", noData.length);
-  h += "</div>";
+  let html = '<div class="cards">';
+  html += statCard("b", "People", people.length);
+  html += statCard("g", "Total Available Hrs", totalHrs("totalAvail"));
+  html += statCard("o", "Total Actual Hrs", totalHrs("totalActual"));
+  html += statCard("r", "Over-utilized", overUtil.length);
+  html += `<div class="card" style="border-left-color:#ff9800"><h3>Under-utilized (&lt;70%)</h3><div class="v">${underUtil.length}</div></div>`;
+  html += statCard("", "No Actuals Data", noData.length);
+  html += "</div>";
 
   // ── PROJECT TIMELINE VIEW (resources grouped by project) ──
-  h += `<div class="box" id="projTimeline"><h2>📅 Project Resource Timeline ${expandCollapseButtons("projTimeline")}</h2>`;
-  h += '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">';
-  h += "Resources allocated per project within the PO_Team. Bar width = allocation period, opacity = allocation %.</p>";
+  html += `<div class="box" id="projTimeline"><h2>📅 Project Resource Timeline ${expandCollapseButtons("projTimeline")}</h2>`;
+  html += '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">';
+  html +=
+    "Resources allocated per project within the PO_Team. Bar width = allocation period, opacity = allocation %.</p>";
   // Group resources by projectID
   const byProject = {};
   resources.forEach((r) => {
@@ -1224,9 +1238,9 @@ function rUtil(D) {
   const tlEnd = allEnds.length ? new Date(Math.max(...allEnds)) : new Date("2026-12-31");
   const tlSpan = tlEnd - tlStart || 1;
   const colors = ["#5c6bc0", "#26a69a", "#e65100", "#8e24aa", "#2e7d32", "#c62828", "#1565c0", "#4e342e", "#00838f"];
-  h += '<div class="tl-scroll"><div class="tl-inner">';
-  h += monthAxis(tlStart, tlEnd, tlSpan, 140, 18);
-  let pi = 0;
+  html += '<div class="tl-scroll"><div class="tl-inner">';
+  html += monthAxis(tlStart, tlEnd, tlSpan, 140, 18);
+  let colorIdx = 0;
   Object.entries(byProject).forEach(([pid, members]) => {
     const team = members[0] ? members[0].po_team || "" : "";
     const byPersonProj = {};
@@ -1235,27 +1249,27 @@ function rUtil(D) {
       if (!byPersonProj[key]) byPersonProj[key] = [];
       byPersonProj[key].push(r);
     });
-    h += `<div class="grp-hdr" onclick="toggleGrp(this)">Project ${pid} · ${team} (${Object.keys(byPersonProj).length} people)</div><div class="grp-rows">`;
+    html += `<div class="grp-hdr" onclick="toggleGrp(this)">Project ${pid} · ${team} (${Object.keys(byPersonProj).length} people)</div><div class="grp-rows">`;
     Object.entries(byPersonProj).forEach(([key, rules]) => {
       const [eid, name] = key.split("|");
-      h += `<div class="tl-row"><span class="nm">${name}</span><div class="ba">`;
+      html += `<div class="tl-row"><span class="nm">${name}</span><div class="ba">`;
       rules.forEach((r) => {
         const rs = new Date(r.start),
           re = new Date(r.end);
         if (isNaN(rs) || isNaN(re) || rs > re) return;
         const left = Math.max(0, ((rs - tlStart) / tlSpan) * 100).toFixed(1);
         const width = Math.max(1, ((re - rs) / tlSpan) * 100).toFixed(1);
-        const barStyle = `left:${left}%;width:${width}%;background:${colors[pi % colors.length]};opacity:${0.6 + r.alloc * 0.4}`;
+        const barStyle = `left:${left}%;width:${width}%;background:${colors[colorIdx % colors.length]};opacity:${0.6 + r.alloc * 0.4}`;
         const tooltip = `${r.role} · ${r.alloc * 100}% · £${r.bill_rate}/hr`;
-        h += `<div class="br" style="${barStyle}" title="${tooltip}">${r.alloc * 100}% ${r.role || ""}</div>`;
+        html += `<div class="br" style="${barStyle}" title="${tooltip}">${r.alloc * 100}% ${r.role || ""}</div>`;
       });
-      h += `</div></div>`;
-      pi++;
+      html += `</div></div>`;
+      colorIdx++;
     });
-    h += "</div>";
+    html += "</div>";
   });
-  if (!resources.length) h += '<p style="color:#888;font-size:.8rem">No resources for selected filter</p>';
-  h += "</div></div></div>";
+  if (!resources.length) html += '<p style="color:#888;font-size:.8rem">No resources for selected filter</p>';
+  html += "</div></div></div>";
 
   // ── UTILIZATION TABLE ──
   const utilCols = [
@@ -1268,7 +1282,7 @@ function rUtil(D) {
     "Status",
     "Actuals Period",
   ];
-  h += `<div class="tw"><table>${tableHead(utilCols)}<tbody>`;
+  html += `<div class="tw"><table>${tableHead(utilCols)}<tbody>`;
   people.sort((a, b) => {
     const ua = a.totalAvail ? a.totalActual / a.totalAvail : 0;
     const ub = b.totalAvail ? b.totalActual / b.totalAvail : 0;
@@ -1287,7 +1301,7 @@ function rUtil(D) {
           : "color:#e65100";
     const teams = [...new Set(p.rules.map((r) => r.po_team))].join(", ");
     const period = p.minDt ? `${p.minDt} → ${p.maxDt}` : "—";
-    h += tableRow([
+    html += tableRow([
       p.name,
       p.empl_id,
       cell(teams, "font-size:.65rem"),
@@ -1298,28 +1312,36 @@ function rUtil(D) {
       cell(period, "font-size:.65rem"),
     ]);
   });
-  h += "</tbody></table></div>";
+  html += "</tbody></table></div>";
   if (!fullCfg.raw_actuals || !fullCfg.raw_actuals.length)
-    h +=
+    html +=
       '<p style="color:#888;font-size:.8rem;margin-top:1rem">⚠️ Upload timesheet actuals to see actual hours utilization.</p>';
 
   // ── ACTUALS DATE RANGE BY PROJECT (UNFILTERED — shows ALL projects) ──
   const allProjEntries = Object.entries(projCoverage);
   if (allProjEntries.length) {
-    h += '<div class="box" style="margin-top:1rem"><h2>📊 Actuals Date Range by Project ';
-    h += '<span style="font-size:.7rem;font-weight:400;color:#888">(All projects — no filter impact)</span></h2>';
-    h += '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">';
-    h += "Shows data availability across all projects regardless of Year/PO_Team filter selection.</p>";
-    h += `<div class="tw"><table id="tblDateRange">${tableHead(DATE_RANGE_COLS)}<tbody>`;
+    html += '<div class="box" style="margin-top:1rem"><h2>📊 Actuals Date Range by Project ';
+    html += '<span style="font-size:.7rem;font-weight:400;color:#888">(All projects — no filter impact)</span></h2>';
+    html += '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">';
+    html += "Shows data availability across all projects regardless of Year/PO_Team filter selection.</p>";
+    html += `<div class="tw"><table id="tblDateRange">${tableHead(DATE_RANGE_COLS)}<tbody>`;
     allProjEntries
       .sort((a, b) => a[0] - b[0])
       .forEach(([pid, d]) => {
         const days = Math.max(1, Math.round((new Date(d.max) - new Date(d.min)) / 86400000));
         const weeks = Math.max(1, Math.ceil(days / 7));
         const avgPerWeek = Math.round((d.rows / weeks) * 10) / 10;
-        h += tableRow([pid, cell(d.team, "font-size:.65rem"), d.min, d.max, d.rows.toLocaleString(), days, avgPerWeek]);
+        html += tableRow([
+          pid,
+          cell(d.team, "font-size:.65rem"),
+          d.min,
+          d.max,
+          d.rows.toLocaleString(),
+          days,
+          avgPerWeek,
+        ]);
       });
-    h += "</tbody></table></div></div>";
+    html += "</tbody></table></div></div>";
   }
 
   // ── MONTHLY ACTUALS (COLLAPSIBLE, filtered by slicer) ──
@@ -1329,73 +1351,73 @@ function rUtil(D) {
     return normFilter ? normFilter.includes(t) : true;
   });
   if (filteredProj.length) {
-    h += '<div class="box" style="margin-top:1rem">';
-    h += collapsibleHeader(`📈 Monthly Actuals (Filtered by Slicer) — ${filteredProj.length} projects`);
-    h += '<div class="collapsible-body">';
+    html += '<div class="box" style="margin-top:1rem">';
+    html += collapsibleHeader(`📈 Monthly Actuals (Filtered by Slicer) — ${filteredProj.length} projects`);
+    html += '<div class="collapsible-body">';
     const monthlyCols = ["Project ID ⇅", "PO_Team", "From ⇅", "To ⇅", "Rows ⇅", "Weeks"];
-    h += `<div class="tw"><table>${tableHead(monthlyCols)}<tbody>`;
+    html += `<div class="tw"><table>${tableHead(monthlyCols)}<tbody>`;
     filteredProj.forEach(([pid, d]) => {
       const weeks = Math.max(1, Math.round((new Date(d.max) - new Date(d.min)) / 604800000) + 1);
-      h += tableRow([pid, cell(d.team, "font-size:.65rem"), d.min, d.max, d.rows, weeks]);
+      html += tableRow([pid, cell(d.team, "font-size:.65rem"), d.min, d.max, d.rows, weeks]);
     });
-    h += "</tbody></table></div></div></div>";
+    html += "</tbody></table></div></div></div>";
   }
-  return h;
+  return html;
 }
 
 // ─── WHAT-IF SCENARIOS ──────────────────────────────────────────────────────
-function rScen(D) {
+function renderScenarios(model) {
   const scenarios = JSON.parse(localStorage.getItem("pf_scenarios") || "{}");
   const names = Object.keys(scenarios);
-  let h = '<div class="cards">';
-  h += statCard("b", "Saved Scenarios", names.length);
-  h += statCard("g", "Current Working", "Active");
-  h += "</div>";
+  let html = '<div class="cards">';
+  html += statCard("b", "Saved Scenarios", names.length);
+  html += statCard("g", "Current Working", "Active");
+  html += "</div>";
   // Save current as scenario
-  h += '<div class="box"><h2>Save Current as Scenario</h2>';
-  h += '<div style="display:flex;gap:.5rem;align-items:center">';
-  h += '<input type="text" id="scenName" placeholder="Scenario name (e.g. With Contractor X)" ';
-  h += 'style="flex:1;padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem">';
-  h += '<button class="btn btn-green" onclick="saveScenario()">💾 Save Scenario</button></div></div>';
+  html += '<div class="box"><h2>Save Current as Scenario</h2>';
+  html += '<div style="display:flex;gap:.5rem;align-items:center">';
+  html += '<input type="text" id="scenName" placeholder="Scenario name (e.g. With Contractor X)" ';
+  html += 'style="flex:1;padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem">';
+  html += '<button class="btn btn-green" onclick="saveScenario()">💾 Save Scenario</button></div></div>';
   // List saved scenarios
   if (names.length) {
     const cols = ["Name", "Resources", "POs", "Total Forecast", "Saved", "Actions"];
-    h += `<div class="box"><h2>Saved Scenarios</h2><div class="tw"><table>${tableHead(cols)}<tbody>`;
+    html += `<div class="box"><h2>Saved Scenarios</h2><div class="tw"><table>${tableHead(cols)}<tbody>`;
     names.forEach((n) => {
       const s = scenarios[n];
       const jsName = n.replace(/'/g, "\\'");
       const actions =
         `<button class="btn btn-blue" style="font-size:.65rem" onclick="loadScenario('${jsName}')">Load</button> ` +
         `<button class="btn btn-red" style="font-size:.65rem" onclick="deleteScenario('${jsName}')">🗑️</button>`;
-      h += tableRow([
+      html += tableRow([
         `<strong>${n}</strong>`,
         (s.resources || []).length,
         (s.po_details || []).length,
-        f(s._forecast || 0),
+        fmtMoney(s._forecast || 0),
         cell(s._saved || "—", "font-size:.65rem"),
         actions,
       ]);
     });
-    h += "</tbody></table></div></div>";
+    html += "</tbody></table></div></div>";
   }
   // Compare side-by-side
   if (names.length >= 1) {
-    h += '<div class="box"><h2>Compare Scenarios</h2>';
-    h += '<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">';
-    h +=
+    html += '<div class="box"><h2>Compare Scenarios</h2>';
+    html += '<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1rem">';
+    html +=
       '<select id="scenA" style="padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem"><option value="_current">Current Working</option>';
     names.forEach((n) => {
-      h += `<option value="${n}">${n}</option>`;
+      html += `<option value="${n}">${n}</option>`;
     });
-    h += '</select><span style="font-weight:700">vs</span>';
-    h += '<select id="scenB" style="padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem">';
+    html += '</select><span style="font-weight:700">vs</span>';
+    html += '<select id="scenB" style="padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem">';
     names.forEach((n) => {
-      h += `<option value="${n}">${n}</option>`;
+      html += `<option value="${n}">${n}</option>`;
     });
-    h += '</select><button class="btn btn-blue" onclick="compareScenarios()">Compare</button></div>';
-    h += '<div id="scenCompare"></div></div>';
+    html += '</select><button class="btn btn-blue" onclick="compareScenarios()">Compare</button></div>';
+    html += '<div id="scenCompare"></div></div>';
   }
-  return h;
+  return html;
 }
 
 function saveScenario() {
@@ -1445,7 +1467,7 @@ function compareScenarios() {
   const fcB = computeForecast(cfgB, []);
   const resA = cfgA.resources || [],
     resB = cfgB.resources || [];
-  let h = `<table>${tableHead(["Metric", aName === "_current" ? "Current" : aName, bName, "Difference"])}<tbody>`;
+  let html = `<table>${tableHead(["Metric", aName === "_current" ? "Current" : aName, bName, "Difference"])}<tbody>`;
   const rows = [
     ["Resources", resA.length, resB.length],
     ["People", [...new Set(resA.map((r) => r.name))].length, [...new Set(resB.map((r) => r.name))].length],
@@ -1456,29 +1478,29 @@ function compareScenarios() {
   ];
   rows.forEach(([label, a, b]) => {
     const diff = typeof a === "number" ? a - b : 0;
-    const diffStr = typeof a === "number" ? (diff > 0 ? "+" : "") + f(diff) : "—";
+    const diffStr = typeof a === "number" ? (diff > 0 ? "+" : "") + fmtMoney(diff) : "—";
     const color = diff > 0 ? "color:#c62828" : diff < 0 ? "color:#2e7d32" : "";
-    const fmt = (x) => (typeof x === "number" ? f(x) : x);
-    h += tableRow([`<strong>${label}</strong>`, fmt(a), fmt(b), cell(diffStr, color + ";font-weight:600")]);
+    const fmt = (x) => (typeof x === "number" ? fmtMoney(x) : x);
+    html += tableRow([`<strong>${label}</strong>`, fmt(a), fmt(b), cell(diffStr, color + ";font-weight:600")]);
   });
-  h += "</tbody></table>";
+  html += "</tbody></table>";
   // Resource diff
   const namesA = new Set(resA.map((r) => r.name)),
     namesB = new Set(resB.map((r) => r.name));
   const added = [...namesB].filter((n) => !namesA.has(n));
   const removed = [...namesA].filter((n) => !namesB.has(n));
   if (added.length || removed.length) {
-    h += '<div style="margin-top:.8rem;font-size:.78rem">';
-    if (added.length) h += `<p style="color:#2e7d32">➕ In ${bName} only: ${added.join(", ")}</p>`;
+    html += '<div style="margin-top:.8rem;font-size:.78rem">';
+    if (added.length) html += `<p style="color:#2e7d32">➕ In ${bName} only: ${added.join(", ")}</p>`;
     if (removed.length)
-      h += `<p style="color:#c62828">➖ In ${aName === "_current" ? "Current" : aName} only: ${removed.join(", ")}</p>`;
-    h += "</div>";
+      html += `<p style="color:#c62828">➖ In ${aName === "_current" ? "Current" : aName} only: ${removed.join(", ")}</p>`;
+    html += "</div>";
   }
-  document.getElementById("scenCompare").innerHTML = h;
+  document.getElementById("scenCompare").innerHTML = html;
 }
 
-function rTLInline(D) {
-  const validTeams = new Set((D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
+function renderResourceGantt(model) {
+  const validTeams = new Set((model.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const fullCfg = loadWork();
   const res = (fullCfg.resources || []).filter((r) => {
@@ -1498,9 +1520,9 @@ function rTLInline(D) {
     if (!groups[t]) groups[t] = [];
     groups[t].push(r);
   });
-  let h = '<div class="tl-scroll"><div class="tl-inner">';
-  h += monthAxis(start, end, span, 140, 18);
-  let pi = 0;
+  let html = '<div class="tl-scroll"><div class="tl-inner">';
+  html += monthAxis(start, end, span, 140, 18);
+  let colorIdx = 0;
   Object.entries(groups).forEach(([team, members]) => {
     const byPerson = {};
     members.forEach((r) => {
@@ -1508,28 +1530,28 @@ function rTLInline(D) {
       if (!byPerson[key]) byPerson[key] = [];
       byPerson[key].push(r);
     });
-    h += `<div style="font-weight:700;font-size:.75rem;margin-top:.5rem;color:#1a1a2e">${team} (${Object.keys(byPerson).length} people)</div>`;
+    html += `<div style="font-weight:700;font-size:.75rem;margin-top:.5rem;color:#1a1a2e">${team} (${Object.keys(byPerson).length} people)</div>`;
     Object.entries(byPerson).forEach(([key, rules]) => {
       const [eid, name] = key.split("|");
-      h += `<div class="tl-row"><span class="nm">${name}</span><div class="ba">`;
+      html += `<div class="tl-row"><span class="nm">${name}</span><div class="ba">`;
       rules.forEach((r) => {
         const rs = new Date(r.start),
           re = new Date(r.end);
         if (isNaN(rs) || isNaN(re) || rs > re) return;
         const left = Math.max(0, ((rs - start) / span) * 100).toFixed(1);
         const width = Math.max(1, ((re - rs) / span) * 100).toFixed(1);
-        h += `<div class="br" style="left:${left}%;width:${width}%;background:${colors[pi % colors.length]};opacity:${0.6 + r.alloc * 0.4}">${r.alloc * 100}%</div>`;
+        html += `<div class="br" style="left:${left}%;width:${width}%;background:${colors[colorIdx % colors.length]};opacity:${0.6 + r.alloc * 0.4}">${r.alloc * 100}%</div>`;
       });
-      h += `</div></div>`;
-      pi++;
+      html += `</div></div>`;
+      colorIdx++;
     });
   });
-  if (!res.length) h += '<p style="color:#888;font-size:.8rem">No resources for selected filter</p>';
-  h += "</div></div>";
-  return h;
+  if (!res.length) html += '<p style="color:#888;font-size:.8rem">No resources for selected filter</p>';
+  html += "</div></div>";
+  return html;
 }
-function rActDataInline(D) {
-  const cfg = D.cfg;
+function renderActualsSummary(model) {
+  const cfg = model.cfg;
   const fullCfg = loadWork();
   const rawCount = fullCfg.raw_actuals ? fullCfg.raw_actuals.length : 0;
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
@@ -1551,17 +1573,17 @@ function rActDataInline(D) {
   });
   const isMatched = (row) => cfg.resources.some((res) => res.empl_id === parseInt(row["Empl ID"] || 0));
   const matchedCount = filtered.filter(isMatched).length;
-  let h = '<div class="cards">';
-  h += statCard("b", "Total Raw Rows", rawCount.toLocaleString());
-  h += statCard("g", "Filtered Rows", filtered.length.toLocaleString());
-  h += statCard("o", "Matched to Resources", matchedCount.toLocaleString());
-  h += statCard("r", "Unmatched", (filtered.length - matchedCount).toLocaleString());
-  h += "</div>";
+  let html = '<div class="cards">';
+  html += statCard("b", "Total Raw Rows", rawCount.toLocaleString());
+  html += statCard("g", "Filtered Rows", filtered.length.toLocaleString());
+  html += statCard("o", "Matched to Resources", matchedCount.toLocaleString());
+  html += statCard("r", "Unmatched", (filtered.length - matchedCount).toLocaleString());
+  html += "</div>";
   if (filtered.length) {
     const cols = ["Name", "Empl ID", "Date", "Project", "Reg Hrs", "OT Hrs"];
-    h += `<div class="tw" style="margin-top:.5rem"><table>${tableHead(cols)}<tbody>`;
+    html += `<div class="tw" style="margin-top:.5rem"><table>${tableHead(cols)}<tbody>`;
     filtered.slice(0, 10).forEach((row) => {
-      h += tableRow([
+      html += tableRow([
         row["Empl Name"] || "",
         row["Empl ID"] || "",
         row["Reported Dt"] || "",
@@ -1570,26 +1592,27 @@ function rActDataInline(D) {
         row["Overtime Hours"] || 0,
       ]);
     });
-    h += "</tbody></table></div>";
+    html += "</tbody></table></div>";
     if (filtered.length > 10)
-      h += `<p style="font-size:.7rem;color:#888;margin-top:.3rem">Showing 10 of ${filtered.length} rows</p>`;
+      html += `<p style="font-size:.7rem;color:#888;margin-top:.3rem">Showing 10 of ${filtered.length} rows</p>`;
   } else {
-    h += '<p style="font-size:.75rem;color:#888">No actuals data loaded yet.</p>';
+    html += '<p style="font-size:.75rem;color:#888">No actuals data loaded yet.</p>';
   }
-  return h;
+  return html;
 }
 
-function rExp(D) {
-  const exps = D.filteredExpenses;
+function renderExpenses(model) {
+  const exps = model.filteredExpenses;
   const total = exps.reduce((s, e) => s + e.amount, 0);
   // Outer table and each group's inner table share column widths so they line up
   const colgroup =
     "<colgroup>" + [14, 12, 12, 8, 10, 22, 22].map((w) => `<col style="width:${w}%">`).join("") + "</colgroup>";
   const cols = ["Name", "Date", "Amount", "Currency", "ProjectID", "PO_Team", "Description"];
-  let h = '<div class="cards">' + statCard("g", "Total", f(total)) + statCard("b", "Claims", exps.length) + "</div>";
-  h += '<div class="tw" id="expTableBox">';
-  h += `<div style="margin-bottom:4px">${expandCollapseButtons("expTableBox")}</div>`;
-  h += `<table id="tblExp" style="table-layout:fixed">${colgroup}${tableHead(cols)}<tbody>`;
+  let html =
+    '<div class="cards">' + statCard("g", "Total", fmtMoney(total)) + statCard("b", "Claims", exps.length) + "</div>";
+  html += '<div class="tw" id="expTableBox">';
+  html += `<div style="margin-bottom:4px">${expandCollapseButtons("expTableBox")}</div>`;
+  html += `<table id="tblExp" style="table-layout:fixed">${colgroup}${tableHead(cols)}<tbody>`;
   const expGroups = {};
   exps.forEach((e) => {
     const t = e.po_team || "Unknown";
@@ -1597,30 +1620,30 @@ function rExp(D) {
     expGroups[t].push(e);
   });
   Object.entries(expGroups).forEach(([team, items]) => {
-    h += groupHeaderRow(7, `${team} (${items.length} claims, ${f(items.reduce((s, e) => s + e.amount, 0))})`);
-    h += '<tr class="grp-rows"><td colspan="7" style="padding:0">';
-    h += `<table style="width:100%;margin:0;box-shadow:none;table-layout:fixed">${colgroup}<tbody>`;
+    html += groupHeaderRow(7, `${team} (${items.length} claims, ${fmtMoney(items.reduce((s, e) => s + e.amount, 0))})`);
+    html += '<tr class="grp-rows"><td colspan="7" style="padding:0">';
+    html += `<table style="width:100%;margin:0;box-shadow:none;table-layout:fixed">${colgroup}<tbody>`;
     items.forEach((e) => {
-      h += tableRow([
+      html += tableRow([
         e.name,
         e.date,
-        f(e.amount),
+        fmtMoney(e.amount),
         e.currency,
         e.projectID || "",
         cell(e.po_team || "", "font-size:.65rem"),
         e.desc,
       ]);
     });
-    h += `</tbody></table></td></tr>`;
+    html += `</tbody></table></td></tr>`;
   });
-  h += "</tbody></table></div>";
-  return h;
+  html += "</tbody></table></div>";
+  return html;
 }
 
 // ─── PO DETAILS TAB ─────────────────────────────────────────────────────────
-function rPO(D) {
+function renderPODetails(model) {
   const normFilterPO = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
-  const pos = (D.cfg.po_details || []).filter((p) =>
+  const pos = (model.cfg.po_details || []).filter((p) =>
     normFilterPO ? normFilterPO.includes((p.PO_Team_Identifier || "").replace(/\s+/g, "")) : true,
   );
   const byTeam = {};
@@ -1648,17 +1671,17 @@ function rPO(D) {
   const totalPO = pos.reduce((s, p) => s + p.PO_WO_value, 0);
   const today = new Date().toISOString().slice(0, 10);
   const normTotal = Object.values(byTeam).reduce((s, t) => {
-    const fxFrom = fxRateAsOf(D.cfg.fx_rates, t.currency, today);
-    const fxTo = fxRateAsOf(D.cfg.fx_rates, t.normCurrency, today);
+    const fxFrom = fxRateAsOf(model.cfg.fx_rates, t.currency, today);
+    const fxTo = fxRateAsOf(model.cfg.fx_rates, t.normCurrency, today);
     return s + (t.value / fxFrom) * fxTo;
   }, 0);
 
-  let h = '<div class="cards">';
-  h += statCard("b", "Total POs", pos.length);
-  h += statCard("g", "Unique Projects", Object.keys(byTeam).length);
-  h += statCard("o", "Total PO Value", f(totalPO));
-  h += statCard("p", "Normalized Total", f(normTotal, "$"));
-  h += "</div>";
+  let html = '<div class="cards">';
+  html += statCard("b", "Total POs", pos.length);
+  html += statCard("g", "Unique Projects", Object.keys(byTeam).length);
+  html += statCard("o", "Total PO Value", fmtMoney(totalPO));
+  html += statCard("p", "Normalized Total", fmtMoney(normTotal, "$"));
+  html += "</div>";
 
   // Timeline view of POs
   const allStarts = pos.map((p) => new Date(p.WO_StartDate)).filter((d) => !isNaN(d));
@@ -1667,16 +1690,17 @@ function rPO(D) {
   const tEnd = allEnds.length ? new Date(Math.max(...allEnds)) : new Date("2027-12-31");
   const span = tEnd - tStart || 1;
   const colors = ["#5c6bc0", "#26a69a", "#e65100", "#8e24aa", "#2e7d32", "#c62828"];
-  h += '<div class="box"><h2>PO & Invoice Timeline</h2><div class="tl-scroll"><div class="tl-inner">';
-  h += '<div style="margin-left:200px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
-  let md = new Date(tStart.getFullYear(), 0, 1);
-  while (md <= tEnd) {
-    const l = ((md - tStart) / span) * 100;
-    if (l >= 0 && l <= 100) h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.getFullYear()}</span>`;
-    md = new Date(md.getFullYear() + 1, 0, 1);
+  html += '<div class="box"><h2>PO & Invoice Timeline</h2><div class="tl-scroll"><div class="tl-inner">';
+  html += '<div style="margin-left:200px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
+  let monthStart = new Date(tStart.getFullYear(), 0, 1);
+  while (monthStart <= tEnd) {
+    const l = ((monthStart - tStart) / span) * 100;
+    if (l >= 0 && l <= 100)
+      html += `<span style="position:absolute;left:${l.toFixed(1)}%">${monthStart.getFullYear()}</span>`;
+    monthStart = new Date(monthStart.getFullYear() + 1, 0, 1);
   }
-  h += "</div>";
-  const invAll = D.cfg.invoices || [];
+  html += "</div>";
+  const invAll = model.cfg.invoices || [];
   const statusColor = { Paid: "#4caf50", Submitted: "#ff9800", Draft: "#bdbdbd" };
   Object.entries(byTeam).forEach(([team, data], i) => {
     const rs = new Date(data.minStart),
@@ -1684,74 +1708,74 @@ function rPO(D) {
     const left = Math.max(0, ((rs - tStart) / span) * 100).toFixed(1);
     const width = Math.max(2, ((re - rs) / span) * 100).toFixed(1);
     const poBarStyle = `left:${left}%;width:${width}%;background:${colors[i % colors.length]}`;
-    const poBarLabel = `${f(data.value)} (${data.count} POs)${data.rollover ? " 🔄" : ""}`;
-    h += '<div class="tl-row">';
-    h += `<span class="nm" style="min-width:200px;font-size:.68rem">${team}</span>`;
-    h += `<div class="ba"><div class="br" style="${poBarStyle}">${poBarLabel}</div></div>`;
-    h += "</div>";
+    const poBarLabel = `${fmtMoney(data.value)} (${data.count} POs)${data.rollover ? " 🔄" : ""}`;
+    html += '<div class="tl-row">';
+    html += `<span class="nm" style="min-width:200px;font-size:.68rem">${team}</span>`;
+    html += `<div class="ba"><div class="br" style="${poBarStyle}">${poBarLabel}</div></div>`;
+    html += "</div>";
     const teamInvs = invAll.filter((inv) => (inv.po_team || "").replace(/\s+/g, "") === team);
     if (teamInvs.length) {
-      h += '<div class="tl-row">';
-      h += '<span class="nm" style="min-width:200px;font-size:.6rem;color:#888">└ Invoices</span>';
-      h += '<div class="ba" style="height:16px">';
+      html += '<div class="tl-row">';
+      html += '<span class="nm" style="min-width:200px;font-size:.6rem;color:#888">└ Invoices</span>';
+      html += '<div class="ba" style="height:16px">';
       teamInvs.forEach((inv) => {
         const is = new Date(inv.period_from),
           ie = new Date(inv.period_to);
         if (isNaN(is) || isNaN(ie)) return;
-        const il = Math.max(0, ((is - tStart) / span) * 100).toFixed(1);
-        const iw = Math.max(1, ((ie - is) / span) * 100).toFixed(1);
-        const invBarStyle = `left:${il}%;width:${iw}%;background:${statusColor[inv.status] || "#666"};height:16px;font-size:.55rem`;
-        h += `<div class="br" style="${invBarStyle}">${f(inv.amount)}</div>`;
+        const invLeft = Math.max(0, ((is - tStart) / span) * 100).toFixed(1);
+        const invWidth = Math.max(1, ((ie - is) / span) * 100).toFixed(1);
+        const invBarStyle = `left:${invLeft}%;width:${invWidth}%;background:${statusColor[inv.status] || "#666"};height:16px;font-size:.55rem`;
+        html += `<div class="br" style="${invBarStyle}">${fmtMoney(inv.amount)}</div>`;
       });
-      h += `</div></div>`;
+      html += `</div></div>`;
     }
   });
-  h +=
+  html +=
     '<div style="margin-top:6px;font-size:.68rem">🟢 Paid &nbsp; 🟠 Submitted &nbsp; ⚪ Draft &nbsp; 🔄 Rollover Allowed</div></div></div></div>';
 
   // Invoice coverage
-  const invs = D.cfg.invoices || [];
+  const invs = model.cfg.invoices || [];
   if (invs.length) {
     const coverageCols = ["PO_Team", "PO Value", "Invoiced", "Paid", "Coverage %", "Remaining"];
-    h += `<div class="box"><h2>Invoice Coverage</h2><div class="tw"><table>${tableHead(coverageCols)}<tbody>`;
+    html += `<div class="box"><h2>Invoice Coverage</h2><div class="tw"><table>${tableHead(coverageCols)}<tbody>`;
     Object.entries(byTeam).forEach(([team, data]) => {
       const teamInvs = invs.filter((i) => (i.po_team || "").replace(/\s+/g, "") === team);
       const invoiced = teamInvs.reduce((s, i) => s + i.amount, 0);
       const paid = teamInvs.filter((i) => i.status === "Paid").reduce((s, i) => s + i.amount, 0);
       const pct = data.value ? Math.round((invoiced / data.value) * 100) : 0;
-      h += tableRow([
+      html += tableRow([
         cell(team, "font-size:.68rem"),
-        f(data.value),
-        f(invoiced),
-        f(paid),
+        fmtMoney(data.value),
+        fmtMoney(invoiced),
+        fmtMoney(paid),
         cell(pct + "%", "font-weight:600;color:" + pctColor(pct)),
-        f(data.value - invoiced),
+        fmtMoney(data.value - invoiced),
       ]);
     });
-    h += "</tbody></table></div></div>";
+    html += "</tbody></table></div></div>";
   }
 
   // Multi-year rollover summary
-  if (D.fc.rolloverByYear && Object.keys(D.fc.rolloverByYear).length > 0) {
+  if (model.fc.rolloverByYear && Object.keys(model.fc.rolloverByYear).length > 0) {
     const rolloverCols = ["Year", "PO Value", "Carry-In", "Available", "Forecast Spend", "Unused", "Rollover?"];
-    h += '<div class="box"><h2>📅 Multi-Year PO Rollover</h2>';
-    h += '<p style="font-size:.75rem;color:#666;margin-bottom:.5rem">';
-    h += "Unused budget carries forward only when <code>rollover_allowed=true</code>.</p>";
-    h += `<div class="tw"><table>${tableHead(rolloverCols)}<tbody>`;
-    Object.entries(D.fc.rolloverByYear)
+    html += '<div class="box"><h2>📅 Multi-Year PO Rollover</h2>';
+    html += '<p style="font-size:.75rem;color:#666;margin-bottom:.5rem">';
+    html += "Unused budget carries forward only when <code>rollover_allowed=true</code>.</p>";
+    html += `<div class="tw"><table>${tableHead(rolloverCols)}<tbody>`;
+    Object.entries(model.fc.rolloverByYear)
       .sort((a, b) => a[0] - b[0])
       .forEach(([yr, d]) => {
-        h += tableRow([
+        html += tableRow([
           `<strong>${yr}</strong>`,
-          f(d.poValue),
-          cell(f(d.carryIn), "color:#2196f3;font-weight:600"),
-          cell(f(d.available), "font-weight:600"),
-          f(d.spent),
-          cell(f(d.unused), `color:${d.unused > 0 ? "#4caf50" : "#c62828"};font-weight:600`),
+          fmtMoney(d.poValue),
+          cell(fmtMoney(d.carryIn), "color:#2196f3;font-weight:600"),
+          cell(fmtMoney(d.available), "font-weight:600"),
+          fmtMoney(d.spent),
+          cell(fmtMoney(d.unused), `color:${d.unused > 0 ? "#4caf50" : "#c62828"};font-weight:600`),
           d.rollover_allowed ? "✅ Yes" : "❌ No",
         ]);
       });
-    h += "</tbody></table></div></div>";
+    html += "</tbody></table></div></div>";
   }
 
   // Detail table
@@ -1767,12 +1791,12 @@ function rPO(D) {
     "Status",
     "PO Number",
   ];
-  h += `<div class="box"><h2>All PO Entries</h2><div class="tw"><table id="tblPO">${tableHead(poCols)}<tbody>`;
+  html += `<div class="box"><h2>All PO Entries</h2><div class="tw"><table id="tblPO">${tableHead(poCols)}<tbody>`;
   pos.forEach((p) => {
-    h += tableRow([
+    html += tableRow([
       cell(p.PO_Team_Identifier, "font-size:.68rem"),
       p.ProjectID,
-      f(p.PO_WO_value),
+      fmtMoney(p.PO_WO_value),
       p.PO_Currency_Code,
       p.Normalized_Currency_Code,
       p.WO_StartDate,
@@ -1782,8 +1806,8 @@ function rPO(D) {
       p.PO_WO_Number,
     ]);
   });
-  h += "</tbody></table></div></div>";
-  return h;
+  html += "</tbody></table></div></div>";
+  return html;
 }
 // ─── FILE UPLOAD TAB ────────────────────────────────────────────────────────
 // Opens one upload panel; the caller closes it with "</div></div>".
@@ -1791,98 +1815,98 @@ function uploadSection(background, title) {
   const summaryStyle = `padding:.6rem 1rem;background:${background};font-weight:600;font-size:.85rem`;
   return `<div class="cfg-section"><summary style="${summaryStyle}">${title}</summary><div class="inner">`;
 }
-function rUpload(D) {
-  let h = "";
+function renderDataAndReports(model) {
+  let html = "";
   // ── EXPORT REPORTS (collapsible) ──
-  h += '<div class="box" style="margin-bottom:1rem">';
-  h += collapsibleHeader("📥 Export Reports");
-  h += '<div class="collapsible-body">';
-  h +=
+  html += '<div class="box" style="margin-bottom:1rem">';
+  html += collapsibleHeader("📥 Export Reports");
+  html += '<div class="collapsible-body">';
+  html +=
     '<p style="font-size:.78rem;color:#666;margin-bottom:.8rem">Select sections to include, then export in your preferred format.</p>';
-  h +=
+  html +=
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:4px;margin-bottom:.8rem;font-size:.75rem">';
-  h += '<label><input type="checkbox" id="exp_summary" checked> 📊 Summary</label>';
-  h += '<label><input type="checkbox" id="exp_monthly" checked> 📈 Monthly Burndown</label>';
-  h += '<label><input type="checkbox" id="exp_chart_spend" checked> 📊 Spend Chart</label>';
-  h += '<label><input type="checkbox" id="exp_chart_burn" checked> 📉 Burndown Chart</label>';
-  h += '<label><input type="checkbox" id="exp_resources" checked> 👥 Resources</label>';
-  h += '<label><input type="checkbox" id="exp_invoices" checked> 🧾 Invoices</label>';
-  h += '<label><input type="checkbox" id="exp_expenses" checked> 💳 Expenses</label>';
-  h += '<label><input type="checkbox" id="exp_rollover" checked> 📅 PO Rollover</label>';
-  h += "</div>";
-  h += '<div style="display:flex;gap:.8rem;flex-wrap:wrap">';
-  h += '<button class="btn btn-green" onclick="exportExcel()">📊 Excel (.xlsx)</button>';
-  h += '<button class="btn btn-red" onclick="exportPDF()">📄 PDF</button>';
-  h += '<button class="btn btn-blue" onclick="exportPPTX()">📽️ PowerPoint (.pptx)</button>';
-  h += '<button class="btn btn-green" onclick="exportFullConfig()">📦 Full Config (JSON)</button>';
-  h += "</div></div></div>";
+  html += '<label><input type="checkbox" id="exp_summary" checked> 📊 Summary</label>';
+  html += '<label><input type="checkbox" id="exp_monthly" checked> 📈 Monthly Burndown</label>';
+  html += '<label><input type="checkbox" id="exp_chart_spend" checked> 📊 Spend Chart</label>';
+  html += '<label><input type="checkbox" id="exp_chart_burn" checked> 📉 Burndown Chart</label>';
+  html += '<label><input type="checkbox" id="exp_resources" checked> 👥 Resources</label>';
+  html += '<label><input type="checkbox" id="exp_invoices" checked> 🧾 Invoices</label>';
+  html += '<label><input type="checkbox" id="exp_expenses" checked> 💳 Expenses</label>';
+  html += '<label><input type="checkbox" id="exp_rollover" checked> 📅 PO Rollover</label>';
+  html += "</div>";
+  html += '<div style="display:flex;gap:.8rem;flex-wrap:wrap">';
+  html += '<button class="btn btn-green" onclick="exportExcel()">📊 Excel (.xlsx)</button>';
+  html += '<button class="btn btn-red" onclick="exportPDF()">📄 PDF</button>';
+  html += '<button class="btn btn-blue" onclick="exportPPTX()">📽️ PowerPoint (.pptx)</button>';
+  html += '<button class="btn btn-green" onclick="exportFullConfig()">📦 Full Config (JSON)</button>';
+  html += "</div></div></div>";
   // ── IMPORT SECTION ──
-  h += '<div class="box"><h2>📤 Upload & Import Data</h2>';
-  h +=
+  html += '<div class="box"><h2>📤 Upload & Import Data</h2>';
+  html +=
     '<p style="font-size:.8rem;color:#666;margin-bottom:1rem">Import your project data here. Start with <strong>Full Config</strong> if you have a shared JSON, or upload individual files below.</p>';
   // Full Config Import (top priority)
-  h +=
+  html +=
     '<div class="cfg-section" style="border:2px solid #1a1a2e;margin-bottom:1.2rem"><summary style="padding:.8rem 1rem;background:#1a1a2e;color:#fff;font-weight:700;font-size:.9rem">📦 Import Full Config (JSON) — Start Here</summary><div class="inner">';
-  h +=
+  html +=
     '<p style="font-size:.78rem;margin-bottom:.5rem">Load a complete config file (exported via <strong>Config → Export Full Config</strong>). This replaces all sections at once: PO Details, Resources, FX Rates, OT Params, Expenses, Invoices, and Monthly Actuals.</p>';
-  h += '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">';
-  h += '<input type="file" id="fullCfgImport" accept=".json" style="font-size:.78rem">';
-  h += '<button class="btn btn-blue" onclick="importFullConfig()">⬆️ Import & Apply</button>';
-  h += "</div>";
-  h += '<div id="fullCfgStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
-  h += "</div></div>";
+  html += '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">';
+  html += '<input type="file" id="fullCfgImport" accept=".json" style="font-size:.78rem">';
+  html += '<button class="btn btn-blue" onclick="importFullConfig()">⬆️ Import & Apply</button>';
+  html += "</div>";
+  html += '<div id="fullCfgStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
+  html += "</div></div>";
   // Guided steps
-  h +=
+  html +=
     '<div style="margin-bottom:1rem;padding:.8rem 1rem;background:#f3e5f5;border-radius:8px;border:1px solid #ce93d8;font-size:.75rem">';
-  h +=
+  html +=
     "<strong>💡 First time?</strong> Follow these steps: ① Import Full Config (above) OR ② Upload Resource Rules → ③ Upload Timesheet Actuals → ④ Save as Master to protect your data.";
-  h += "</div>";
-  h += '<div style="display:grid;gap:1rem;grid-template-columns:1fr 1fr">';
+  html += "</div>";
+  html += '<div style="display:grid;gap:1rem;grid-template-columns:1fr 1fr">';
   // Actuals upload
-  h += uploadSection("#e3f2fd", "② Timesheet Actuals (CSV/JSON/XLSX)");
-  h +=
+  html += uploadSection("#e3f2fd", "② Timesheet Actuals (CSV/JSON/XLSX)");
+  html +=
     '<p style="font-size:.75rem;margin-bottom:.3rem"><strong>What is this?</strong> Your timesheet export from PeopleSoft or similar system.</p>';
-  h +=
+  html +=
     '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">Required columns: <code>Empl ID</code>, <code>Reported Dt</code>, <code>Regular Hours</code>. Optional: Overtime Hours, Project ID</p>';
-  h +=
+  html +=
     '<input type="file" accept=".csv,.json,.xlsx" onchange="handleUpload(this,\'actuals\')" style="margin-bottom:.5rem"><br>';
-  h += `<span style="font-size:.7rem;color:#888">Currently loaded: ${(D.cfg.raw_actuals || []).length} rows | ${Object.keys(D.cfg.actuals_by_project || {}).length} projects | ${D.cfg.actuals_monthly.length} months</span>`;
-  h += "</div></div>";
+  html += `<span style="font-size:.7rem;color:#888">Currently loaded: ${(model.cfg.raw_actuals || []).length} rows | ${Object.keys(model.cfg.actuals_by_project || {}).length} projects | ${model.cfg.actuals_monthly.length} months</span>`;
+  html += "</div></div>";
   // Resources upload
-  h += uploadSection("#e8f5e9", "③ Resource Rules (CSV/JSON/XLSX)");
-  h +=
+  html += uploadSection("#e8f5e9", "③ Resource Rules (CSV/JSON/XLSX)");
+  html +=
     '<p style="font-size:.75rem;margin-bottom:.3rem"><strong>What is this?</strong> Your team allocation rules — who works on what, at what rate, for which dates.</p>';
-  h +=
+  html +=
     '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">Required columns: <code>name</code>, <code>empl_id</code>, <code>start</code>, <code>end</code>, <code>bill_rate</code>, <code>po_team</code></p>';
-  h +=
+  html +=
     '<input type="file" accept=".csv,.json,.xlsx" onchange="handleUpload(this,\'resources\')" style="margin-bottom:.5rem"><br>';
-  h += `<span style="font-size:.7rem;color:#888">Currently loaded: ${D.cfg.resources.length} resource rules</span>`;
-  h += "</div></div>";
+  html += `<span style="font-size:.7rem;color:#888">Currently loaded: ${model.cfg.resources.length} resource rules</span>`;
+  html += "</div></div>";
   // Smart Solution Excel Parser
-  h += uploadSection("#fce4ec", "③b 🧠 Smart Resource Parser (Solution Excel)");
-  h +=
+  html += uploadSection("#fce4ec", "③b 🧠 Smart Resource Parser (Solution Excel)");
+  html +=
     '<p style="font-size:.75rem;margin-bottom:.3rem"><strong>For non-standard Excel files</strong> with section headers, merged cells, or column headers not in row 1.</p>';
-  h +=
+  html +=
     '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">The parser scans all rows to find column headers (name, empl_id, rate, etc.) then extracts resource data below them.</p>';
-  h += '<input type="file" id="solutionExcel" accept=".xlsx,.xls" style="margin-bottom:.5rem"><br>';
-  h += '<button class="btn btn-blue" onclick="parseSolutionExcel()">🧠 Parse & Preview</button>';
-  h += '<div id="solutionPreview" style="margin-top:.5rem"></div>';
-  h += "</div></div>";
-  h += "</div>";
+  html += '<input type="file" id="solutionExcel" accept=".xlsx,.xls" style="margin-bottom:.5rem"><br>';
+  html += '<button class="btn btn-blue" onclick="parseSolutionExcel()">🧠 Parse & Preview</button>';
+  html += '<div id="solutionPreview" style="margin-top:.5rem"></div>';
+  html += "</div></div>";
+  html += "</div>";
   // Save as Master button
-  h += '<div style="margin-top:1rem;padding:1rem;background:#fff3e0;border-radius:8px;border:1px solid #ffe0b2">';
-  h +=
+  html += '<div style="margin-top:1rem;padding:1rem;background:#fff3e0;border-radius:8px;border:1px solid #ffe0b2">';
+  html +=
     '<p style="font-size:.8rem;margin-bottom:.5rem"><strong>④ 💾 Save as Master</strong> — Protects your data. Auto-deduplicates actuals on save. PIN: ask your team lead.</p>';
-  h += '<button class="btn btn-blue" onclick="promptMasterSave()">🔒 Save As Master (PIN)</button>';
-  h += "</div>";
+  html += '<button class="btn btn-blue" onclick="promptMasterSave()">🔒 Save As Master (PIN)</button>';
+  html += "</div>";
   // Preview area
-  h += '<div id="uploadPreview" style="margin-top:1rem"></div>';
-  h +=
+  html += '<div id="uploadPreview" style="margin-top:1rem"></div>';
+  html +=
     '<details class="cfg-section" style="margin-top:1rem"><summary style="padding:.8rem 1rem;background:#f5f5f5;font-weight:700">📋 Actuals Data Summary (click to expand)</summary><div class="inner">';
-  h += rActDataInline(D);
-  h += "</div></details>";
-  h += "</div>";
-  return h;
+  html += renderActualsSummary(model);
+  html += "</div></details>";
+  html += "</div>";
+  return html;
 }
 
 function handleUpload(input, type) {
@@ -1912,12 +1936,12 @@ function handleUpload(input, type) {
     } else {
       // Parse CSV
       const lines = text.trim().split("\n");
-      const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+      const headers = lines[0].split(",").map((html) => html.trim().replace(/"/g, ""));
       data = lines.slice(1).map((line) => {
         const vals = line.split(",").map((v) => v.trim().replace(/"/g, ""));
         const obj = {};
-        headers.forEach((h, i) => {
-          obj[h] = vals[i] || "";
+        headers.forEach((html, i) => {
+          obj[html] = vals[i] || "";
         });
         return obj;
       });
@@ -2048,20 +2072,20 @@ function processUpload(data, type) {
       alloc: "alloc/Allocation_Percentage",
       po_team: "po_team/PO_Team_Identifier",
     };
-    let rpt = '<div class="box"><h2>📋 Upload Report</h2>';
-    rpt += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
-    rpt +=
+    let report = '<div class="box"><h2>📋 Upload Report</h2>';
+    report += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
+    report +=
       '<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Column Mapping</h3><table style="font-size:.7rem"><tbody>';
     Object.entries(mapped).forEach(([field, src]) => {
       const found = cols.find((c) => src.split("/").some((s) => c.toLowerCase().includes(s.toLowerCase())));
-      rpt += `<tr><td style="font-weight:600">${field}</td><td>${found ? "✅ " + found : "❌ not found"}</td></tr>`;
+      report += `<tr><td style="font-weight:600">${field}</td><td>${found ? "✅ " + found : "❌ not found"}</td></tr>`;
     });
-    rpt += "</tbody></table></div>";
+    report += "</tbody></table></div>";
     const firstStart = resources.length
       ? resources.reduce((m, r) => (r.start < m ? r.start : m), resources[0].start)
       : "-";
     const lastEnd = resources.length ? resources.reduce((m, r) => (r.end > m ? r.end : m), resources[0].end) : "-";
-    rpt += dataQualityList([
+    report += dataQualityList([
       `Total rows: ${data.length}`,
       `Valid resources: ${resources.length}`,
       `Unique people: ${[...new Set(resources.map((r) => r.name))].length}`,
@@ -2069,12 +2093,12 @@ function processUpload(data, type) {
       `Duplicates: ${dupes.length}`,
     ]);
     if (warnings.length)
-      rpt +=
+      report +=
         '<div class="val-err" style="margin-top:.5rem"><ul>' +
         warnings.map((w) => "<li>" + w + "</li>").join("") +
         "</ul></div>";
-    rpt += "</div></div></div>";
-    document.getElementById("uploadPreview").innerHTML = rpt;
+    report += "</div></div></div>";
+    document.getElementById("uploadPreview").innerHTML = report;
     setTimeout(render, 400);
   } else if (type === "actuals") {
     // Validate actuals upload
@@ -2152,15 +2176,15 @@ function processUpload(data, type) {
       .map((r) => parseDate(r["Reported Dt"] || "", "us"))
       .filter(Boolean)
       .sort();
-    let rpt = '<div class="box"><h2>📋 Upload Report</h2>';
-    rpt += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
-    rpt +=
+    let report = '<div class="box"><h2>📋 Upload Report</h2>';
+    report += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">';
+    report +=
       '<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Columns Detected</h3><ul style="font-size:.72rem;margin-left:1rem">';
     cols.forEach((c) => {
-      rpt += `<li>✅ ${c}</li>`;
+      report += `<li>✅ ${c}</li>`;
     });
-    rpt += "</ul></div>";
-    rpt += dataQualityList([
+    report += "</ul></div>";
+    report += dataQualityList([
       `Total rows: ${data.length}`,
       `Unique employees: ${new Set(data.map((r) => r["Empl ID"])).size}`,
       `Date range: ${dateRange[0] || "?"} → ${dateRange[dateRange.length - 1] || "?"}`,
@@ -2168,9 +2192,9 @@ function processUpload(data, type) {
       `Projects: ${new Set(data.map((r) => r["Project ID"])).size}`,
     ]);
     if (actDupes)
-      rpt += `<div class="val-err" style="margin-top:.5rem">⚠️ ${actDupes} duplicate timesheet entries detected (same employee+date+project)</div>`;
-    rpt += "</div></div></div>";
-    document.getElementById("uploadPreview").innerHTML = rpt;
+      report += `<div class="val-err" style="margin-top:.5rem">⚠️ ${actDupes} duplicate timesheet entries detected (same employee+date+project)</div>`;
+    report += "</div></div></div>";
+    document.getElementById("uploadPreview").innerHTML = report;
   }
 }
 
@@ -2204,9 +2228,9 @@ function parseSolutionExcel() {
         .toLowerCase()
         .replace(/[_\-\.]/g, " ");
     const matchField = (header) => {
-      const h = normalize(header);
+      const html = normalize(header);
       for (const [field, names] of Object.entries(aliases)) {
-        if (names.some((n) => h === n || h.includes(n))) return field;
+        if (names.some((n) => html === n || html.includes(n))) return field;
       }
       return null;
     };
@@ -2278,20 +2302,20 @@ function parseSolutionExcel() {
     }
     // Show preview
     const title = `🧠 Parsed: ${resources.length} resources from "${bestSheet}" (header row ${bestHeaderRow + 1})`;
-    let h = `<div class="box" style="margin-top:.5rem"><h2>${title}</h2>`;
-    h += `<p style="font-size:.72rem;color:#666">Matched ${bestScore} columns: ${Object.keys(bestMapping).join(", ")}</p>`;
+    let html = `<div class="box" style="margin-top:.5rem"><h2>${title}</h2>`;
+    html += `<p style="font-size:.72rem;color:#666">Matched ${bestScore} columns: ${Object.keys(bestMapping).join(", ")}</p>`;
     const cols = ["Name", "EmplID", "Role", "Start", "End", "Rate", "Alloc", "PO_Team"];
-    h += `<div class="tw" style="max-height:200px;overflow:auto"><table>${tableHead(cols)}<tbody>`;
+    html += `<div class="tw" style="max-height:200px;overflow:auto"><table>${tableHead(cols)}<tbody>`;
     resources.slice(0, 15).forEach((r) => {
-      h += tableRow([r.name, r.empl_id, r.role, r.start, r.end, r.bill_rate, r.alloc, r.po_team]);
+      html += tableRow([r.name, r.empl_id, r.role, r.start, r.end, r.bill_rate, r.alloc, r.po_team]);
     });
-    h += "</tbody></table></div>";
-    if (resources.length > 15) h += `<p style="font-size:.7rem;color:#888">Showing 15 of ${resources.length}</p>`;
-    h += '<div style="margin-top:.5rem;display:flex;gap:.5rem">';
-    h += '<button class="btn btn-green" onclick="applySolutionResources()">✅ Apply to Dashboard</button>';
-    h += `<button class="btn btn-orange" onclick="document.getElementById('solutionPreview').innerHTML=''">Cancel</button>`;
-    h += "</div></div>";
-    preview.innerHTML = h;
+    html += "</tbody></table></div>";
+    if (resources.length > 15) html += `<p style="font-size:.7rem;color:#888">Showing 15 of ${resources.length}</p>`;
+    html += '<div style="margin-top:.5rem;display:flex;gap:.5rem">';
+    html += '<button class="btn btn-green" onclick="applySolutionResources()">✅ Apply to Dashboard</button>';
+    html += `<button class="btn btn-orange" onclick="document.getElementById('solutionPreview').innerHTML=''">Cancel</button>`;
+    html += "</div></div>";
+    preview.innerHTML = html;
     // Store parsed for apply
     window.__parsedSolutionResources = resources;
   });
@@ -2398,13 +2422,13 @@ function expSel(id) {
   return el ? el.checked : true;
 }
 function getExportData() {
-  const D = buildData();
+  const model = buildData();
   const fcMap = {};
-  D.fc.burndown.forEach((m) => {
+  model.fc.burndown.forEach((m) => {
     fcMap[m.month] = { forecast: m.forecast, forecast_burn: m.forecast_burn };
   });
   const actMap = {};
-  D.actuals.forEach((m) => {
+  model.actuals.forEach((m) => {
     actMap[m.month] = { actuals: m.actuals, actuals_burn: m.actuals_burn };
   });
   const allMonths = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
@@ -2419,12 +2443,12 @@ function getExportData() {
     "Actuals Burn": actMap[m] ? actMap[m].actuals_burn : null,
   }));
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
-  const invs = (D.cfg.invoices || []).filter((i) =>
+  const invs = (model.cfg.invoices || []).filter((i) =>
     normFilter ? normFilter.includes((i.po_team || "").replace(/\s+/g, "")) : true,
   );
   const res = normFilter
-    ? D.cfg.resources.filter((r) => normFilter.includes((r.po_team || "").replace(/\s+/g, "")))
-    : D.cfg.resources;
+    ? model.cfg.resources.filter((r) => normFilter.includes((r.po_team || "").replace(/\s+/g, "")))
+    : model.cfg.resources;
   const sel = {
     summary: expSel("exp_summary"),
     monthly: expSel("exp_monthly"),
@@ -2435,11 +2459,11 @@ function getExportData() {
     expenses: expSel("exp_expenses"),
     rollover: expSel("exp_rollover"),
   };
-  return { D, monthly, invs, res, sel };
+  return { model, monthly, invs, res, sel };
 }
 
 function exportExcel() {
-  const { D, monthly, invs, res, sel } = getExportData();
+  const { model, monthly, invs, res, sel } = getExportData();
   const wb = XLSX.utils.book_new();
   const sig = [[""], ["Crafted by Vamsi Yedlapalli | github.com/LoneWolfDen"]];
   if (sel.summary) {
@@ -2449,13 +2473,13 @@ function exportExcel() {
       ["Filter", selectedPoTeams.length ? selectedPoTeams.join(", ") : "All Projects"],
       [],
       ["Metric", "Value"],
-      ["PO Value (" + D.fc.currency + ")", D.fc.totalPOValue],
-      ["PO Value (" + D.fc.normCurrency + ")", D.fc.normPO],
-      ["Total Forecast", D.fc.total],
-      ["Total Actuals", D.tAct],
-      ["Total Expenses", D.tExp],
-      ["Remaining Budget", D.rem],
-      ["Burn Rate/Day", D.fc.rate],
+      ["PO Value (" + model.fc.currency + ")", model.fc.totalPOValue],
+      ["PO Value (" + model.fc.normCurrency + ")", model.fc.normPO],
+      ["Total Forecast", model.fc.total],
+      ["Total Actuals", model.totalActuals],
+      ["Total Expenses", model.totalExpenses],
+      ["Remaining Budget", model.remaining],
+      ["Burn Rate/Day", model.fc.rate],
       ...sig,
     ];
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), "Summary");
@@ -2497,11 +2521,11 @@ function exportExcel() {
       ),
       "Resources",
     );
-  if (sel.expenses && D.filteredExpenses.length)
+  if (sel.expenses && model.filteredExpenses.length)
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.json_to_sheet(
-        D.filteredExpenses.map((e) => ({
+        model.filteredExpenses.map((e) => ({
           Name: e.name,
           Date: e.date,
           Amount: e.amount,
@@ -2512,8 +2536,8 @@ function exportExcel() {
       ),
       "Expenses",
     );
-  if (sel.rollover && D.fc.rolloverByYear && Object.keys(D.fc.rolloverByYear).length > 1) {
-    const ro = Object.entries(D.fc.rolloverByYear)
+  if (sel.rollover && model.fc.rolloverByYear && Object.keys(model.fc.rolloverByYear).length > 1) {
+    const ro = Object.entries(model.fc.rolloverByYear)
       .sort((a, b) => a[0] - b[0])
       .map(([yr, d]) => ({
         Year: yr,
@@ -2530,7 +2554,7 @@ function exportExcel() {
 }
 
 function exportPDF() {
-  const { D, monthly, invs, res, sel } = getExportData();
+  const { model, monthly, invs, res, sel } = getExportData();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const sig = "Crafted by Vamsi Yedlapalli | github.com/LoneWolfDen";
@@ -2552,13 +2576,13 @@ function exportPDF() {
       startY: 37,
       head: [["Metric", "Value"]],
       body: [
-        ["PO Value (" + D.fc.currency + ")", f(D.fc.totalPOValue)],
-        ["PO Value (" + D.fc.normCurrency + ")", f(D.fc.normPO, "$")],
-        ["Total Forecast", f(D.fc.total)],
-        ["Total Actuals", f(D.tAct)],
-        ["Expenses", f(D.tExp)],
-        ["Remaining", f(D.rem)],
-        ["Burn Rate/Day", f(D.fc.rate)],
+        ["PO Value (" + model.fc.currency + ")", fmtMoney(model.fc.totalPOValue)],
+        ["PO Value (" + model.fc.normCurrency + ")", fmtMoney(model.fc.normPO, "$")],
+        ["Total Forecast", fmtMoney(model.fc.total)],
+        ["Total Actuals", fmtMoney(model.totalActuals)],
+        ["Expenses", fmtMoney(model.totalExpenses)],
+        ["Remaining", fmtMoney(model.remaining)],
+        ["Burn Rate/Day", fmtMoney(model.fc.rate)],
       ],
       theme: "grid",
       styles: { fontSize: 8 },
@@ -2584,11 +2608,11 @@ function exportPDF() {
       head: [["Month", "Forecast", "Actuals", "Variance", "Fc Burn", "Act Burn"]],
       body: monthly.map((m) => [
         m.Month,
-        f(m["Forecast Spend"]),
-        f(m["Actuals Spend"]),
-        f(m.Variance),
-        f(m["Forecast Burn"]),
-        f(m["Actuals Burn"]),
+        fmtMoney(m["Forecast Spend"]),
+        fmtMoney(m["Actuals Spend"]),
+        fmtMoney(m.Variance),
+        fmtMoney(m["Forecast Burn"]),
+        fmtMoney(m["Actuals Burn"]),
       ]),
       theme: "striped",
       styles: { fontSize: 7 },
@@ -2624,39 +2648,52 @@ function exportPDF() {
     doc.autoTable({
       startY: 22,
       head: [["PO_Team", "Invoice", "Period", "Amount", "Status"]],
-      body: invs.map((i) => [i.po_team, i.invoice_number, i.period_from + " → " + i.period_to, f(i.amount), i.status]),
+      body: invs.map((i) => [
+        i.po_team,
+        i.invoice_number,
+        i.period_from + " → " + i.period_to,
+        fmtMoney(i.amount),
+        i.status,
+      ]),
       theme: "striped",
       styles: { fontSize: 7 },
     });
   }
-  if (sel.expenses && D.filteredExpenses.length) {
+  if (sel.expenses && model.filteredExpenses.length) {
     doc.addPage();
     doc.setFontSize(12);
-    doc.text("Expenses (" + D.filteredExpenses.length + ")", 14, 18);
+    doc.text("Expenses (" + model.filteredExpenses.length + ")", 14, 18);
     doc.autoTable({
       startY: 22,
       head: [["Name", "Date", "Amount", "Currency", "PO_Team", "Description"]],
-      body: D.filteredExpenses.map((e) => [e.name, e.date, f(e.amount), e.currency, e.po_team || "", e.desc]),
+      body: model.filteredExpenses.map((e) => [
+        e.name,
+        e.date,
+        fmtMoney(e.amount),
+        e.currency,
+        e.po_team || "",
+        e.desc,
+      ]),
       theme: "striped",
       styles: { fontSize: 7 },
     });
   }
-  if (sel.rollover && D.fc.rolloverByYear && Object.keys(D.fc.rolloverByYear).length > 1) {
+  if (sel.rollover && model.fc.rolloverByYear && Object.keys(model.fc.rolloverByYear).length > 1) {
     doc.addPage();
     doc.setFontSize(12);
     doc.text("PO Rollover", 14, 18);
     doc.autoTable({
       startY: 22,
       head: [["Year", "PO Value", "Carry-In", "Available", "Spent", "Unused", "Rollover?"]],
-      body: Object.entries(D.fc.rolloverByYear)
+      body: Object.entries(model.fc.rolloverByYear)
         .sort((a, b) => a[0] - b[0])
         .map(([yr, d]) => [
           yr,
-          f(d.poValue),
-          f(d.carryIn),
-          f(d.available),
-          f(d.spent),
-          f(d.unused),
+          fmtMoney(d.poValue),
+          fmtMoney(d.carryIn),
+          fmtMoney(d.available),
+          fmtMoney(d.spent),
+          fmtMoney(d.unused),
           d.rollover_allowed ? "Yes" : "No",
         ]),
       theme: "grid",
@@ -2675,7 +2712,7 @@ function exportPDF() {
 }
 
 function exportPPTX() {
-  const { D, monthly, invs, res, sel } = getExportData();
+  const { model, monthly, invs, res, sel } = getExportData();
   const pptx = new PptxGenJS();
   pptx.layout = "LAYOUT_WIDE";
   const titleColor = "1A1A2E";
@@ -2695,13 +2732,13 @@ function exportPPTX() {
       { x: 0.5, y: 0.6, fontSize: 10, color: "666666" },
     );
     const summaryRows = [
-      ["PO Value (" + D.fc.currency + ")", f(D.fc.totalPOValue)],
-      ["PO Value (" + D.fc.normCurrency + ")", f(D.fc.normPO, "$")],
-      ["Total Forecast", f(D.fc.total)],
-      ["Total Actuals", f(D.tAct)],
-      ["Expenses", f(D.tExp)],
-      ["Remaining Budget", f(D.rem)],
-      ["Burn Rate/Day", f(D.fc.rate)],
+      ["PO Value (" + model.fc.currency + ")", fmtMoney(model.fc.totalPOValue)],
+      ["PO Value (" + model.fc.normCurrency + ")", fmtMoney(model.fc.normPO, "$")],
+      ["Total Forecast", fmtMoney(model.fc.total)],
+      ["Total Actuals", fmtMoney(model.totalActuals)],
+      ["Expenses", fmtMoney(model.totalExpenses)],
+      ["Remaining Budget", fmtMoney(model.remaining)],
+      ["Burn Rate/Day", fmtMoney(model.fc.rate)],
     ];
     slide.addTable(
       [
@@ -2732,11 +2769,11 @@ function exportPPTX() {
     ];
     const mRows = monthly.map((m) => [
       { text: m.Month, options: cellOpts },
-      { text: f(m["Forecast Spend"]), options: cellOpts },
-      { text: f(m["Actuals Spend"]), options: cellOpts },
-      { text: f(m.Variance), options: { ...cellOpts, color: m.Variance > 0 ? "C62828" : "2E7D32" } },
-      { text: f(m["Forecast Burn"]), options: cellOpts },
-      { text: f(m["Actuals Burn"]), options: cellOpts },
+      { text: fmtMoney(m["Forecast Spend"]), options: cellOpts },
+      { text: fmtMoney(m["Actuals Spend"]), options: cellOpts },
+      { text: fmtMoney(m.Variance), options: { ...cellOpts, color: m.Variance > 0 ? "C62828" : "2E7D32" } },
+      { text: fmtMoney(m["Forecast Burn"]), options: cellOpts },
+      { text: fmtMoney(m["Actuals Burn"]), options: cellOpts },
     ]);
     slide.addTable([mHdr, ...mRows], {
       x: 0.3,
@@ -2874,7 +2911,7 @@ function exportPPTX() {
       { text: i.invoice_number || "", options: cellOpts },
       { text: i.period_from, options: cellOpts },
       { text: i.period_to, options: cellOpts },
-      { text: f(i.amount), options: cellOpts },
+      { text: fmtMoney(i.amount), options: cellOpts },
       {
         text: i.status,
         options: {
@@ -2893,7 +2930,7 @@ function exportPPTX() {
     });
   }
 
-  if (sel.rollover && D.fc.rolloverByYear && Object.keys(D.fc.rolloverByYear).length > 1) {
+  if (sel.rollover && model.fc.rolloverByYear && Object.keys(model.fc.rolloverByYear).length > 1) {
     let slide = pptx.addSlide();
     slide.addText("Multi-Year PO Rollover", { x: 0.5, y: 0.2, fontSize: 20, bold: true, color: titleColor });
     const roHdr = [
@@ -2905,15 +2942,15 @@ function exportPPTX() {
       { text: "Unused", options: hdrOpts },
       { text: "Rollover?", options: hdrOpts },
     ];
-    const roRows = Object.entries(D.fc.rolloverByYear)
+    const roRows = Object.entries(model.fc.rolloverByYear)
       .sort((a, b) => a[0] - b[0])
       .map(([yr, d]) => [
         { text: yr, options: { ...cellOpts, bold: true } },
-        { text: f(d.poValue), options: cellOpts },
-        { text: f(d.carryIn), options: cellOpts },
-        { text: f(d.available), options: cellOpts },
-        { text: f(d.spent), options: cellOpts },
-        { text: f(d.unused), options: { ...cellOpts, color: d.unused > 0 ? "4CAF50" : "C62828" } },
+        { text: fmtMoney(d.poValue), options: cellOpts },
+        { text: fmtMoney(d.carryIn), options: cellOpts },
+        { text: fmtMoney(d.available), options: cellOpts },
+        { text: fmtMoney(d.spent), options: cellOpts },
+        { text: fmtMoney(d.unused), options: { ...cellOpts, color: d.unused > 0 ? "4CAF50" : "C62828" } },
         { text: d.rollover_allowed ? "Yes" : "No", options: cellOpts },
       ]);
     slide.addTable([roHdr, ...roRows], {
@@ -2930,22 +2967,22 @@ function exportPPTX() {
 }
 
 // ─── CONFIG PAGE ────────────────────────────────────────────────────────────
-function rCfg(D) {
-  let h = '<div class="box"><h2>⚙️ Working Config</h2>';
-  h +=
+function renderSettings(model) {
+  let html = '<div class="box"><h2>⚙️ Working Config</h2>';
+  html +=
     '<p style="font-size:.78rem;color:#666;margin-bottom:.8rem">Edit and save freely — this is your working copy. Use "Restore from Master" to undo experiments.</p>';
-  h += '<div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap">';
-  h += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
-  h += '<button class="btn btn-blue" onclick="promptMasterSave()">🔒 Save as Master (PIN required)</button>';
-  h += '<button class="btn btn-green" onclick="exportFullConfig()">📦 Export Full Config (JSON)</button>';
-  h += '<button class="btn btn-green" onclick="exportExcel()">📊 Export Excel</button>';
-  h += '<button class="btn btn-red" onclick="exportPDF()">📄 Export PDF</button>';
-  h += "</div>";
+  html += '<div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap">';
+  html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
+  html += '<button class="btn btn-blue" onclick="promptMasterSave()">🔒 Save as Master (PIN required)</button>';
+  html += '<button class="btn btn-green" onclick="exportFullConfig()">📦 Export Full Config (JSON)</button>';
+  html += '<button class="btn btn-green" onclick="exportExcel()">📊 Export Excel</button>';
+  html += '<button class="btn btn-red" onclick="exportPDF()">📄 Export PDF</button>';
+  html += "</div>";
   // File import helper
-  h += '<details class="cfg-section"><summary>📂 Import XLSX/CSV → JSON</summary><div class="inner">';
-  h +=
+  html += '<details class="cfg-section"><summary>📂 Import XLSX/CSV → JSON</summary><div class="inner">';
+  html +=
     '<p style="font-size:.75rem;margin-bottom:.5rem">Select a file and target section. The file will be parsed and JSON pasted into the corresponding textarea below.</p>';
-  h += '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">';
+  html += '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">';
   const importTargets = [
     ["po_details", "PO Details"],
     ["resources", "Resources"],
@@ -2955,40 +2992,46 @@ function rCfg(D) {
     ["expenses", "Expenses"],
     ["actuals_monthly", "Monthly Actuals"],
   ];
-  h += '<select id="cfgImportTarget" style="padding:4px 8px;font-size:.78rem;border:1px solid #ddd;border-radius:4px">';
-  h += importTargets.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
-  h += "</select>";
-  h += '<input type="file" id="cfgImportFile" accept=".xlsx,.csv,.json" style="font-size:.75rem">';
-  h += '<button class="btn btn-green" onclick="cfgImportFile()">⬆️ Import</button>';
-  h += '</div><div id="cfgImportStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
-  h += "</div></details>";
+  html +=
+    '<select id="cfgImportTarget" style="padding:4px 8px;font-size:.78rem;border:1px solid #ddd;border-radius:4px">';
+  html += importTargets.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+  html += "</select>";
+  html += '<input type="file" id="cfgImportFile" accept=".xlsx,.csv,.json" style="font-size:.75rem">';
+  html += '<button class="btn btn-green" onclick="cfgImportFile()">⬆️ Import</button>';
+  html += '</div><div id="cfgImportStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
+  html += "</div></details>";
   const sections = [
-    { key: "po_details", label: "PO Details", data: D.cfg.po_details },
-    { key: "resources", label: "Resources (" + D.cfg.resources.length + ")", data: D.cfg.resources, tall: true },
-    { key: "invoices", label: "Invoices (" + (D.cfg.invoices || []).length + ")", data: D.cfg.invoices || [] },
-    { key: "fx_rates", label: "FX Rates", data: D.cfg.fx_rates },
-    { key: "ot_params", label: "OT Params", data: D.cfg.ot_params },
-    { key: "expenses", label: "Expenses", data: D.cfg.expenses },
-    { key: "actuals_monthly", label: "Monthly Actuals", data: D.cfg.actuals_monthly, tall: true },
+    { key: "po_details", label: "PO Details", data: model.cfg.po_details },
+    {
+      key: "resources",
+      label: "Resources (" + model.cfg.resources.length + ")",
+      data: model.cfg.resources,
+      tall: true,
+    },
+    { key: "invoices", label: "Invoices (" + (model.cfg.invoices || []).length + ")", data: model.cfg.invoices || [] },
+    { key: "fx_rates", label: "FX Rates", data: model.cfg.fx_rates },
+    { key: "ot_params", label: "OT Params", data: model.cfg.ot_params },
+    { key: "expenses", label: "Expenses", data: model.cfg.expenses },
+    { key: "actuals_monthly", label: "Monthly Actuals", data: model.cfg.actuals_monthly, tall: true },
   ];
   sections.forEach((s, i) => {
     const textareaStyle = s.tall ? ' style="min-height:350px"' : "";
-    h += `<details class="cfg-section"${i === 0 ? " open" : ""}><summary>${s.label}</summary><div class="inner">`;
-    h += `<textarea id="cfg_${s.key}"${textareaStyle}>${JSON.stringify(s.data, null, 2)}</textarea>`;
-    h += `<button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button>`;
-    h += "</div></details>";
+    html += `<details class="cfg-section"${i === 0 ? " open" : ""}><summary>${s.label}</summary><div class="inner">`;
+    html += `<textarea id="cfg_${s.key}"${textareaStyle}>${JSON.stringify(s.data, null, 2)}</textarea>`;
+    html += `<button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button>`;
+    html += "</div></details>";
   });
-  h += '<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner">';
-  h += '<p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p>';
-  h += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
-  h += '<p style="font-size:.8rem;margin:1rem 0 .5rem">Reset everything to factory defaults (PIN required):</p>';
-  h += '<button class="btn btn-red" onclick="promptFactoryReset()">⚠️ Factory Reset</button>';
-  h += "</div></details>";
-  h += '<details class="cfg-section" style="margin-top:1.5rem;border:1px solid #c5cae9">';
-  h += '<summary style="background:#e8eaf6;font-size:.9rem">📖 README — Definitions & Logic</summary>';
-  h += '<div class="inner" style="font-size:.75rem;line-height:1.6;color:#333">';
-  h += '<h3 style="font-size:.85rem;margin-bottom:.5rem">Core Concepts</h3>';
-  h += '<table style="font-size:.72rem;margin-bottom:1rem"><tbody>';
+  html += '<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner">';
+  html += '<p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p>';
+  html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
+  html += '<p style="font-size:.8rem;margin:1rem 0 .5rem">Reset everything to factory defaults (PIN required):</p>';
+  html += '<button class="btn btn-red" onclick="promptFactoryReset()">⚠️ Factory Reset</button>';
+  html += "</div></details>";
+  html += '<details class="cfg-section" style="margin-top:1.5rem;border:1px solid #c5cae9">';
+  html += '<summary style="background:#e8eaf6;font-size:.9rem">📖 README — Definitions & Logic</summary>';
+  html += '<div class="inner" style="font-size:.75rem;line-height:1.6;color:#333">';
+  html += '<h3 style="font-size:.85rem;margin-bottom:.5rem">Core Concepts</h3>';
+  html += '<table style="font-size:.72rem;margin-bottom:1rem"><tbody>';
   const glossary = [
     [
       "PO_Team",
@@ -3001,33 +3044,33 @@ function rCfg(D) {
     ["Alloc", "Allocation percentage (0-1). 0.5 = 50% allocated to this PO_Team"],
   ];
   glossary.forEach(([term, definition]) => {
-    h += `<tr><td style="font-weight:600;padding:3px 12px 3px 0">${term}</td><td>${definition}</td></tr>`;
+    html += `<tr><td style="font-weight:600;padding:3px 12px 3px 0">${term}</td><td>${definition}</td></tr>`;
   });
-  h += "</tbody></table>";
-  h += '<h3 style="font-size:.85rem;margin-bottom:.5rem">Forecast Calculation</h3>';
-  h +=
+  html += "</tbody></table>";
+  html += '<h3 style="font-size:.85rem;margin-bottom:.5rem">Forecast Calculation</h3>';
+  html +=
     "<p><code>Daily Cost = Bill_Rate × Allocation × 8hrs</code> for each working day (excludes weekends + bank holidays by location).</p>";
-  h += "<p>Forecast is bounded by the PO validity end date — resources are not forecast beyond PO expiry.</p>";
-  h += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">Actuals Calculation</h3>';
-  h +=
+  html += "<p>Forecast is bounded by the PO validity end date — resources are not forecast beyond PO expiry.</p>";
+  html += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">Actuals Calculation</h3>';
+  html +=
     "<p><code>Cost = (Regular_Hours × Hour_Mult × Bill_Rate) + (OT_Hours × Hour_Mult × Bill_Rate × OT_Multiplier)</code></p>";
-  h +=
+  html +=
     "<p>Resource rules are matched by <code>Empl_ID</code> + effective date range. OT multipliers are effective-dated.</p>";
-  h += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">Filters</h3>';
-  h +=
+  html += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">Filters</h3>';
+  html +=
     "<p><strong>Year</strong> (primary): Filters PO_Details by validity end year → defines which PO_Teams are visible.<br>";
-  h += "<strong>PO_Team</strong> (secondary): Further filters within the year-selected teams.</p>";
-  h += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">FX Rates</h3>';
-  h +=
+  html += "<strong>PO_Team</strong> (secondary): Further filters within the year-selected teams.</p>";
+  html += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">FX Rates</h3>';
+  html +=
     "<p>Effective-dated: the latest rate on or before the reference date is used. Normalized values convert from PO currency to a common reporting currency.</p>";
-  h += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">Data Flow</h3>';
-  h +=
+  html += '<h3 style="font-size:.85rem;margin:.8rem 0 .5rem">Data Flow</h3>';
+  html +=
     "<p>Upload → Working Config (editable) → Save as Master (PIN-protected backup). Restore from Master to undo changes.</p>";
-  h +=
+  html +=
     '<p style="margin-top:1rem;color:#888;font-style:italic">🐺 Built by Vamsi Yedlapalli | <a href="https://github.com/LoneWolfDen" style="color:#5c6bc0">github.com/LoneWolfDen</a></p>';
-  h += "</div></details>";
-  h += "</div>";
-  return h;
+  html += "</div></details>";
+  html += "</div>";
+  return html;
 }
 function doSave(key) {
   const raw = document.getElementById("cfg_" + key).value;
@@ -3156,16 +3199,16 @@ function cfgImportFile() {
   } else if (ext === "csv") {
     file.text().then((t) => {
       const lines = t.trim().split("\n");
-      const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+      const headers = lines[0].split(",").map((html) => html.trim().replace(/"/g, ""));
       const data = lines
         .slice(1)
         .filter((l) => l.trim())
         .map((line) => {
           const vals = line.split(",").map((v) => v.trim().replace(/"/g, ""));
           const obj = {};
-          headers.forEach((h, i) => {
+          headers.forEach((html, i) => {
             const v = vals[i] || "";
-            obj[h] = isNaN(v) || v === "" ? v : Number(v);
+            obj[html] = isNaN(v) || v === "" ? v : Number(v);
           });
           return obj;
         });
@@ -3325,16 +3368,16 @@ function checkPin(action) {
 }
 
 // ─── CHARTS ─────────────────────────────────────────────────────────────────
-function drawCharts(tab, D) {
+function drawCharts(tab, model) {
   if (tab === "overview") {
-    const am = D.actuals,
-      fc = D.fc.burndown;
+    const actualsMonthly = model.actuals,
+      fc = model.fc.burndown;
     const fcMap = {};
     fc.forEach((m) => {
       fcMap[m.month] = m.forecast;
     });
     const actMap = {};
-    am.forEach((m) => {
+    actualsMonthly.forEach((m) => {
       actMap[m.month] = m.actuals;
     });
     const labels = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
@@ -3378,14 +3421,14 @@ function drawCharts(tab, D) {
     );
   }
   if (tab === "burndown") {
-    const am = D.actuals,
-      fm = D.fc.burndown;
-    const allMonths = [...new Set([...am.map((m) => m.month), ...fm.map((m) => m.month)])];
+    const actualsMonthly = model.actuals,
+      fm = model.fc.burndown;
+    const allMonths = [...new Set([...actualsMonthly.map((m) => m.month), ...fm.map((m) => m.month)])];
     const ctx = document.getElementById("c2");
     if (!ctx) return;
     // Aggregate expenses by month for burndown inclusion
     const expByMonth = {};
-    (D.filteredExpenses || []).forEach((e) => {
+    (model.filteredExpenses || []).forEach((e) => {
       const d = new Date(e.date);
       if (isNaN(d)) return;
       const key = d.toLocaleString("en", { month: "short" }) + "-" + String(d.getFullYear()).slice(2);
@@ -3399,7 +3442,7 @@ function drawCharts(tab, D) {
     // Actuals burn: PO_Available_at_month - cumulative actuals
     // Forecast burn: PO_Available_at_month - cumulative forecast
     // First compute cumPO per month
-    const poArr = D.cfg.po_details || [];
+    const poArr = model.cfg.po_details || [];
     const normFilter2 = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
     const cumPO = allMonths.map((mKey) => {
       const [mName, yy] = mKey.split("-");
@@ -3418,7 +3461,7 @@ function drawCharts(tab, D) {
     // Now compute burn lines using cumPO as the baseline (expenses included in actuals burn)
     let cumAct = 0;
     const actBurn = allMonths.map((l, i) => {
-      const m = am.find((x) => x.month === l);
+      const m = actualsMonthly.find((x) => x.month === l);
       const exp = expByMonth[l] || 0;
       if (m && m.actuals) {
         cumAct += m.actuals + exp;
@@ -3443,7 +3486,7 @@ function drawCharts(tab, D) {
       return m ? m.forecast : null;
     });
     const actSpend = allMonths.map((l) => {
-      const m = am.find((x) => x.month === l);
+      const m = actualsMonthly.find((x) => x.month === l);
       return m ? m.actuals : null;
     });
     charts.push(
@@ -3521,8 +3564,8 @@ function drawCharts(tab, D) {
     );
     // Normalized chart (combo: bars for spend + lines for burn)
     const today2 = new Date().toISOString().slice(0, 10);
-    const fxF = fxRateAsOf(D.cfg.fx_rates, D.fc.currency || "GBP", today2);
-    const fxT = fxRateAsOf(D.cfg.fx_rates, D.fc.normCurrency || "USD", today2);
+    const fxF = fxRateAsOf(model.cfg.fx_rates, model.fc.currency || "GBP", today2);
+    const fxT = fxRateAsOf(model.cfg.fx_rates, model.fc.normCurrency || "USD", today2);
     const norm = (v) => (v != null ? Math.round((v / fxF) * fxT) : null);
     const ctx2 = document.getElementById("c2norm");
     if (ctx2) {
@@ -3533,19 +3576,19 @@ function drawCharts(tab, D) {
             labels: allMonths,
             datasets: [
               {
-                label: "Forecast Spend (" + D.fc.normCurrency + ")",
+                label: "Forecast Spend (" + model.fc.normCurrency + ")",
                 data: fcSpend.map(norm),
                 backgroundColor: "rgba(33,150,243,0.4)",
                 order: 2,
               },
               {
-                label: "Actuals Spend (" + D.fc.normCurrency + ")",
+                label: "Actuals Spend (" + model.fc.normCurrency + ")",
                 data: actSpend.map(norm),
                 backgroundColor: "rgba(76,175,80,0.4)",
                 order: 2,
               },
               {
-                label: "Actuals Burn (" + D.fc.normCurrency + ")",
+                label: "Actuals Burn (" + model.fc.normCurrency + ")",
                 type: "line",
                 data: actBurn.map(norm),
                 borderColor: "#4caf50",
@@ -3557,7 +3600,7 @@ function drawCharts(tab, D) {
                 yAxisID: "y1",
               },
               {
-                label: "Forecast Burn (" + D.fc.normCurrency + ")",
+                label: "Forecast Burn (" + model.fc.normCurrency + ")",
                 type: "line",
                 data: fcBurn.map(norm),
                 borderColor: "#2196f3",
@@ -3568,7 +3611,7 @@ function drawCharts(tab, D) {
                 yAxisID: "y1",
               },
               {
-                label: "PO Available (" + D.fc.normCurrency + ")",
+                label: "PO Available (" + model.fc.normCurrency + ")",
                 type: "line",
                 data: cumPO.map(norm),
                 borderColor: "#f44336",
@@ -3595,13 +3638,13 @@ function drawCharts(tab, D) {
             scales: {
               y: {
                 position: "left",
-                title: { display: true, text: "Monthly Spend (" + D.fc.normCurrency + ")" },
+                title: { display: true, text: "Monthly Spend (" + model.fc.normCurrency + ")" },
                 beginAtZero: true,
                 ticks: { callback: (v) => "$" + v.toLocaleString() },
               },
               y1: {
                 position: "right",
-                title: { display: true, text: "PO Burn (" + D.fc.normCurrency + ")" },
+                title: { display: true, text: "PO Burn (" + model.fc.normCurrency + ")" },
                 ticks: { callback: (v) => "$" + v.toLocaleString() },
                 grid: { drawOnChartArea: false },
               },
@@ -3612,14 +3655,14 @@ function drawCharts(tab, D) {
     }
   }
   if (tab === "monthly") {
-    const am = D.actuals,
-      fc = D.fc.burndown;
+    const actualsMonthly = model.actuals,
+      fc = model.fc.burndown;
     const fcMap = {};
     fc.forEach((m) => {
       fcMap[m.month] = m.forecast;
     });
     const actMap = {};
-    am.forEach((m) => {
+    actualsMonthly.forEach((m) => {
       actMap[m.month] = m.actuals;
     });
     const labels = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
