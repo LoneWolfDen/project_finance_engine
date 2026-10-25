@@ -148,6 +148,65 @@ const rule = (over) => ({
     check(evil === 403, `JSON POST from another origin → ${evil}`);
     check(status.json === 200, `JSON POST from the app → ${status.json}`);
 
+    console.log("Saving:");
+    // 20 saves in a row: the server must end up with the last one
+    const last = await page.evaluate(async () => {
+      for (let i = 1; i <= 20; i++) {
+        const cfg = loadWork();
+        cfg.normalized_currency = "S" + i;
+        saveWork(cfg);
+      }
+      await saveQueue;
+      return (await (await fetch("/api/config")).json()).normalized_currency;
+    });
+    check(last === "S20", `20 quick saves arrive in order (server has ${last})`);
+    // Browser storage full: the save must still reach the server
+    const quota = await page.evaluate(async () => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = () => {
+        throw new DOMException("full", "QuotaExceededError");
+      };
+      try {
+        const cfg = loadWork();
+        cfg.normalized_currency = "GBP";
+        saveWork(cfg);
+        await saveQueue;
+      } finally {
+        Storage.prototype.setItem = original;
+      }
+      return (await (await fetch("/api/config")).json()).normalized_currency;
+    });
+    check(quota === "GBP", `save reaches the server when browser storage is full (server has ${quota})`);
+
+    console.log("Save history:");
+    const names = async () =>
+      page.evaluate(() =>
+        loadWork()
+          .resources.map((r) => r.name)
+          .join("+"),
+      );
+    for (const name of ["Alpha", "Beta", "Gamma"]) await setConfig({ resources: [rule({ name })] });
+    await page.evaluate(() => saveQueue);
+    const list = await page.evaluate(async () => {
+      show("config");
+      const d = [...document.querySelectorAll("details")].find((x) => x.textContent.includes("Save history"));
+      d.open = true;
+      await loadHistory();
+      return [...document.querySelectorAll("#tblHistory tbody tr")].map((tr) => tr.cells[2].textContent);
+    });
+    check(list.length >= 3, `history lists earlier versions (${list.length})`);
+    // newest history entry is the version before the current one (Beta)
+    const ids = await page.evaluate(async () => (await (await fetch("/api/history")).json()).map((h) => h.id));
+    await page.evaluate((id) => restoreHistory(id), ids[0]);
+    await settle();
+    check((await names()) === "Beta", `restore → working config is the earlier version: ${await names()}`);
+    const server = await page.evaluate(async () => (await (await fetch("/api/config")).json()).resources[0].name);
+    check(server === "Beta", `server has the restored version: ${server}`);
+    const after = await page.evaluate(async () => (await (await fetch("/api/history")).json())[0]);
+    await page.evaluate((id) => restoreHistory(id), after.id);
+    await settle();
+    check((await names()) === "Gamma", "the replaced version is in the history, so the restore can be undone");
+
     check(!errors.length, "no page errors" + (errors.length ? ": " + errors[0] : ""));
   } finally {
     await browser.close();

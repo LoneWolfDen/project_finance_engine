@@ -57,6 +57,11 @@ function renderSettings(model) {
     html += `<button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button>`;
     html += "</div></details>";
   });
+  html +=
+    '<details class="cfg-section" ontoggle="if (this.open) loadHistory()"><summary>🕘 Save history</summary><div class="inner">';
+  html +=
+    '<p style="font-size:.75rem;color:#666;margin-bottom:.5rem">Every save keeps the version it replaces (the last 50). Restore one to undo an import or edit; the current config is kept too.</p>';
+  html += '<div id="historyList">Loading…</div></div></details>';
   html += '<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner">';
   html += '<p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p>';
   html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';

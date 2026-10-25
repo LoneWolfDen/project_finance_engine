@@ -5,6 +5,8 @@ GET  /           → serves index.html
 GET  /css/*, /js/*, /data/* → serves the page's static .css/.js files
 GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
+GET  /api/history → earlier versions of the working config (newest first)
+POST /api/history/<id>/restore → make that version the working config
 POST /api/config → saves config JSON to SQLite
 POST /api/chat   → proxies to local Ollama LLM
 """
@@ -34,6 +36,9 @@ DB_FILE = Path(os.environ.get('DB_FILE', BASE_DIR / "finance_engine.db"))
 STATIC_DIRS = ('/css/', '/js/', '/data/')
 STATIC_TYPES = {'.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8'}
 
+# Earlier versions of the working config kept for Settings → Save history
+HISTORY_LIMIT = int(os.environ.get('HISTORY_LIMIT', 50))
+
 DEFAULT_CONFIG = {
     "summary": {"total_budget": 0, "used": 0, "remaining": 0},
     "po_details": [],
@@ -53,6 +58,14 @@ def get_db():
             updated_at TEXT DEFAULT (datetime('now'))
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS config_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id TEXT NOT NULL,
+            data TEXT NOT NULL,
+            saved_at TEXT NOT NULL
+        )
+    """)
     conn.commit()
     return conn
 
@@ -66,12 +79,56 @@ def load_config(config_id='working'):
 
 def save_config(data, config_id='working'):
     conn = get_db()
+    # Keep the version being replaced (unless unchanged), then trim to the last HISTORY_LIMIT
+    row = conn.execute("SELECT data, updated_at FROM config WHERE id=?", (config_id,)).fetchone()
+    if row and row[0] != data:
+        conn.execute(
+            "INSERT INTO config_history (config_id, data, saved_at) VALUES (?, ?, ?)",
+            (config_id, row[0], row[1])
+        )
+        conn.execute(
+            "DELETE FROM config_history WHERE config_id=? AND id NOT IN "
+            "(SELECT id FROM config_history WHERE config_id=? ORDER BY id DESC LIMIT ?)",
+            (config_id, config_id, HISTORY_LIMIT)
+        )
     conn.execute(
         "INSERT OR REPLACE INTO config (id, data, updated_at) VALUES (?, ?, datetime('now'))",
         (config_id, data)
     )
     conn.commit()
     conn.close()
+
+
+def list_history(config_id='working'):
+    """Newest first: id, when that version was saved (UTC) and what it held."""
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT id, data, saved_at FROM config_history WHERE config_id=? ORDER BY id DESC", (config_id,)
+    ).fetchall()
+    conn.close()
+    sections = ["po_details", "resources", "invoices", "expenses", "raw_actuals", "resource_versions"]
+    out = []
+    for hid, data, saved_at in rows:
+        try:
+            cfg = json.loads(data)
+        except json.JSONDecodeError:
+            cfg = {}
+        counts = {k: len(cfg.get(k) or []) for k in sections}
+        out.append({"id": hid, "saved_at": saved_at, "counts": counts})
+    return out
+
+
+def restore_history(hid, config_id='working'):
+    """Make an earlier version current again (the current one goes into history first)."""
+    conn = get_db()
+    row = conn.execute(
+        "SELECT data FROM config_history WHERE id=? AND config_id=?", (hid, config_id)
+    ).fetchone()
+    conn.close()
+    if not row:
+        return None
+    save_config(row[0], config_id)
+    return row[0]
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -105,6 +162,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(data if data else "null")
         elif self.path == '/api/test':
             self.send_json({"source": "finance-engine-v3 working ✅"})
+        elif self.path == '/api/history':
+            self.send_json(list_history())
         elif self.path == '/api/health':
             self.send_json({"status": "ok", "version": "3.0"})
         elif self.path.split('?')[0].startswith(STATIC_DIRS):
@@ -154,6 +213,18 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"error": "Ollama not running"}, 503)
             except Exception as e:
                 self.send_json({"error": str(e)}, 500)
+
+        elif self.path.startswith('/api/history/') and self.path.endswith('/restore'):
+            try:
+                hid = int(self.path.split('/')[3])
+            except ValueError:
+                self.send_json({"error": "Bad history id"}, 400)
+                return
+            data = restore_history(hid)
+            if data is None:
+                self.send_json({"error": "No such saved version"}, 404)
+            else:
+                self.send_json(data)
 
         elif self.path in ('/api/config', '/api/config/master'):
             length = int(self.headers.get('Content-Length', 0))
