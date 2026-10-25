@@ -1,6 +1,6 @@
-﻿# Project Finance Portfolio Engine
+# Project Finance Portfolio Engine
 
-Three independent versions. Each runs standalone.
+Active version: `finance-engine-v3.5`. Earlier versions (v1, v2, v3) are kept, unchanged, in `archive/`. Each runs standalone.
 
 Built by Vamsi Yedlapalli | github.com/LoneWolfDen
 
