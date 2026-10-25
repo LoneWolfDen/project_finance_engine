@@ -6,18 +6,27 @@ function poValidity(po) {
   return po.PO_Validity_Year || po.PO_Validity;
 }
 
-// Parse a validity value (see poValidity) → end date
+// Dates are handled as UTC midnight ("2025-11-17" → new Date("2025-11-17")), so weekdays and
+// months must be read in UTC too; local time would shift them a day west of UTC.
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// "2025-12-01" or a UTC-midnight Date → "Dec-25"
+function monthKeyOf(date) {
+  const iso = typeof date === "string" ? date : date.toISOString();
+  return MONTH_NAMES[parseInt(iso.slice(5, 7)) - 1] + "-" + iso.slice(2, 4);
+}
+
+// Parse a validity value (see poValidity) → end date (UTC)
 function parseValidityEnd(v) {
   if (!v) return new Date("2025-12-31");
   const s = String(v).trim();
-  if (/^\d{4}$/.test(s)) return new Date(parseInt(s), 11, 31); // year → 31 Dec
+  if (/^\d{4}$/.test(s)) return new Date(Date.UTC(parseInt(s), 11, 31)); // year → 31 Dec
   const parts = s.split("-");
   if (parts.length === 2) {
     let mm = parseInt(parts[0]),
       yy = parts[1];
     if (yy.length === 2) yy = "20" + yy;
     const yr = parseInt(yy);
-    return new Date(yr, mm, 0); // last day of month mm in year yr
+    return new Date(Date.UTC(yr, mm, 0)); // last day of month mm in year yr
   }
   return new Date("2025-12-31");
 }
@@ -35,7 +44,7 @@ Object.entries(HOLIDAYS_BY_LOC).forEach(([k, v]) => {
 });
 
 function isWorkingDay(d, location) {
-  const dow = d.getDay();
+  const dow = d.getUTCDay();
   if (dow === 0 || dow === 6) return false;
   const hols = HOLIDAY_SETS[location || "UK"] || HOLIDAY_SETS["UK"];
   return !hols.has(d.toISOString().slice(0, 10));
@@ -229,8 +238,7 @@ function computeForecast(cfg, filterPoTeams) {
   Object.entries(daily)
     .sort()
     .forEach(([d, c]) => {
-      const dt = new Date(d);
-      const key = dt.toLocaleString("en", { month: "short" }) + "-" + String(dt.getFullYear()).slice(2);
+      const key = monthKeyOf(d);
       monthly[key] = (monthly[key] || 0) + c;
     });
 
@@ -251,7 +259,7 @@ function computeForecast(cfg, filterPoTeams) {
     team.pos.forEach((po) => {
       if (normFilter && !normFilter.includes((po.PO_Team_Identifier || "").replace(/\s+/g, ""))) return;
       const endDt = parseValidityEnd(poValidity(po));
-      const yr = endDt.getFullYear();
+      const yr = endDt.getUTCFullYear();
       if (!posByYear[yr]) posByYear[yr] = [];
       posByYear[yr].push(po);
     });

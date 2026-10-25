@@ -63,7 +63,10 @@ function burndownSeries(model) {
   (model.filteredExpenses || []).forEach((e) => {
     const d = new Date(e.date);
     if (isNaN(d)) return;
-    const key = d.toLocaleString("en", { month: "short" }) + "-" + String(d.getFullYear()).slice(2);
+    // ISO dates are UTC; anything else was parsed as local time
+    const key = /^\d{4}-\d{2}-\d{2}/.test(e.date)
+      ? monthKeyOf(e.date)
+      : MONTH_NAMES[d.getMonth()] + "-" + String(d.getFullYear()).slice(2);
     expByMonth[key] = (expByMonth[key] || 0) + model.toBase(e.amount, e.currency);
   });
   // Ensure expense months are in allMonths
@@ -80,7 +83,7 @@ function burndownSeries(model) {
     const [mName, yy] = mKey.split("-");
     const yr = parseInt("20" + yy);
     const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mName);
-    const monthEnd = new Date(yr, mIdx + 1, 0);
+    const monthEnd = new Date(Date.UTC(yr, mIdx + 1, 0));
     let total = 0;
     poArr.forEach((p) => {
       const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");

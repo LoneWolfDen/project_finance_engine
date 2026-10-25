@@ -52,12 +52,12 @@ function renderPODetails(model) {
   const colors = ["#5c6bc0", "#26a69a", "#e65100", "#8e24aa", "#2e7d32", "#c62828"];
   html += '<div class="box"><h2>PO & Invoice Timeline</h2><div class="tl-scroll"><div class="tl-inner">';
   html += '<div style="margin-left:200px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
-  let monthStart = new Date(tStart.getFullYear(), 0, 1);
+  let monthStart = new Date(Date.UTC(tStart.getUTCFullYear(), 0, 1));
   while (monthStart <= tEnd) {
     const l = ((monthStart - tStart) / span) * 100;
     if (l >= 0 && l <= 100)
-      html += `<span style="position:absolute;left:${l.toFixed(1)}%">${monthStart.getFullYear()}</span>`;
-    monthStart = new Date(monthStart.getFullYear() + 1, 0, 1);
+      html += `<span style="position:absolute;left:${l.toFixed(1)}%">${monthStart.getUTCFullYear()}</span>`;
+    monthStart = new Date(Date.UTC(monthStart.getUTCFullYear() + 1, 0, 1));
   }
   html += "</div>";
   const invAll = model.cfg.invoices || [];

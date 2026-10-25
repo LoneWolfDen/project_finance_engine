@@ -19,6 +19,7 @@ cd finance-engine-v3.5/tests/regression
 ./run.sh main     # working tree vs another branch or commit
 ```
 
+It also reruns the working tree in New York and Kolkata time and expects identical results.
 Prints `IDENTICAL` when nothing changed, otherwise the first differences. It then runs
 `startup-check.js`: with different data on the server and in the browser cache, the
 charts shown after page load must match the server data.

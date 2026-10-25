@@ -20,7 +20,7 @@ function buildData() {
     ...new Set(
       (cfg.po_details || []).map((p) => {
         const e = parseValidityEnd(poValidity(p));
-        return e.getFullYear();
+        return e.getUTCFullYear();
       }),
     ),
   ].sort();
@@ -29,7 +29,7 @@ function buildData() {
     filteredCfg = JSON.parse(JSON.stringify(cfg));
     filteredCfg.po_details = cfg.po_details.filter((p) => {
       const e = parseValidityEnd(poValidity(p));
-      return e.getFullYear() === parseInt(selectedYear);
+      return e.getUTCFullYear() === parseInt(selectedYear);
     });
   }
   const fc = computeForecast(filteredCfg, selectedPoTeams);
@@ -114,7 +114,7 @@ function computeActualsMonthly(cfg, normFilter, projToTeam, money = SAME_CURRENC
     if (!dt) return;
     const d = new Date(dt);
     if (isNaN(d.getTime())) return;
-    const key = d.toLocaleString("en", { month: "short" }) + "-" + String(d.getFullYear()).slice(2);
+    const key = monthKeyOf(dt);
     const regHrs = parseFloat(row["Regular Hours"] || 0);
     const otHrs = parseFloat(row["Overtime Hours"] || 0);
     const emplId = parseInt(row["Empl ID"] || 0);
@@ -172,7 +172,7 @@ function aggregateActuals(data) {
     if (!dt) return;
     const d = new Date(dt);
     if (isNaN(d.getTime())) return;
-    const key = d.toLocaleString("en", { month: "short" }) + "-" + String(d.getFullYear()).slice(2);
+    const key = monthKeyOf(dt);
     const emplId = parseInt(row["Empl ID"] || 0);
     const projId = parseInt(row["Project ID"] || 0);
     const rule =

@@ -41,7 +41,7 @@ const TABS = [
   await new Promise((r) => setTimeout(r, 1200));
   const out = { errors: [], snaps: {}, downloads: {} };
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ acceptDownloads: true, locale: "en-GB", timezoneId: "UTC" });
+  const ctx = await browser.newContext({ acceptDownloads: true, locale: "en-GB", timezoneId: process.env.HARNESS_TZ || "UTC" });
   await ctx.route(/cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com/, (route) => {
     const file = route.request().url().split("/").pop();
     route.fulfill({ path: path.join(LIBS, CDN[file]), contentType: "text/javascript" });

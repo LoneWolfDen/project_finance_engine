@@ -4,7 +4,9 @@
 let selectedVersionId = null; // version whose details are shown
 
 const fmtDay = (iso) =>
-  iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—";
+  iso
+    ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })
+    : "—";
 
 // Current working resources first, then saved versions
 function resourcePlans(cfg) {
@@ -218,10 +220,7 @@ function drawResourceCharts(model) {
     ...p,
     days: planDailyCosts(p.resources, model, teams, asOf),
   }));
-  const monthKey = (iso) => {
-    const d = new Date(iso);
-    return d.toLocaleString("en", { month: "short" }) + "-" + String(d.getFullYear()).slice(2);
-  };
+  const monthKey = monthKeyOf;
   const months = [
     ...new Set(
       plans
