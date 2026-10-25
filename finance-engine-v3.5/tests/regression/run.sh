@@ -28,3 +28,4 @@ done
 node startup-check.js "$APP" 3203 | tail -1
 node currency-check.js "$APP" 3204 | tail -1
 node versions-check.js "$APP" 3205 | tail -1
+node robustness-check.js "$APP" 3207 | tail -1

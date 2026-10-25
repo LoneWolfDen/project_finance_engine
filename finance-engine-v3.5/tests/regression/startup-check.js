@@ -42,7 +42,11 @@ fs.rmSync(app + "/finance_engine.db", { force: true });
           const cfg = loadWork();
           cfg.po_details = pos;
           cfg.actuals_monthly = cfg.actuals_monthly.map((m) => ({ ...m, actuals: m.actuals * 2 })); // visibly different
-          await fetch("/api/config", { method: "POST", body: JSON.stringify(cfg) });
+          await fetch("/api/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cfg),
+          });
           localStorage.clear(); // the browser cache keeps only defaults
         },
         JSON.parse(fs.readFileSync(app + "/test_PO_Details.json")),

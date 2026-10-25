@@ -28,6 +28,8 @@ per-team figures converted to the selected normalised currency.
 `versions-check.js` saves, compares, applies and deletes resource versions and checks the
 funding figures (cost from today, funded until, days covered, additional needed) against an
 independent count of UK working days.
+`robustness-check.js` covers bank-holiday warnings and editing, duplicate resource rules,
+the server refusing writes from other websites, and save history with restore.
 Use it for refactors, where the output should not change at all.
 
 `fixtures/solution.xlsx` is a small Solution Excel for the Smart Parser.

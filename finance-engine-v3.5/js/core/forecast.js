@@ -37,11 +37,28 @@ function fmtValidity(v) {
 }
 
 // ─── FORECAST ENGINE ────────────────────────────────────────────────────────
-const HOLIDAY_SETS = {};
+// Bank holidays per location: the config's `holidays` (Settings → Holidays), else data/holidays.js
+let HOLIDAY_SETS = {};
+function useHolidays(holidays) {
+  HOLIDAY_SETS = Object.fromEntries(Object.entries(holidays || HOLIDAYS_BY_LOC).map(([k, v]) => [k, new Set(v)]));
+}
+useHolidays(null);
 
-Object.entries(HOLIDAYS_BY_LOC).forEach(([k, v]) => {
-  HOLIDAY_SETS[k] = new Set(v);
-});
+// Resource work the holiday list doesn't cover: an unknown location (UK holidays are used),
+// or a year with no holidays listed for the location (none are deducted that year)
+function holidayGaps(holidays, resources) {
+  const src = holidays || HOLIDAYS_BY_LOC;
+  const gaps = new Set();
+  resources.forEach((r) => {
+    const loc = r.location || "UK";
+    if (!src[loc]) return gaps.add(`location "${loc}" is not in the list (UK holidays used)`);
+    const years = new Set(src[loc].map((d) => d.slice(0, 4)));
+    const from = parseInt(String(r.start).slice(0, 4)),
+      to = parseInt(String(r.end).slice(0, 4));
+    for (let y = from; y <= to; y++) if (!years.has(String(y))) gaps.add(`no ${loc} holidays for ${y}`);
+  });
+  return [...gaps].sort();
+}
 
 function isWorkingDay(d, location) {
   const dow = d.getUTCDay();
@@ -158,6 +175,7 @@ function parseDate(s, format) {
 }
 
 function computeForecast(cfg, filterPoTeams) {
+  useHolidays(cfg.holidays);
   const poArr = cfg.po_details;
   const poByTeam = {};
   poArr.forEach((po) => {

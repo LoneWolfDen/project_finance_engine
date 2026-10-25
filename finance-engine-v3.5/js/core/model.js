@@ -76,6 +76,10 @@ function buildData() {
       ),
     ]),
   ];
+  const holidayWarnings = holidayGaps(
+    cfg.holidays,
+    cfg.resources.filter((r) => !normFilter || normFilter.includes((r.po_team || "").replace(/\s+/g, ""))),
+  );
   const fromPO = (filteredCfg.po_details || [])
     .map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, ""))
     .filter(Boolean);
@@ -93,6 +97,7 @@ function buildData() {
     toBase,
     teamCurrency,
     fxWarnings,
+    holidayWarnings,
     projToTeam,
     money,
   };

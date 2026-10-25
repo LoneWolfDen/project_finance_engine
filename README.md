@@ -64,7 +64,7 @@ Requirements: Python 3.11 or later.
 	python3 server.py
 	```
 
-	The server listens on `http://localhost:3005` by default.
+	The server listens on `http://localhost:3005` by default, and only accepts connections from this computer.
 
 3. Open [http://localhost:3005](http://localhost:3005) in a browser.
 
@@ -84,10 +84,11 @@ From the repository root, build the image and start a container:
 
 ```bash
 docker build -t finance-engine-v3.5 ./finance-engine-v3.5
-docker run --rm -p 3005:3005 finance-engine-v3.5
+docker run --rm -p 127.0.0.1:3005:3005 -v finance-engine-data:/data finance-engine-v3.5
 ```
 
-Then open [http://localhost:3005](http://localhost:3005).
+Then open [http://localhost:3005](http://localhost:3005). Your data is kept in the Docker volume
+`finance-engine-data`, so it survives restarts; `127.0.0.1:` keeps the app reachable from this computer only.
 
 To preserve the SQLite database after the container stops, mount the version
 directory and run the container from the version directory instead:
@@ -95,7 +96,7 @@ directory and run the container from the version directory instead:
 ```bash
 cd finance-engine-v3.5
 docker build -t finance-engine-v3.5 .
-docker run --rm -p 3005:3005 -v "$PWD:/app" finance-engine-v3.5
+docker run --rm -p 127.0.0.1:3005:3005 -v "$PWD:/app" -v finance-engine-data:/data finance-engine-v3.5
 ```
 
 ### Optional: Ollama chat mode

@@ -16,17 +16,21 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import URLError
+from urllib.parse import urlparse
 
 print("✅ RUNNING V3.5 SERVER FILE")
 print("✅ FILE PATH:", __file__)
 
 PORT = int(os.environ.get('PORT', 3005))
+# Local app: only this machine can connect. Docker sets HOST=0.0.0.0 inside the container
+# (the port is published to localhost only, see README).
+HOST = os.environ.get('HOST', '127.0.0.1')
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 
 BASE_DIR = Path(__file__).parent
 HTML_FILE = BASE_DIR / "index.html"
-DB_FILE = BASE_DIR / "finance_engine.db"
+DB_FILE = Path(os.environ.get('DB_FILE', BASE_DIR / "finance_engine.db"))
 STATIC_DIRS = ('/css/', '/js/', '/data/')
 STATIC_TYPES = {'.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8'}
 
@@ -40,6 +44,7 @@ DEFAULT_CONFIG = {
 
 
 def get_db():
+    DB_FILE.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_FILE))
     conn.execute("""
         CREATE TABLE IF NOT EXISTS config (
@@ -74,7 +79,6 @@ class Handler(BaseHTTPRequestHandler):
     def send_json(self, data, status=200):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         if isinstance(data, (dict, list)):
             data = json.dumps(data)
@@ -115,7 +119,19 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 self.send_json({"error": "index.html not found"}, 500)
 
+    def write_allowed(self):
+        """Only this app's page may write. Another website open in the browser could otherwise
+        POST to localhost and overwrite the config: browsers send its Origin, and a JSON
+        content type from another origin needs a CORS pre-check this server never grants."""
+        origin = self.headers.get('Origin')
+        if origin and urlparse(origin).netloc != self.headers.get('Host'):
+            return False
+        return self.headers.get('Content-Type', '').startswith('application/json')
+
     def do_POST(self):
+        if not self.write_allowed():
+            self.send_json({"error": "Forbidden: JSON requests from this app only"}, 403)
+            return
         if self.path == '/api/chat':
             length = int(self.headers.get('Content-Length', 0))
             body = self.rfile.read(length).decode()
@@ -153,13 +169,6 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_json({"error": "Not found"}, 404)
 
-    def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
-
     def log_message(self, format, *args):
         return
 
@@ -168,4 +177,4 @@ if __name__ == "__main__":
     get_db()
     print(f"✅ Project Finance Dashboard v3.5 → http://localhost:{PORT}")
     print(f"✅ SQLite DB: {DB_FILE}")
-    HTTPServer(("", PORT), Handler).serve_forever()
+    HTTPServer((HOST, PORT), Handler).serve_forever()
