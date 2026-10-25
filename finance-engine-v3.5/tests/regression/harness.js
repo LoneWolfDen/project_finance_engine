@@ -7,6 +7,8 @@ const path = require("path");
 const LIBS = path.join(__dirname, "node_modules");
 const XLSX = require(path.join(LIBS, "xlsx"));
 const [appDir, port, outFile] = process.argv.slice(2);
+// Versions before vendor/ loaded their libraries from CDNs: serve those from node_modules so
+// run.sh can still compare against older commits offline
 const CDN = {
   "chart.umd.min.js": "chart.js/dist/chart.umd.js",
   "chartjs-plugin-datalabels.min.js": "chartjs-plugin-datalabels/dist/chartjs-plugin-datalabels.min.js",
@@ -38,6 +40,7 @@ const TABS = [
   if (inUse) throw new Error(`port ${port} is already in use; stop that server first`);
   fs.rmSync(path.join(appDir, "finance_engine.db"), { force: true });
   const srv = spawn("python3", ["server.py"], { cwd: appDir, env: { ...process.env, PORT: port }, stdio: "ignore" });
+  process.on("exit", () => srv.kill()); // also when the run fails part-way
   await new Promise((r) => setTimeout(r, 1200));
   const out = { errors: [], snaps: {}, downloads: {} };
   const browser = await chromium.launch();

@@ -6,6 +6,7 @@ COPY server.py excel_export.py index.html ./
 COPY css ./css
 COPY js ./js
 COPY data ./data
+COPY vendor ./vendor
 COPY test_*.json test_*.csv ./
 # Data lives on a volume so it survives the container (see README)
 ENV HOST=0.0.0.0 DB_FILE=/data/finance_engine.db

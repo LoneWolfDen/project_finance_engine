@@ -2,7 +2,7 @@
 Project Finance Portfolio Engine v3.5 — SQLite-backed server.
 Finance Engine – Version 3.5
 GET  /           → serves index.html
-GET  /css/*, /js/*, /data/* → serves the page's static .css/.js files
+GET  /css/*, /js/*, /data/*, /vendor/* → serves the page's static .css/.js files (no CDN: works offline)
 GET  /api/config → returns stored config JSON
 GET  /api/test   → test endpoint
 GET  /api/history → earlier versions of the working config (newest first)
@@ -34,7 +34,7 @@ OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
 BASE_DIR = Path(__file__).parent
 HTML_FILE = BASE_DIR / "index.html"
 DB_FILE = Path(os.environ.get('DB_FILE', BASE_DIR / "finance_engine.db"))
-STATIC_DIRS = ('/css/', '/js/', '/data/')
+STATIC_DIRS = ('/css/', '/js/', '/data/', '/vendor/')
 STATIC_TYPES = {'.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8'}
 
 # Earlier versions of the working config kept for Settings → Save history

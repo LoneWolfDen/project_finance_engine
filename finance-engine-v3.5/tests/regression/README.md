@@ -9,7 +9,8 @@ Drives the app in headless Chromium and snapshots what it renders:
 - the Excel (cell by cell), PDF, PowerPoint and Full Config exports
 
 The clock is fixed at 2025-11-15 so dates in the output don't change between runs.
-CDN libraries are served from `node_modules` so it works offline.
+The app serves its libraries from `vendor/`; `offline-check.js` blocks every request outside localhost
+and checks all tabs, charts and exports still work.
 
 First time: `npm install && npx playwright install chromium` in this folder.
 
