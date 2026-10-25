@@ -1,0 +1,14 @@
+{
+  "name": "finance-engine-regression",
+  "private": true,
+  "description": "Headless-browser snapshot test: renders every tab and export and compares against a baseline git ref",
+  "devDependencies": {
+    "chart.js": "4.4.0",
+    "chartjs-plugin-datalabels": "2.2.0",
+    "jspdf": "2.5.1",
+    "jspdf-autotable": "3.8.2",
+    "playwright": "1.63.0",
+    "pptxgenjs": "3.12.0",
+    "xlsx": "0.18.5"
+  }
+}
