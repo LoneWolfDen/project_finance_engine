@@ -21,3 +21,4 @@ echo "Working tree:"
 node harness.js "$APP" 3202 "$TMP/new.json"
 node compare.js "$TMP/base.json" "$TMP/new.json"
 node startup-check.js "$APP" 3203 | tail -1
+node currency-check.js "$APP" 3204 | tail -1

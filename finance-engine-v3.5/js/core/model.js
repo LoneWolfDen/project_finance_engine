@@ -11,6 +11,8 @@ let selectedPoTeams = []; // empty = all
 //   fc             forecast from computeForecast() (totals, burndown, rate, days, ...)
 //   actuals        monthly actuals; totalActuals / totalExpenses / remaining are summed from them
 //   filteredExpenses, allPoTeams, allYears
+//   toBase(amount, code), teamCurrency   money is in fc.currency; toBase converts into it,
+//                                        teamCurrency maps PO_Team -> its PO currency
 function buildData() {
   const cfg = loadWork();
   // Year filter: filter PO_details by selected year before computing
@@ -31,6 +33,12 @@ function buildData() {
     });
   }
   const fc = computeForecast(filteredCfg, selectedPoTeams);
+  // Convert every amount into fc.currency at today's rates
+  const today = new Date().toISOString().slice(0, 10);
+  const toBase = (amount, code) => convertCurrency(amount, code || fc.currency, fc.currency, cfg.fx_rates, today);
+  const teamCurrency = teamCurrencies(cfg.po_details);
+  const money = { toBase, teamCurrency };
+  moneySymbol = currencySymbol(fc.currency);
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const projToTeam = {};
   cfg.resources.forEach((r) => {
@@ -44,9 +52,9 @@ function buildData() {
 
   let filteredActuals;
   if (cfg.actuals_by_project) {
-    filteredActuals = computeActualsFromCache(cfg, normFilter, projToTeam);
+    filteredActuals = computeActualsFromCache(cfg, normFilter, projToTeam, money);
   } else if (cfg.raw_actuals && cfg.raw_actuals.length) {
-    filteredActuals = computeActualsMonthly(cfg, normFilter, projToTeam);
+    filteredActuals = computeActualsMonthly(cfg, normFilter, projToTeam, money);
   } else {
     filteredActuals = cfg.actuals_monthly || [];
   }
@@ -57,7 +65,17 @@ function buildData() {
     const t = (e.po_team || "").replace(/\s+/g, "");
     return normFilterExp ? normFilterExp.includes(t) : true;
   });
-  const totalExpenses = filteredExpenses.reduce((s, e) => s + e.amount, 0);
+  const totalExpenses = filteredExpenses.reduce((s, e) => s + toBase(e.amount, e.currency), 0);
+  const fxWarnings = [
+    ...new Set([
+      ...fc.fxWarnings,
+      ...missingFxRates(
+        cfg.fx_rates,
+        filteredExpenses.map((e) => e.currency),
+        today,
+      ),
+    ]),
+  ];
   const fromPO = (filteredCfg.po_details || [])
     .map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, ""))
     .filter(Boolean);
@@ -72,11 +90,17 @@ function buildData() {
     actuals: filteredActuals,
     filteredExpenses,
     allYears,
+    toBase,
+    teamCurrency,
+    fxWarnings,
   };
 }
 
-// Compute actuals from raw timesheet data, filtered by PO_Team
-function computeActualsMonthly(cfg, normFilter, projToTeam) {
+// Without `money` amounts stay in each team's PO currency
+const SAME_CURRENCY = { toBase: (amount) => amount, teamCurrency: {} };
+
+// Compute actuals from raw timesheet data, filtered by PO_Team; costs are converted with money.toBase
+function computeActualsMonthly(cfg, normFilter, projToTeam, money = SAME_CURRENCY) {
   if (!cfg.raw_actuals || !cfg.raw_actuals.length) return cfg.actuals_monthly || [];
   const monthly = {};
   cfg.raw_actuals.forEach((row) => {
@@ -100,13 +124,13 @@ function computeActualsMonthly(cfg, normFilter, projToTeam) {
     const hourMult = rule ? rule.hour_mult : 1;
     const poTeam = rule ? (rule.po_team || "").replace(/\s+/g, "") : "";
     const otMult = otMultiplier(cfg.ot_params, poTeam, "Overtime_Hours", dt);
-    const cost = regHrs * hourMult * rate + otHrs * hourMult * rate * otMult;
+    const cost = money.toBase(regHrs * hourMult * rate + otHrs * hourMult * rate * otMult, money.teamCurrency[poTeam]);
     if (!monthly[key]) monthly[key] = 0;
     monthly[key] += cost;
   });
   const poVal = (cfg.po_details || []).reduce((s, p) => {
     const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
-    return normFilter && !normFilter.includes(t) ? s : s + p.PO_WO_value;
+    return normFilter && !normFilter.includes(t) ? s : s + money.toBase(p.PO_WO_value, p.PO_Currency_Code);
   }, 0);
   let cum = 0;
   return Object.entries(monthly)
@@ -177,19 +201,19 @@ function aggregateActuals(data) {
 }
 
 // Fast actuals from pre-computed cache (no re-parsing raw data)
-function computeActualsFromCache(cfg, normFilter, projToTeam) {
+function computeActualsFromCache(cfg, normFilter, projToTeam, money = SAME_CURRENCY) {
   const byProject = cfg.actuals_by_project || {};
   const monthly = {};
   Object.entries(byProject).forEach(([projId, months]) => {
     const team = projToTeam[parseInt(projId)] || "";
     if (normFilter && !normFilter.includes(team)) return;
     Object.entries(months).forEach(([m, cost]) => {
-      monthly[m] = (monthly[m] || 0) + cost;
+      monthly[m] = (monthly[m] || 0) + money.toBase(cost, money.teamCurrency[team]);
     });
   });
   const poVal = (cfg.po_details || []).reduce((s, p) => {
     const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
-    return normFilter && !normFilter.includes(t) ? s : s + p.PO_WO_value;
+    return normFilter && !normFilter.includes(t) ? s : s + money.toBase(p.PO_WO_value, p.PO_Currency_Code);
   }, 0);
   let cum = 0;
   return Object.entries(monthly)
@@ -202,6 +226,11 @@ function computeActualsFromCache(cfg, normFilter, projToTeam) {
         actuals_burn: Math.round((poVal - cum) * 100) / 100,
       };
     });
+}
+
+// Symbol of the currency a resource's bill rate is in (its team's PO currency)
+function rateSymbol(model, r) {
+  return currencySymbol(model.teamCurrency[(r.po_team || "").replace(/\s+/g, "")] || model.fc.currency);
 }
 
 // Forecast and actuals side by side for each month ("Jul-25"), in date order.

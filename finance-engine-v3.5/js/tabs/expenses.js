@@ -2,7 +2,9 @@
 
 function renderExpenses(model) {
   const exps = model.filteredExpenses;
-  const total = exps.reduce((s, e) => s + e.amount, 0);
+  // each claim is shown in its own currency; totals are converted to the model currency
+  const sumBase = (list) => list.reduce((s, e) => s + model.toBase(e.amount, e.currency), 0);
+  const total = sumBase(exps);
   // Outer table and each group's inner table share column widths so they line up
   const colgroup =
     "<colgroup>" + [14, 12, 12, 8, 10, 22, 22].map((w) => `<col style="width:${w}%">`).join("") + "</colgroup>";
@@ -19,14 +21,14 @@ function renderExpenses(model) {
     expGroups[t].push(e);
   });
   Object.entries(expGroups).forEach(([team, items]) => {
-    html += groupHeaderRow(7, `${team} (${items.length} claims, ${fmtMoney(items.reduce((s, e) => s + e.amount, 0))})`);
+    html += groupHeaderRow(7, `${team} (${items.length} claims, ${fmtMoney(sumBase(items))})`);
     html += '<tr class="grp-rows"><td colspan="7" style="padding:0">';
     html += `<table style="width:100%;margin:0;box-shadow:none;table-layout:fixed">${colgroup}<tbody>`;
     items.forEach((e) => {
       html += tableRow([
         e.name,
         e.date,
-        fmtMoney(e.amount),
+        fmtMoney(e.amount, currencySymbol(e.currency || model.fc.currency)),
         e.currency,
         e.projectID || "",
         cell(e.po_team || "", "font-size:.65rem"),

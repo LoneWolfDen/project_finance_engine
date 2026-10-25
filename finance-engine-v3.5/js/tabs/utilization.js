@@ -119,7 +119,7 @@ function renderUtilization(model) {
         const left = Math.max(0, ((rs - tlStart) / tlSpan) * 100).toFixed(1);
         const width = Math.max(1, ((re - rs) / tlSpan) * 100).toFixed(1);
         const barStyle = `left:${left}%;width:${width}%;background:${colors[colorIdx % colors.length]};opacity:${0.6 + r.alloc * 0.4}`;
-        const tooltip = `${r.role} · ${r.alloc * 100}% · £${r.bill_rate}/hr`;
+        const tooltip = `${r.role} · ${r.alloc * 100}% · ${rateSymbol(model, r)}${r.bill_rate}/hr`;
         html += `<div class="br" style="${barStyle}" title="${tooltip}">${r.alloc * 100}% ${r.role || ""}</div>`;
       });
       html += `</div></div>`;

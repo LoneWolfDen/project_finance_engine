@@ -41,6 +41,48 @@ function isWorkingDay(d, location) {
   return !hols.has(d.toISOString().slice(0, 10));
 }
 
+// ─── CURRENCY ───────────────────────────────────────────────────────────────
+// fx_rates hold "units of this currency per 1 GBP" (GBP 1, USD 1.36, INR 88), effective-dated.
+
+const CURRENCY_SYMBOLS = { GBP: "£", USD: "$", EUR: "€", INR: "₹", JPY: "¥", AUD: "A$", CAD: "C$", SGD: "S$" };
+function currencySymbol(code) {
+  return CURRENCY_SYMBOLS[code] || (code ? code + " " : "");
+}
+
+// Converts with the rates effective on asOfDate
+function convertCurrency(amount, from, to, fxRates, asOfDate) {
+  if (amount == null || !from || !to || from === to) return amount;
+  return (amount / fxRateAsOf(fxRates, from, asOfDate)) * fxRateAsOf(fxRates, to, asOfDate);
+}
+
+// Codes with no rate effective on asOfDate (fxRateAsOf would silently use 1)
+function missingFxRates(fxRates, codes, asOfDate) {
+  return [...new Set(codes.filter(Boolean))].filter(
+    (code) => !fxRates.some((r) => r.code === code && r.effective <= asOfDate),
+  );
+}
+
+// PO currency per PO_Team (first PO of the team wins)
+function teamCurrencies(poDetails) {
+  const map = {};
+  (poDetails || []).forEach((p) => {
+    const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
+    if (!map[t] && p.PO_Currency_Code) map[t] = p.PO_Currency_Code;
+  });
+  return map;
+}
+
+// The currencies the dashboard reports in:
+//   normCurrency  the normalised currency: cfg.normalized_currency (chosen in the nav bar),
+//                 else the first PO's Normalized_Currency_Code, else USD
+//   currency      the selected POs' own currency when they all share one, else normCurrency
+function resolveCurrencies(cfg, poList) {
+  const normCurrency = cfg.normalized_currency || (poList[0] && poList[0].Normalized_Currency_Code) || "USD";
+  const poCurrencies = [...new Set(poList.map((p) => p.PO_Currency_Code).filter(Boolean))];
+  const currency = poCurrencies.length === 1 ? poCurrencies[0] : poCurrencies.length ? normCurrency : "GBP";
+  return { currency, normCurrency, poCurrencies };
+}
+
 // Effective-dated FX lookup: latest rate on or before asOfDate
 function fxRateAsOf(fxRates, code, asOfDate) {
   let best = null,
@@ -135,13 +177,23 @@ function computeForecast(cfg, filterPoTeams) {
   const activeTeams = normFilter || Object.keys(poByTeam);
   const activePOs = activeTeams.map((t) => poByTeam[t]).filter(Boolean);
 
-  const totalPOValue = activePOs.reduce((s, p) => s + p.PO_WO_value, 0);
+  // All amounts below are in `currency`, converted at today's rates (see resolveCurrencies)
+  const today = new Date().toISOString().slice(0, 10);
+  const activePOList = activePOs.flatMap((team) => team.pos);
+  const { currency, normCurrency, poCurrencies } = resolveCurrencies(cfg, activePOList);
+  const toBase = (amount, from) => convertCurrency(amount, from || currency, currency, cfg.fx_rates, today);
+  const fxWarnings = missingFxRates(cfg.fx_rates, [...poCurrencies, normCurrency], today);
+
+  const totalPOValue = activePOs.reduce(
+    (s, team) => s + team.pos.reduce((a, po) => a + toBase(po.PO_WO_value, po.PO_Currency_Code), 0),
+    0,
+  );
   const maxEnd = activePOs.reduce((m, p) => (p.maxEnd > m ? p.maxEnd : m), new Date(0));
   const earliestStart = activePOs.reduce(
     (m, p) => (p.WO_StartDate && p.WO_StartDate < m ? p.WO_StartDate : m),
     "9999-12-31",
   );
-  const currency = activePOs[0] || { PO_Currency_Code: "GBP", Normalized_Currency_Code: "USD" };
+  const firstPO = activePOs[0] || {};
 
   const poStart = new Date(earliestStart !== "9999-12-31" ? earliestStart : "2025-01-01");
   const poEnd = maxEnd > new Date(0) ? maxEnd : new Date("2025-12-31");
@@ -161,7 +213,8 @@ function computeForecast(cfg, filterPoTeams) {
     const rStart = new Date(Math.max(new Date(r.start), poStart));
     const rEnd = new Date(Math.min(new Date(r.end), teamEnd));
     if (rStart > rEnd || isNaN(rStart.getTime()) || isNaN(rEnd.getTime())) return;
-    const dailyCost = r.bill_rate * r.alloc * STD_HOURS;
+    // bill rates are in the team's PO currency
+    const dailyCost = toBase(r.bill_rate * r.alloc * STD_HOURS, teamPO ? teamPO.PO_Currency_Code : currency);
     let d = new Date(rStart);
     while (d <= rEnd) {
       if (isWorkingDay(d, r.location)) {
@@ -189,13 +242,7 @@ function computeForecast(cfg, filterPoTeams) {
   const total = Object.values(monthly).reduce((a, b) => a + b, 0);
   const days = Object.keys(daily).length;
 
-  const today = new Date().toISOString().slice(0, 10);
-  let normPO = 0;
-  activePOs.forEach((p) => {
-    const fxFrom = fxRateAsOf(cfg.fx_rates, p.PO_Currency_Code, today);
-    const fxTo = fxRateAsOf(cfg.fx_rates, p.Normalized_Currency_Code || "USD", today);
-    normPO += (p.PO_WO_value / fxFrom) * fxTo;
-  });
+  const normPO = convertCurrency(totalPOValue, currency, normCurrency, cfg.fx_rates, today);
 
   // Multi-year PO rollover (only for POs with rollover_allowed=true)
   // Group POs by validity end year
@@ -219,7 +266,7 @@ function computeForecast(cfg, filterPoTeams) {
   let carryForward = 0;
   years.forEach((yr) => {
     const yrPOs = posByYear[yr];
-    const yrPOValue = yrPOs.reduce((s, p) => s + p.PO_WO_value, 0);
+    const yrPOValue = yrPOs.reduce((s, p) => s + toBase(p.PO_WO_value, p.PO_Currency_Code), 0);
     const available = yrPOValue + carryForward;
     const spent = spendByYear[yr] || 0;
     const unused = Math.max(0, available - spent);
@@ -244,9 +291,11 @@ function computeForecast(cfg, filterPoTeams) {
     rate: days ? Math.round((total / days) * 100) / 100 : 0,
     normPO: Math.round(normPO * 100) / 100,
     totalPOValue,
-    currency: currency.PO_Currency_Code,
-    normCurrency: currency.Normalized_Currency_Code || "USD",
-    status: currency.WO_Approval_Status || "Approved",
+    currency,
+    normCurrency,
+    poCurrencies,
+    fxWarnings,
+    status: firstPO.WO_Approval_Status || "Approved",
     rolloverByYear,
     posByYear,
   };

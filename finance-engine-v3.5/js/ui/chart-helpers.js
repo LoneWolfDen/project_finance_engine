@@ -11,7 +11,7 @@ function addChart(canvasId, config) {
 
 // Value labels ("£12k") on bars/points, shown when "Show Data Labels" is ticked.
 // skipZero: also hide labels for 0 (the Overview chart treats 0 as "no value").
-function kLabels({ size = 10, skipZero = false, symbol = "£" } = {}) {
+function kLabels({ size = 10, skipZero = false, symbol = moneySymbol } = {}) {
   return {
     display: showDataLabels,
     formatter: (v) => ((skipZero ? v : v != null) ? symbol + Math.round(v / 1000) + "k" : ""),
@@ -22,6 +22,6 @@ function kLabels({ size = 10, skipZero = false, symbol = "£" } = {}) {
 }
 
 // Axis ticks as money: 12000 -> "£12,000"
-function moneyTicks(symbol = "£") {
+function moneyTicks(symbol = moneySymbol) {
   return { callback: (v) => symbol + v.toLocaleString() };
 }

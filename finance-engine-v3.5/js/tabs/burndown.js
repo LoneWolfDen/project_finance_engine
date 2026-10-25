@@ -4,11 +4,13 @@ function renderBurndown(model) {
   const months = mergeMonthly(model);
 
   const detailCols = ["Month", "Forecast Spend", "Actuals Spend", "Forecast Burn", "Actuals Burn", "Variance"];
-  let html = `<div class="box"><h2>PO Burndown (Local: ${model.fc.currency})</h2>`;
+  let html = `<div class="box"><h2>PO Burndown (${model.fc.poCurrencies.length > 1 ? "converted to" : "Local:"} ${model.fc.currency})</h2>`;
   html += '<p style="font-size:.75rem;color:#666;margin-bottom:.8rem">';
   html += "Green=Actuals Burn, Blue=Forecast Burn, Red dashed=Cumulative PO Value available</p>";
   html += '<canvas id="c2" height="100"></canvas></div>';
-  html += `<div class="box"><h2>Normalized Burndown (${model.fc.normCurrency})</h2><canvas id="c2norm" height="80"></canvas></div>`;
+  const showNorm = model.fc.normCurrency !== model.fc.currency;
+  if (showNorm)
+    html += `<div class="box"><h2>Normalized Burndown (${model.fc.normCurrency})</h2><canvas id="c2norm" height="80"></canvas></div>`;
   // Table
   html += `<div class="box"><h2>Monthly Detail</h2><div class="tw"><table>${tableHead(detailCols)}<tbody>`;
   months.forEach((m) => {
@@ -23,7 +25,12 @@ function renderBurndown(model) {
     ]);
   });
   html += "</tbody></table></div></div>";
-  // Normalized Monthly Detail table
+  // Normalized Monthly Detail table (not needed when the figures are already in the normalised currency)
+  if (!showNorm) {
+    html += `<p style="font-size:.72rem;color:#888">Figures are in the normalised currency (${model.fc.normCurrency}).</p>`;
+    return html;
+  }
+  const normSym = currencySymbol(model.fc.normCurrency);
   const today3 = new Date().toISOString().slice(0, 10);
   const fxFn = fxRateAsOf(model.cfg.fx_rates, model.fc.currency || "GBP", today3);
   const fxTn = fxRateAsOf(model.cfg.fx_rates, model.fc.normCurrency || "USD", today3);
@@ -34,11 +41,11 @@ function renderBurndown(model) {
     const v = m.actuals != null && m.forecast != null ? toNorm(m.actuals - m.forecast) : null;
     html += tableRow([
       `<strong>${m.month}</strong>`,
-      fmtMoney(toNorm(m.forecast), "$"),
-      fmtMoney(toNorm(m.actuals), "$"),
-      fmtMoney(toNorm(m.forecast_burn), "$"),
-      fmtMoney(toNorm(m.actuals_burn), "$"),
-      cell(fmtMoney(v, "$"), varianceStyle(v)),
+      fmtMoney(toNorm(m.forecast), normSym),
+      fmtMoney(toNorm(m.actuals), normSym),
+      fmtMoney(toNorm(m.forecast_burn), normSym),
+      fmtMoney(toNorm(m.actuals_burn), normSym),
+      cell(fmtMoney(v, normSym), varianceStyle(v)),
     ]);
   });
   html += "</tbody></table></div></div>";
@@ -57,7 +64,7 @@ function burndownSeries(model) {
     const d = new Date(e.date);
     if (isNaN(d)) return;
     const key = d.toLocaleString("en", { month: "short" }) + "-" + String(d.getFullYear()).slice(2);
-    expByMonth[key] = (expByMonth[key] || 0) + e.amount;
+    expByMonth[key] = (expByMonth[key] || 0) + model.toBase(e.amount, e.currency);
   });
   // Ensure expense months are in allMonths
   Object.keys(expByMonth).forEach((m) => {
@@ -79,7 +86,8 @@ function burndownSeries(model) {
       const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
       if (normFilter2 && !normFilter2.includes(t)) return;
       const poEnd2 = parseValidityEnd(poValidity(p));
-      if (new Date(p.WO_StartDate) <= monthEnd && poEnd2 >= monthEnd) total += p.PO_WO_value;
+      if (new Date(p.WO_StartDate) <= monthEnd && poEnd2 >= monthEnd)
+        total += model.toBase(p.PO_WO_value, p.PO_Currency_Code);
     });
     return total;
   });
@@ -197,7 +205,9 @@ function burndownChartConfig(s, { suffix, symbol, actualsSpanGaps, conv }) {
 // Burndown in PO currency (canvas c2) and normalized currency (canvas c2norm)
 function drawBurndownCharts(model) {
   const s = burndownSeries(model);
-  if (!addChart("c2", burndownChartConfig(s, { suffix: "", symbol: "£", actualsSpanGaps: false, conv: (v) => v })))
+  if (
+    !addChart("c2", burndownChartConfig(s, { suffix: "", symbol: moneySymbol, actualsSpanGaps: false, conv: (v) => v }))
+  )
     return;
   const today = new Date().toISOString().slice(0, 10);
   const fxF = fxRateAsOf(model.cfg.fx_rates, model.fc.currency || "GBP", today);
@@ -207,7 +217,7 @@ function drawBurndownCharts(model) {
     "c2norm",
     burndownChartConfig(s, {
       suffix: " (" + model.fc.normCurrency + ")",
-      symbol: "$",
+      symbol: currencySymbol(model.fc.normCurrency),
       actualsSpanGaps: true,
       conv: norm,
     }),

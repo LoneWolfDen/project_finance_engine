@@ -27,19 +27,20 @@ function renderPODetails(model) {
     byTeam[k].count++;
     byTeam[k].pos.push(p);
   });
-  const totalPO = pos.reduce((s, p) => s + p.PO_WO_value, 0);
+  // totals in the model currency; per-team and per-PO figures below stay in their PO currency
+  const totalPO = pos.reduce((s, p) => s + model.toBase(p.PO_WO_value, p.PO_Currency_Code), 0);
   const today = new Date().toISOString().slice(0, 10);
-  const normTotal = Object.values(byTeam).reduce((s, t) => {
-    const fxFrom = fxRateAsOf(model.cfg.fx_rates, t.currency, today);
-    const fxTo = fxRateAsOf(model.cfg.fx_rates, t.normCurrency, today);
-    return s + (t.value / fxFrom) * fxTo;
-  }, 0);
+  const normTotal = convertCurrency(totalPO, model.fc.currency, model.fc.normCurrency, model.cfg.fx_rates, today);
 
   let html = '<div class="cards">';
   html += statCard("b", "Total POs", pos.length);
   html += statCard("g", "Unique Projects", Object.keys(byTeam).length);
   html += statCard("o", "Total PO Value", fmtMoney(totalPO));
-  html += statCard("p", "Normalized Total", fmtMoney(normTotal, "$"));
+  html += statCard(
+    "p",
+    `Normalized Total (${model.fc.normCurrency})`,
+    fmtMoney(normTotal, currencySymbol(model.fc.normCurrency)),
+  );
   html += "</div>";
 
   // Timeline view of POs
@@ -67,7 +68,8 @@ function renderPODetails(model) {
     const left = Math.max(0, ((rs - tStart) / span) * 100).toFixed(1);
     const width = Math.max(2, ((re - rs) / span) * 100).toFixed(1);
     const poBarStyle = `left:${left}%;width:${width}%;background:${colors[i % colors.length]}`;
-    const poBarLabel = `${fmtMoney(data.value)} (${data.count} POs)${data.rollover ? " 🔄" : ""}`;
+    const sym = currencySymbol(data.currency);
+    const poBarLabel = `${fmtMoney(data.value, sym)} (${data.count} POs)${data.rollover ? " 🔄" : ""}`;
     html += '<div class="tl-row">';
     html += `<span class="nm" style="min-width:200px;font-size:.68rem">${team}</span>`;
     html += `<div class="ba"><div class="br" style="${poBarStyle}">${poBarLabel}</div></div>`;
@@ -84,7 +86,7 @@ function renderPODetails(model) {
         const invLeft = Math.max(0, ((is - tStart) / span) * 100).toFixed(1);
         const invWidth = Math.max(1, ((ie - is) / span) * 100).toFixed(1);
         const invBarStyle = `left:${invLeft}%;width:${invWidth}%;background:${statusColor[inv.status] || "#666"};height:16px;font-size:.55rem`;
-        html += `<div class="br" style="${invBarStyle}">${fmtMoney(inv.amount)}</div>`;
+        html += `<div class="br" style="${invBarStyle}">${fmtMoney(inv.amount, sym)}</div>`;
       });
       html += `</div></div>`;
     }
@@ -104,11 +106,11 @@ function renderPODetails(model) {
       const pct = data.value ? Math.round((invoiced / data.value) * 100) : 0;
       html += tableRow([
         cell(team, "font-size:.68rem"),
-        fmtMoney(data.value),
-        fmtMoney(invoiced),
-        fmtMoney(paid),
+        fmtMoney(data.value, currencySymbol(data.currency)),
+        fmtMoney(invoiced, currencySymbol(data.currency)),
+        fmtMoney(paid, currencySymbol(data.currency)),
         cell(pct + "%", "font-weight:600;color:" + pctColor(pct)),
-        fmtMoney(data.value - invoiced),
+        fmtMoney(data.value - invoiced, currencySymbol(data.currency)),
       ]);
     });
     html += "</tbody></table></div></div>";
@@ -155,7 +157,7 @@ function renderPODetails(model) {
     html += tableRow([
       cell(p.PO_Team_Identifier, "font-size:.68rem"),
       p.ProjectID,
-      fmtMoney(p.PO_WO_value),
+      fmtMoney(p.PO_WO_value, currencySymbol(p.PO_Currency_Code)),
       p.PO_Currency_Code,
       p.Normalized_Currency_Code,
       p.WO_StartDate,
