@@ -91,3 +91,23 @@ function renderOverview(model) {
   html += '<div class="box"><h2>Monthly: Forecast vs Actuals</h2><canvas id="c1" height="80"></canvas></div>';
   return html;
 }
+
+// Monthly forecast vs actuals bars (canvas c1)
+function drawOverviewCharts(model) {
+  const months = mergeMonthly(model);
+  addChart("c1", {
+    type: "bar",
+    data: {
+      labels: months.map((m) => m.month),
+      datasets: [
+        { label: "Forecast (£)", data: months.map((m) => m.forecast || null), backgroundColor: "rgba(33,150,243,0.7)" },
+        { label: "Actuals (£)", data: months.map((m) => m.actuals || null), backgroundColor: "rgba(76,175,80,0.7)" },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "top" }, datalabels: kLabels({ skipZero: true }) },
+      scales: { y: { beginAtZero: true, ticks: moneyTicks() } },
+    },
+  });
+}

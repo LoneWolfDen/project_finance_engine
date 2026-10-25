@@ -75,7 +75,7 @@ function render() {
   // Cancel a draw still pending from an earlier render (e.g. at startup, when the server
   // data arrives right after the first render): it would draw stale data onto this canvas
   clearTimeout(drawChartsTimer);
-  drawChartsTimer = setTimeout(() => drawCharts(tab, model), 60);
+  drawChartsTimer = setTimeout(() => drawTabCharts(tab, model), 60);
 }
 
 function setYear(y) {
@@ -151,6 +151,12 @@ function show(id) {
   render();
 }
 
+// Charts for the tab with this id, drawn once its HTML (with the canvases) is on the page.
+// Looked up at call time because the tab files load after this one.
+function drawTabCharts(id, model) {
+  const draw = { overview: drawOverviewCharts, burndown: drawBurndownCharts, monthly: drawVarianceCharts }[id];
+  if (draw) draw(model);
+}
 // HTML for the tab with this id (see TABS)
 function renderTab(id, model) {
   return {

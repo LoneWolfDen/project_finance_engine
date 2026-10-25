@@ -203,3 +203,28 @@ function computeActualsFromCache(cfg, normFilter, projToTeam) {
       };
     });
 }
+
+// Forecast and actuals side by side for each month ("Jul-25"), in date order.
+// A month missing from either side has null values there and hasForecast/hasActuals false.
+function mergeMonthly(model) {
+  const fcMap = {};
+  model.fc.burndown.forEach((m) => (fcMap[m.month] = m));
+  const actMap = {};
+  model.actuals.forEach((m) => (actMap[m.month] = m));
+  const months = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
+    (a, b) => new Date("1 " + a) - new Date("1 " + b),
+  );
+  return months.map((month) => {
+    const fc = fcMap[month],
+      ac = actMap[month];
+    return {
+      month,
+      hasForecast: !!fc,
+      hasActuals: !!ac,
+      forecast: fc ? fc.forecast : null,
+      forecast_burn: fc ? fc.forecast_burn : null,
+      actuals: ac ? ac.actuals : null,
+      actuals_burn: ac ? ac.actuals_burn : null,
+    };
+  });
+}
