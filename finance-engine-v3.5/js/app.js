@@ -127,12 +127,7 @@ function findResourceRule(resources, emplId, poTeam, asOfDate) {
   // Find the rule with latest start date that is <= asOfDate and end >= asOfDate
   let best = null;
   resources.forEach((r) => {
-    if (
-      r.empl_id === emplId &&
-      (r.po_team || "") === (poTeam || "") &&
-      r.start <= asOfDate &&
-      r.end >= asOfDate
-    ) {
+    if (r.empl_id === emplId && (r.po_team || "") === (poTeam || "") && r.start <= asOfDate && r.end >= asOfDate) {
       if (!best || r.start > best.start) best = r;
     }
   });
@@ -204,8 +199,7 @@ function computeForecast(cfg, filterPoTeams) {
     poByTeam[key].pos.push(po);
   });
 
-  const normFilter =
-    filterPoTeams && filterPoTeams.length ? filterPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
+  const normFilter = filterPoTeams && filterPoTeams.length ? filterPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const activeTeams = normFilter || Object.keys(poByTeam);
   const activePOs = activeTeams.map((t) => poByTeam[t]).filter(Boolean);
 
@@ -479,7 +473,9 @@ function render() {
   });
   // Year filter as clickable buttons
   if (D.allYears.length > 0) {
-    navH += `<div class="filter-bar" style="margin-left:auto"><span style="font-size:.7rem;font-weight:600;color:#666">Year:</span><button class="yr-btn ${!selectedYear ? "active" : ""}" onclick="setYear('')">All</button>`;
+    navH += '<div class="filter-bar" style="margin-left:auto">';
+    navH += '<span style="font-size:.7rem;font-weight:600;color:#666">Year:</span>';
+    navH += `<button class="yr-btn ${!selectedYear ? "active" : ""}" onclick="setYear('')">All</button>`;
     D.allYears.forEach((y) => {
       navH += `<button class="yr-btn ${selectedYear == y ? "active" : ""}" onclick="setYear('${y}')">${y}</button>`;
     });
@@ -489,11 +485,21 @@ function render() {
   if (D.allPoTeams.length > 0) {
     const selCount = selectedPoTeams.length;
     const label = selCount === 0 ? "All PO_Teams (" + D.allPoTeams.length + ")" : selCount + " selected";
-    navH += `<div class="slicer-wrap"><button class="slicer-btn" onclick="toggleSlicer()">🔍 ${label} ▾</button><div class="slicer-dd" id="slicerDD"><input type="text" placeholder="Search projects..." oninput="filterSlicer(this.value)"><div class="opts" id="slicerOpts">`;
+    navH += '<div class="slicer-wrap">';
+    navH += `<button class="slicer-btn" onclick="toggleSlicer()">🔍 ${label} ▾</button>`;
+    navH += '<div class="slicer-dd" id="slicerDD">';
+    navH += '<input type="text" placeholder="Search projects..." oninput="filterSlicer(this.value)">';
+    navH += '<div class="opts" id="slicerOpts">';
     D.allPoTeams.forEach((pt) => {
-      navH += `<label><input type="checkbox" value="${pt}" ${selectedPoTeams.includes(pt) ? "checked" : ""} onchange="togglePoTeam('${pt}',this.checked)"> ${pt}</label>`;
+      const checked = selectedPoTeams.includes(pt) ? "checked" : "";
+      navH += `<label><input type="checkbox" value="${pt}" ${checked} onchange="togglePoTeam('${pt}',this.checked)"> ${pt}</label>`;
     });
-    navH += `</div><div class="actions"><button onclick="selectAllPO()">All</button><button onclick="selectNonePO()">None</button><button onclick="toggleSlicer()">Close</button></div></div></div>`;
+    navH += "</div>";
+    navH += '<div class="actions">';
+    navH += '<button onclick="selectAllPO()">All</button>';
+    navH += '<button onclick="selectNonePO()">None</button>';
+    navH += '<button onclick="toggleSlicer()">Close</button>';
+    navH += "</div></div></div>";
   }
   if (D.allYears.length > 0) navH += `</div>`;
   navH +=
@@ -585,6 +591,81 @@ function rTab(id, D) {
 function f(n, c = "£") {
   return n != null ? c + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 }) : "—";
 }
+
+// ─── HTML HELPERS ───────────────────────────────────────────────────────────
+// Builders for markup repeated across tabs. Each returns exactly the HTML that
+// was previously written out by hand, so the rendered page is unchanged.
+
+// <thead> row. A label ending in "⇅" becomes a sortable column (see the
+// th[data-sort] click handler above); data-sort is the column index.
+function tableHead(labels) {
+  const cells = labels.map((label, i) =>
+    label.endsWith("⇅") ? `<th data-sort="${i}" style="cursor:pointer">${label}</th>` : `<th>${label}</th>`,
+  );
+  return `<thead><tr>${cells.join("")}</tr></thead>`;
+}
+// A <td> with an inline style, for use inside tableRow().
+function cell(html, style) {
+  return { html, style };
+}
+// <tr> of plain values and/or cell() objects.
+function tableRow(cells) {
+  const tds = cells.map((c) =>
+    c != null && typeof c === "object" ? `<td style="${c.style}">${c.html}</td>` : `<td>${c}</td>`,
+  );
+  return `<tr>${tds.join("")}</tr>`;
+}
+// Clickable header row of a collapsible group inside a table.
+function groupHeaderRow(colspan, label) {
+  return `<tr class="grp-hdr" onclick="toggleGrp(this)"><td colspan="${colspan}">${label}</td></tr>`;
+}
+// Summary card: <div class="card {cls}"><h3>title</h3><div class="v">value</div></div>
+function statCard(cls, title, value, valueStyle = "") {
+  const cardCls = cls ? "card " + cls : "card";
+  const vStyle = valueStyle ? ` style="${valueStyle}"` : "";
+  return `<div class="${cardCls}"><h3>${title}</h3><div class="v"${vStyle}>${value}</div></div>`;
+}
+// "Expand All" / "Collapse All" buttons for the grouped section with this id.
+function expandCollapseButtons(containerId) {
+  const btn = (cls, expand, label) =>
+    `<button class="btn ${cls}" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps('${containerId}',${expand})">${label}</button>`;
+  return btn("btn-blue", true, "Expand All") + " " + btn("btn-orange", false, "Collapse All");
+}
+// Header that shows/hides the element right after it.
+function collapsibleHeader(label) {
+  return `<div class="collapsible-hdr" onclick="this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')">${label}</div>`;
+}
+// Month labels above a Gantt-style timeline; each label sits at its % offset
+// within the start→end span. labelWidth matches the row-name column width.
+function monthAxis(start, end, span, labelWidth, height) {
+  let h = `<div style="margin-left:${labelWidth}px;position:relative;height:${height}px;font-size:.6rem;color:#888;margin-bottom:4px">`;
+  let md = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (md <= end) {
+    const l = ((md - start) / span) * 100;
+    if (l >= 0 && l <= 100)
+      h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
+    md = new Date(md.getFullYear(), md.getMonth() + 1, 1);
+  }
+  return h + "</div>";
+}
+// Columns of the "Actuals Date Range by Project" table (Utilization and Data tabs).
+const DATE_RANGE_COLS = [
+  "Project ID ⇅",
+  "PO_Team",
+  "Start Date ⇅",
+  "End Date ⇅",
+  "# Rows ⇅",
+  "Duration (days) ⇅",
+  "Avg Rows/Week",
+];
+// Red when over forecast, green when under, unstyled when unknown.
+function varianceStyle(v) {
+  return v != null ? (v > 0 ? "color:#c62828" : "color:#2e7d32") : "";
+}
+// Red above 90%, orange above 70%, otherwise green.
+function pctColor(pct) {
+  return pct > 90 ? "#c62828" : pct > 70 ? "#e65100" : "#2e7d32";
+}
 function toast(msg, ok = true) {
   const d = document.createElement("div");
   d.className = "toast " + (ok ? "ok" : "err");
@@ -634,18 +715,19 @@ function rOV(D) {
     h +=
       '<a href="#" onclick="show(\'upload\');return false" style="color:#1565c0;font-weight:600">Go to Upload →</a></div>';
   }
+  const statusBadge = `<span class="badge ${risk === "Low" ? "badge-low" : "badge-over"}">${D.fc.status} · ${risk}</span>`;
   h += '<div class="cards">';
-  h += `<div class="card b"><h3>PO Value (${D.fc.currency})</h3><div class="v">${f(D.fc.totalPOValue)}</div></div>`;
-  h += `<div class="card p"><h3>PO Value (${D.fc.normCurrency})</h3><div class="v">${f(D.fc.normPO, "$")}</div></div>`;
-  h += `<div class="card g"><h3>Total Actuals</h3><div class="v">${f(D.tAct)}</div></div>`;
-  h += `<div class="card o"><h3>Remaining Budget</h3><div class="v">${f(D.rem)}</div></div>`;
-  h += `<div class="card r"><h3>Burn Rate/Day</h3><div class="v">${f(D.fc.rate)}</div></div>`;
-  h += `<div class="card b"><h3>Total Forecast</h3><div class="v">${f(D.fc.total)}</div></div>`;
-  h += `<div class="card g"><h3>Expenses</h3><div class="v">${f(D.tExp)}</div></div>`;
-  h += `<div class="card"><h3>Budget Used</h3><div class="v" style="color:${pctUsed > 90 ? "#c62828" : pctUsed > 70 ? "#e65100" : "#2e7d32"}">${pctUsed}%</div></div>`;
-  h += `<div class="card"><h3>Forecast Accuracy</h3><div class="v">${fcVsAct}%</div></div>`;
-  h += `<div class="card"><h3>Days Remaining</h3><div class="v">${daysRem > 0 ? daysRem + " days" : "—"}</div></div>`;
-  h += `<div class="card"><h3>Status</h3><div class="v"><span class="badge ${risk === "Low" ? "badge-low" : "badge-over"}">${D.fc.status} · ${risk}</span></div></div>`;
+  h += statCard("b", `PO Value (${D.fc.currency})`, f(D.fc.totalPOValue));
+  h += statCard("p", `PO Value (${D.fc.normCurrency})`, f(D.fc.normPO, "$"));
+  h += statCard("g", "Total Actuals", f(D.tAct));
+  h += statCard("o", "Remaining Budget", f(D.rem));
+  h += statCard("r", "Burn Rate/Day", f(D.fc.rate));
+  h += statCard("b", "Total Forecast", f(D.fc.total));
+  h += statCard("g", "Expenses", f(D.tExp));
+  h += statCard("", "Budget Used", pctUsed + "%", "color:" + pctColor(pctUsed));
+  h += statCard("", "Forecast Accuracy", fcVsAct + "%");
+  h += statCard("", "Days Remaining", daysRem > 0 ? daysRem + " days" : "—");
+  h += statCard("", "Status", statusBadge);
   h += "</div>";
   // PO_Team status cards
   const poArr = D.cfg.po_details || [];
@@ -679,15 +761,28 @@ function rOV(D) {
       d = new Date(d.getTime() + 86400000);
     }
   });
-  h +=
-    '<div class="box"><h2>PO_Team Budget Status</h2><p style="font-size:.72rem;color:#666;margin-bottom:.8rem"><strong>Fc</strong> = Forecast utilization % of PO value. Calculated as: <code>Total Forecast Cost ÷ PO Value × 100</code>. Forecast = sum of (BillRate × Allocation × 8hrs × working days) for each resource, bounded by PO validity end date. <span style="color:#2e7d32">🟢 &lt;85%</span> On Track · <span style="color:#e65100">🟠 85-100%</span> At Risk · <span style="color:#c62828">🔴 &gt;100%</span> Over Budget</p><div class="cards">';
+  h += '<div class="box"><h2>PO_Team Budget Status</h2>';
+  h += '<p style="font-size:.72rem;color:#666;margin-bottom:.8rem">';
+  h += "<strong>Fc</strong> = Forecast utilization % of PO value. ";
+  h += "Calculated as: <code>Total Forecast Cost ÷ PO Value × 100</code>. ";
+  h += "Forecast = sum of (BillRate × Allocation × 8hrs × working days) for each resource, ";
+  h += "bounded by PO validity end date. ";
+  h += '<span style="color:#2e7d32">🟢 &lt;85%</span> On Track · ';
+  h += '<span style="color:#e65100">🟠 85-100%</span> At Risk · ';
+  h += '<span style="color:#c62828">🔴 &gt;100%</span> Over Budget</p>';
+  h += '<div class="cards">';
   Object.entries(teamBudgets).forEach(([team, data]) => {
     const teamFc = fcPerTeam[team] || 0;
     const overBudget = teamFc > data.po;
     const pct = data.po ? Math.round((teamFc / data.po) * 100) : 0;
     const color = overBudget ? "r" : pct > 85 ? "o" : "g";
     const statusMsg = overBudget ? `${data.status} · Over Budget` : `${data.status} · On Track`;
-    h += `<div class="card ${color}"><h3 style="font-size:.68rem">${team}</h3><div class="v" style="font-size:1rem">${f(data.po)}</div><div style="font-size:.7rem;margin-top:3px"><span class="badge ${overBudget ? "badge-over" : "badge-low"}">${statusMsg}</span> · Fc: ${pct}% (${f(teamFc)})</div></div>`;
+    h += `<div class="card ${color}">`;
+    h += `<h3 style="font-size:.68rem">${team}</h3>`;
+    h += `<div class="v" style="font-size:1rem">${f(data.po)}</div>`;
+    h += `<div style="font-size:.7rem;margin-top:3px">`;
+    h += `<span class="badge ${overBudget ? "badge-over" : "badge-low"}">${statusMsg}</span> · Fc: ${pct}% (${f(teamFc)})`;
+    h += `</div></div>`;
   });
   h += "</div></div>";
   h += '<div class="box"><h2>Monthly: Forecast vs Actuals</h2><canvas id="c1" height="80"></canvas></div>';
@@ -707,23 +802,26 @@ function rBD(D) {
     (a, b) => new Date("1 " + a) - new Date("1 " + b),
   );
 
-  let h =
-    '<div class="box"><h2>PO Burndown (Local: ' +
-    D.fc.currency +
-    ')</h2><p style="font-size:.75rem;color:#666;margin-bottom:.8rem">Green=Actuals Burn, Blue=Forecast Burn, Red dashed=Cumulative PO Value available</p><canvas id="c2" height="100"></canvas></div>';
-  h +=
-    '<div class="box"><h2>Normalized Burndown (' +
-    D.fc.normCurrency +
-    ')</h2><canvas id="c2norm" height="80"></canvas></div>';
+  const detailCols = ["Month", "Forecast Spend", "Actuals Spend", "Forecast Burn", "Actuals Burn", "Variance"];
+  let h = `<div class="box"><h2>PO Burndown (Local: ${D.fc.currency})</h2>`;
+  h += '<p style="font-size:.75rem;color:#666;margin-bottom:.8rem">';
+  h += "Green=Actuals Burn, Blue=Forecast Burn, Red dashed=Cumulative PO Value available</p>";
+  h += '<canvas id="c2" height="100"></canvas></div>';
+  h += `<div class="box"><h2>Normalized Burndown (${D.fc.normCurrency})</h2><canvas id="c2norm" height="80"></canvas></div>`;
   // Table
-  h +=
-    '<div class="box"><h2>Monthly Detail</h2><div class="tw"><table><thead><tr><th>Month</th><th>Forecast Spend</th><th>Actuals Spend</th><th>Forecast Burn</th><th>Actuals Burn</th><th>Variance</th></tr></thead><tbody>';
+  h += `<div class="box"><h2>Monthly Detail</h2><div class="tw"><table>${tableHead(detailCols)}<tbody>`;
   allMonths.forEach((m) => {
     const fc = fcMap[m] || {},
       ac = actMap[m] || {};
-    const v =
-      ac.actuals != null && fc.forecast != null ? Math.round((ac.actuals - fc.forecast) * 100) / 100 : null;
-    h += `<tr><td><strong>${m}</strong></td><td>${f(fc.forecast)}</td><td>${f(ac.actuals)}</td><td>${f(fc.forecast_burn)}</td><td>${f(ac.actuals_burn)}</td><td style="${v != null ? (v > 0 ? "color:#c62828" : "color:#2e7d32") : ""}">${f(v)}</td></tr>`;
+    const v = ac.actuals != null && fc.forecast != null ? Math.round((ac.actuals - fc.forecast) * 100) / 100 : null;
+    h += tableRow([
+      `<strong>${m}</strong>`,
+      f(fc.forecast),
+      f(ac.actuals),
+      f(fc.forecast_burn),
+      f(ac.actuals_burn),
+      cell(f(v), varianceStyle(v)),
+    ]);
   });
   h += "</tbody></table></div></div>";
   // Normalized Monthly Detail table
@@ -731,12 +829,20 @@ function rBD(D) {
   const fxFn = fxRateAsOf(D.cfg.fx_rates, D.fc.currency || "GBP", today3);
   const fxTn = fxRateAsOf(D.cfg.fx_rates, D.fc.normCurrency || "USD", today3);
   const nx = (v) => (v != null ? Math.round((v / fxFn) * fxTn * 100) / 100 : null);
-  h += `<div class="box"><h2>Normalized Monthly Detail (${D.fc.normCurrency})</h2><div class="tw"><table><thead><tr><th>Month</th><th>Forecast Spend</th><th>Actuals Spend</th><th>Forecast Burn</th><th>Actuals Burn</th><th>Variance</th></tr></thead><tbody>`;
+  h += `<div class="box"><h2>Normalized Monthly Detail (${D.fc.normCurrency})</h2>`;
+  h += `<div class="tw"><table>${tableHead(detailCols)}<tbody>`;
   allMonths.forEach((m) => {
     const fc = fcMap[m] || {},
       ac = actMap[m] || {};
     const v = ac.actuals != null && fc.forecast != null ? nx(ac.actuals - fc.forecast) : null;
-    h += `<tr><td><strong>${m}</strong></td><td>${f(nx(fc.forecast), "$")}</td><td>${f(nx(ac.actuals), "$")}</td><td>${f(nx(fc.forecast_burn), "$")}</td><td>${f(nx(ac.actuals_burn), "$")}</td><td style="${v != null ? (v > 0 ? "color:#c62828" : "color:#2e7d32") : ""}">${f(v, "$")}</td></tr>`;
+    h += tableRow([
+      `<strong>${m}</strong>`,
+      f(nx(fc.forecast), "$"),
+      f(nx(ac.actuals), "$"),
+      f(nx(fc.forecast_burn), "$"),
+      f(nx(ac.actuals_burn), "$"),
+      cell(f(v, "$"), varianceStyle(v)),
+    ]);
   });
   h += "</tbody></table></div></div>";
   return h;
@@ -762,11 +868,18 @@ function rMo(D) {
     forecast_burn: fcMap[m] ? fcMap[m].forecast_burn : null,
   }));
   let h = '<div class="box"><h2>Variance: Actuals − Forecast</h2><canvas id="c3" height="70"></canvas></div>';
-  h +=
-    '<div class="tw"><table><thead><tr><th>Month</th><th>Forecast</th><th>Actuals</th><th>Variance</th><th>Actuals Burn</th><th>Forecast Burn</th></tr></thead><tbody>';
+  const cols = ["Month", "Forecast", "Actuals", "Variance", "Actuals Burn", "Forecast Burn"];
+  h += `<div class="tw"><table>${tableHead(cols)}<tbody>`;
   merged.forEach((m) => {
     const v = m.actuals != null && m.forecast != null ? Math.round((m.actuals - m.forecast) * 100) / 100 : null;
-    h += `<tr><td><strong>${m.month}</strong></td><td>${f(m.forecast)}</td><td>${f(m.actuals)}</td><td style="${v != null ? (v > 0 ? "color:#c62828" : "color:#2e7d32") : ""}">${f(v)}</td><td>${f(m.actuals_burn)}</td><td>${f(m.forecast_burn)}</td></tr>`;
+    h += tableRow([
+      `<strong>${m.month}</strong>`,
+      f(m.forecast),
+      f(m.actuals),
+      cell(f(v), varianceStyle(v)),
+      f(m.actuals_burn),
+      f(m.forecast_burn),
+    ]);
   });
   h += "</tbody></table></div>";
   return h;
@@ -775,9 +888,7 @@ function rMo(D) {
 // ─── INVOICES TAB ───────────────────────────────────────────────────────────
 function rInv(D) {
   // Filter invoices by year-valid PO_Teams AND PO_Team slicer
-  const validTeamsInv = new Set(
-    (D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")),
-  );
+  const validTeamsInv = new Set((D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const fullCfgInv = loadWork();
   const invs = (fullCfgInv.invoices || []).filter((i) => {
@@ -791,13 +902,14 @@ function rInv(D) {
   const totalInv = invs.reduce((s, i) => s + i.amount, 0);
   const totalPaid = paid.reduce((s, i) => s + i.amount, 0);
 
+  const sumAmount = (list) => list.reduce((s, i) => s + i.amount, 0);
   let h = '<div class="cards">';
-  h += `<div class="card b"><h3>Total Invoices</h3><div class="v">${invs.length}</div></div>`;
-  h += `<div class="card g"><h3>Total Invoiced</h3><div class="v">${f(totalInv)}</div></div>`;
+  h += statCard("b", "Total Invoices", invs.length);
+  h += statCard("g", "Total Invoiced", f(totalInv));
   h += `<div class="card" style="border-left-color:#4caf50"><h3>Paid</h3><div class="v">${f(totalPaid)} (${paid.length})</div></div>`;
-  h += `<div class="card o"><h3>Submitted</h3><div class="v">${f(submitted.reduce((s, i) => s + i.amount, 0))} (${submitted.length})</div></div>`;
-  h += `<div class="card r"><h3>Draft</h3><div class="v">${f(draft.reduce((s, i) => s + i.amount, 0))} (${draft.length})</div></div>`;
-  h += `<div class="card p"><h3>PO Remaining (uninvoiced)</h3><div class="v">${f(D.fc.totalPOValue - totalInv)}</div></div>`;
+  h += statCard("o", "Submitted", `${f(sumAmount(submitted))} (${submitted.length})`);
+  h += statCard("r", "Draft", `${f(sumAmount(draft))} (${draft.length})`);
+  h += statCard("p", "PO Remaining (uninvoiced)", f(D.fc.totalPOValue - totalInv));
   h += "</div>";
 
   // Invoice timeline by PO_Team
@@ -808,18 +920,9 @@ function rInv(D) {
       tEnd = new Date(Math.max(...allEnds));
     const span = tEnd - tStart || 1;
     const statusColor = { Paid: "#4caf50", Submitted: "#ff9800", Draft: "#9e9e9e" };
-    h +=
-      '<div class="box" id="invTimeline"><h2>Invoice Timeline <button class="btn btn-blue" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'invTimeline\',true)">Expand All</button> <button class="btn btn-orange" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'invTimeline\',false)">Collapse All</button></h2><div class="tl-scroll"><div class="tl-inner">';
-    h +=
-      '<div style="margin-left:160px;position:relative;height:16px;font-size:.6rem;color:#888;margin-bottom:4px">';
-    let md = new Date(tStart.getFullYear(), tStart.getMonth(), 1);
-    while (md <= tEnd) {
-      const l = ((md - tStart) / span) * 100;
-      if (l >= 0 && l <= 100)
-        h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
-      md = new Date(md.getFullYear(), md.getMonth() + 1, 1);
-    }
-    h += "</div>";
+    h += `<div class="box" id="invTimeline"><h2>Invoice Timeline ${expandCollapseButtons("invTimeline")}</h2>`;
+    h += '<div class="tl-scroll"><div class="tl-inner">';
+    h += monthAxis(tStart, tEnd, span, 160, 16);
     // Group by po_team
     const groups = {};
     invs.forEach((i) => {
@@ -834,7 +937,11 @@ function rInv(D) {
           re = new Date(i.period_to);
         const left = Math.max(0, ((rs - tStart) / span) * 100).toFixed(1);
         const width = Math.max(2, ((re - rs) / span) * 100).toFixed(1);
-        h += `<div class="tl-row"><span class="nm" style="min-width:160px;font-size:.65rem">${i.invoice_number}</span><div class="ba"><div class="br" style="left:${left}%;width:${width}%;background:${statusColor[i.status] || "#666"}">${f(i.amount)} · ${i.status}</div></div></div>`;
+        const barStyle = `left:${left}%;width:${width}%;background:${statusColor[i.status] || "#666"}`;
+        h += '<div class="tl-row">';
+        h += `<span class="nm" style="min-width:160px;font-size:.65rem">${i.invoice_number}</span>`;
+        h += `<div class="ba"><div class="br" style="${barStyle}">${f(i.amount)} · ${i.status}</div></div>`;
+        h += "</div>";
       });
       h += "</div>";
     });
@@ -843,8 +950,9 @@ function rInv(D) {
   }
 
   // Table with collapsible PO_Team groups
-  h +=
-    '<div class="box" id="invTable"><h2>Invoice Details <button class="btn btn-blue" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'invTable\',true)">Expand All</button> <button class="btn btn-orange" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'invTable\',false)">Collapse All</button></h2><div class="tw"><table id="tblInv"><thead><tr><th>PO_Team</th><th>Invoice #</th><th>From</th><th>To</th><th>Amount</th><th>Status</th><th>Paid Date</th><th>Notes</th></tr></thead><tbody>';
+  const invCols = ["PO_Team", "Invoice #", "From", "To", "Amount", "Status", "Paid Date", "Notes"];
+  h += `<div class="box" id="invTable"><h2>Invoice Details ${expandCollapseButtons("invTable")}</h2>`;
+  h += `<div class="tw"><table id="tblInv">${tableHead(invCols)}<tbody>`;
   const invGroups = {};
   invs.forEach((i) => {
     const t = i.po_team || "Unknown";
@@ -852,12 +960,20 @@ function rInv(D) {
     invGroups[t].push(i);
   });
   Object.entries(invGroups).forEach(([team, items]) => {
-    h += `<tr class="grp-hdr" onclick="toggleGrp(this)"><td colspan="8">${team} (${items.length} invoices, ${f(items.reduce((s, i) => s + i.amount, 0))})</td></tr>`;
+    h += groupHeaderRow(8, `${team} (${items.length} invoices, ${f(sumAmount(items))})`);
     h += `<tr class="grp-rows"><td colspan="8" style="padding:0"><table style="width:100%;margin:0;box-shadow:none"><tbody>`;
     items.forEach((i) => {
-      const sc =
-        i.status === "Paid" ? "color:#2e7d32" : i.status === "Submitted" ? "color:#e65100" : "color:#666";
-      h += `<tr><td style="font-size:.65rem">${i.po_team}</td><td>${i.invoice_number}</td><td>${i.period_from}</td><td>${i.period_to}</td><td>${f(i.amount)}</td><td style="${sc};font-weight:600">${i.status}</td><td>${i.paid_date || "—"}</td><td>${i.notes || ""}</td></tr>`;
+      const sc = i.status === "Paid" ? "color:#2e7d32" : i.status === "Submitted" ? "color:#e65100" : "color:#666";
+      h += tableRow([
+        cell(i.po_team, "font-size:.65rem"),
+        i.invoice_number,
+        i.period_from,
+        i.period_to,
+        f(i.amount),
+        cell(i.status, sc + ";font-weight:600"),
+        i.paid_date || "—",
+        i.notes || "",
+      ]);
     });
     h += `</tbody></table></td></tr>`;
   });
@@ -866,6 +982,50 @@ function rInv(D) {
 }
 
 // ─── EDITABLE RESOURCES TABLE ───────────────────────────────────────────────
+// Editable columns, in table order; saveResTable() reads them back by data-field.
+const RES_FIELDS = [
+  "name",
+  "empl_id",
+  "role",
+  "location",
+  "projectID",
+  "start",
+  "end",
+  "bill_rate",
+  "hour_mult",
+  "alloc",
+];
+const RES_TABLE_COLS = [
+  "Name ⇅",
+  "EmplID ⇅",
+  "Role ⇅",
+  "Location",
+  "ProjectID",
+  "Start ⇅",
+  "End ⇅",
+  "Rate ⇅",
+  "HrMult",
+  "Alloc ⇅",
+  "Fc £/day",
+  "Del",
+];
+const NEW_RES_ROW = {
+  name: "New_Resource",
+  empl_id: 0,
+  role: "Role",
+  location: "UK",
+  projectID: "",
+  start: "2025-07-01",
+  end: "2025-12-31",
+  bill_rate: 100,
+  hour_mult: 8,
+  alloc: 1,
+};
+const RES_DELETE_BTN =
+  '<button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button>';
+function editableResCells(values) {
+  return RES_FIELDS.map((k) => `<td contenteditable="true" data-field="${k}">${values[k]}</td>`).join("");
+}
 function rRes(D) {
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const allRes = normFilter
@@ -880,10 +1040,10 @@ function rRes(D) {
     return true;
   });
   let h = '<div class="cards">';
-  h += `<div class="card b"><h3>People</h3><div class="v">${[...new Set(res.map((r) => r.name))].length}</div></div>`;
-  h += `<div class="card g"><h3>Rules</h3><div class="v">${res.length}</div></div>`;
-  h += `<div class="card o"><h3>Forecast Days</h3><div class="v">${D.fc.days}</div></div>`;
-  h += `<div class="card r"><h3>Total Forecast</h3><div class="v">${f(D.fc.total)}</div></div>`;
+  h += statCard("b", "People", [...new Set(res.map((r) => r.name))].length);
+  h += statCard("g", "Rules", res.length);
+  h += statCard("o", "Forecast Days", D.fc.days);
+  h += statCard("r", "Total Forecast", f(D.fc.total));
   h += "</div>";
   h += '<div style="margin-bottom:.5rem;display:flex;gap:.5rem;align-items:center">';
   h += '<button class="btn btn-blue" onclick="saveResTable()">💾 Save All (recalculates forecast)</button>';
@@ -899,16 +1059,24 @@ function rRes(D) {
   });
   Object.entries(resGroups).forEach(([team, members]) => {
     const tid = team.replace(/[^a-zA-Z0-9]/g, "_");
-    h += `<div class="box" style="margin-bottom:.8rem"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem"><h2 style="font-size:.85rem;margin:0">${team} <span style="font-size:.7rem;color:#888">(${members.length} rules, ${[...new Set(members.map((r) => r.name))].length} people)</span></h2><div><button class="btn btn-green" style="font-size:.65rem" onclick="addResRowTo('${tid}','${team}')">➕ Add</button> <button class="btn btn-blue" style="font-size:.65rem" onclick="saveResTable()">💾 Save</button></div></div>`;
-    h += `<div class="tw"><table class="resGrpTable" id="res_${tid}"><thead><tr><th data-sort="0" style="cursor:pointer">Name ⇅</th><th data-sort="1" style="cursor:pointer">EmplID ⇅</th><th data-sort="2" style="cursor:pointer">Role ⇅</th><th>Location</th><th>ProjectID</th><th data-sort="5" style="cursor:pointer">Start ⇅</th><th data-sort="6" style="cursor:pointer">End ⇅</th><th data-sort="7" style="cursor:pointer">Rate ⇅</th><th>HrMult</th><th data-sort="9" style="cursor:pointer">Alloc ⇅</th><th>Fc £/day</th><th>Del</th></tr></thead><tbody>`;
-    members.forEach((r, i) => {
+    const people = [...new Set(members.map((r) => r.name))].length;
+    h += '<div class="box" style="margin-bottom:.8rem">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">';
+    h += `<h2 style="font-size:.85rem;margin:0">${team} <span style="font-size:.7rem;color:#888">(${members.length} rules, ${people} people)</span></h2>`;
+    h += `<div><button class="btn btn-green" style="font-size:.65rem" onclick="addResRowTo('${tid}','${team}')">➕ Add</button> `;
+    h += `<button class="btn btn-blue" style="font-size:.65rem" onclick="saveResTable()">💾 Save</button></div>`;
+    h += "</div>";
+    h += `<div class="tw"><table class="resGrpTable" id="res_${tid}">${tableHead(RES_TABLE_COLS)}<tbody>`;
+    members.forEach((r) => {
       const dc = r.bill_rate * r.alloc * 8;
-      h += `<tr><td contenteditable="true" data-field="name">${r.name}</td><td contenteditable="true" data-field="empl_id">${r.empl_id || 0}</td><td contenteditable="true" data-field="role">${r.role}</td><td contenteditable="true" data-field="location">${r.location}</td><td contenteditable="true" data-field="projectID">${r.projectID || ""}</td><td contenteditable="true" data-field="start">${r.start}</td><td contenteditable="true" data-field="end">${r.end}</td><td contenteditable="true" data-field="bill_rate">${r.bill_rate}</td><td contenteditable="true" data-field="hour_mult">${r.hour_mult}</td><td contenteditable="true" data-field="alloc">${r.alloc}</td><td style="font-weight:600">${f(dc)}</td><td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td></tr>`;
+      const values = { ...r, empl_id: r.empl_id || 0, projectID: r.projectID || "" };
+      h += `<tr>${editableResCells(values)}<td style="font-weight:600">${f(dc)}</td><td>${RES_DELETE_BTN}</td></tr>`;
     });
     h += `</tbody></table></div></div>`;
   });
-  h +=
-    '<details class="cfg-section" style="margin-top:1rem"><summary style="padding:.8rem 1rem;background:#e8eaf6;font-weight:700">📅 Resource Timeline (Gantt)</summary><div class="inner" id="ganttContainer">';
+  h += '<details class="cfg-section" style="margin-top:1rem">';
+  h += '<summary style="padding:.8rem 1rem;background:#e8eaf6;font-weight:700">📅 Resource Timeline (Gantt)</summary>';
+  h += '<div class="inner" id="ganttContainer">';
   h += rTLInline(D);
   h += "</div></details>";
   return h;
@@ -918,7 +1086,7 @@ function addResRowTo(tid, team) {
   if (!tbody) return;
   const tr = document.createElement("tr");
   tr.className = "row-new";
-  tr.innerHTML = `<td contenteditable="true" data-field="name">New_Resource</td><td contenteditable="true" data-field="empl_id">0</td><td contenteditable="true" data-field="role">Role</td><td contenteditable="true" data-field="location">UK</td><td contenteditable="true" data-field="projectID"></td><td contenteditable="true" data-field="start">2025-07-01</td><td contenteditable="true" data-field="end">2025-12-31</td><td contenteditable="true" data-field="bill_rate">100</td><td contenteditable="true" data-field="hour_mult">8</td><td contenteditable="true" data-field="alloc">1</td><td>—</td><td><button onclick="delResRow(this)" style="background:none;border:none;cursor:pointer;font-size:1rem">🗑️</button></td>`;
+  tr.innerHTML = editableResCells(NEW_RES_ROW) + `<td>—</td><td>${RES_DELETE_BTN}</td>`;
   // Set po_team as hidden data attribute
   tr.dataset.poTeam = team;
   tbody.appendChild(tr);
@@ -980,8 +1148,7 @@ function rUtil(D) {
   const byPerson = {};
   resources.forEach((r) => {
     const key = r.empl_id + "|" + r.name;
-    if (!byPerson[key])
-      byPerson[key] = { name: r.name, empl_id: r.empl_id, rules: [], totalAvail: 0, totalActual: 0 };
+    if (!byPerson[key]) byPerson[key] = { name: r.name, empl_id: r.empl_id, rules: [], totalAvail: 0, totalActual: 0 };
     byPerson[key].rules.push(r);
   });
   Object.values(byPerson).forEach((p) => {
@@ -1034,24 +1201,22 @@ function rUtil(D) {
   }
   const people = Object.values(byPerson);
   const overUtil = people.filter((p) => p.totalAvail > 0 && p.totalActual > p.totalAvail);
-  const underUtil = people.filter(
-    (p) => p.totalAvail > 0 && p.totalActual > 0 && p.totalActual < p.totalAvail * 0.7,
-  );
+  const underUtil = people.filter((p) => p.totalAvail > 0 && p.totalActual > 0 && p.totalActual < p.totalAvail * 0.7);
   const noData = people.filter((p) => p.totalActual === 0);
+  const totalHrs = (key) => Math.round(people.reduce((s, p) => s + p[key], 0)).toLocaleString();
   let h = '<div class="cards">';
-  h += `<div class="card b"><h3>People</h3><div class="v">${people.length}</div></div>`;
-  h += `<div class="card g"><h3>Total Available Hrs</h3><div class="v">${Math.round(people.reduce((s, p) => s + p.totalAvail, 0)).toLocaleString()}</div></div>`;
-  h += `<div class="card o"><h3>Total Actual Hrs</h3><div class="v">${Math.round(people.reduce((s, p) => s + p.totalActual, 0)).toLocaleString()}</div></div>`;
-  h += `<div class="card r"><h3>Over-utilized</h3><div class="v">${overUtil.length}</div></div>`;
+  h += statCard("b", "People", people.length);
+  h += statCard("g", "Total Available Hrs", totalHrs("totalAvail"));
+  h += statCard("o", "Total Actual Hrs", totalHrs("totalActual"));
+  h += statCard("r", "Over-utilized", overUtil.length);
   h += `<div class="card" style="border-left-color:#ff9800"><h3>Under-utilized (&lt;70%)</h3><div class="v">${underUtil.length}</div></div>`;
-  h += `<div class="card"><h3>No Actuals Data</h3><div class="v">${noData.length}</div></div>`;
+  h += statCard("", "No Actuals Data", noData.length);
   h += "</div>";
 
   // ── PROJECT TIMELINE VIEW (resources grouped by project) ──
-  h +=
-    '<div class="box" id="projTimeline"><h2>📅 Project Resource Timeline <button class="btn btn-blue" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'projTimeline\',true)">Expand All</button> <button class="btn btn-orange" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'projTimeline\',false)">Collapse All</button></h2>';
-  h +=
-    '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">Resources allocated per project within the PO_Team. Bar width = allocation period, opacity = allocation %.</p>';
+  h += `<div class="box" id="projTimeline"><h2>📅 Project Resource Timeline ${expandCollapseButtons("projTimeline")}</h2>`;
+  h += '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">';
+  h += "Resources allocated per project within the PO_Team. Bar width = allocation period, opacity = allocation %.</p>";
   // Group resources by projectID
   const byProject = {};
   resources.forEach((r) => {
@@ -1064,28 +1229,9 @@ function rUtil(D) {
   const tlStart = allStarts.length ? new Date(Math.min(...allStarts)) : new Date("2025-01-01");
   const tlEnd = allEnds.length ? new Date(Math.max(...allEnds)) : new Date("2026-12-31");
   const tlSpan = tlEnd - tlStart || 1;
-  const colors = [
-    "#5c6bc0",
-    "#26a69a",
-    "#e65100",
-    "#8e24aa",
-    "#2e7d32",
-    "#c62828",
-    "#1565c0",
-    "#4e342e",
-    "#00838f",
-  ];
+  const colors = ["#5c6bc0", "#26a69a", "#e65100", "#8e24aa", "#2e7d32", "#c62828", "#1565c0", "#4e342e", "#00838f"];
   h += '<div class="tl-scroll"><div class="tl-inner">';
-  h +=
-    '<div style="margin-left:140px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
-  let md = new Date(tlStart.getFullYear(), tlStart.getMonth(), 1);
-  while (md <= tlEnd) {
-    const l = ((md - tlStart) / tlSpan) * 100;
-    if (l >= 0 && l <= 100)
-      h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
-    md = new Date(md.getFullYear(), md.getMonth() + 1, 1);
-  }
-  h += "</div>";
+  h += monthAxis(tlStart, tlEnd, tlSpan, 140, 18);
   let pi = 0;
   Object.entries(byProject).forEach(([pid, members]) => {
     const team = members[0] ? members[0].po_team || "" : "";
@@ -1105,7 +1251,9 @@ function rUtil(D) {
         if (isNaN(rs) || isNaN(re) || rs > re) return;
         const left = Math.max(0, ((rs - tlStart) / tlSpan) * 100).toFixed(1);
         const width = Math.max(1, ((re - rs) / tlSpan) * 100).toFixed(1);
-        h += `<div class="br" style="left:${left}%;width:${width}%;background:${colors[pi % colors.length]};opacity:${0.6 + r.alloc * 0.4}" title="${r.role} · ${r.alloc * 100}% · £${r.bill_rate}/hr">${r.alloc * 100}% ${r.role || ""}</div>`;
+        const barStyle = `left:${left}%;width:${width}%;background:${colors[pi % colors.length]};opacity:${0.6 + r.alloc * 0.4}`;
+        const tooltip = `${r.role} · ${r.alloc * 100}% · £${r.bill_rate}/hr`;
+        h += `<div class="br" style="${barStyle}" title="${tooltip}">${r.alloc * 100}% ${r.role || ""}</div>`;
       });
       h += `</div></div>`;
       pi++;
@@ -1116,8 +1264,17 @@ function rUtil(D) {
   h += "</div></div></div>";
 
   // ── UTILIZATION TABLE ──
-  h +=
-    '<div class="tw"><table><thead><tr><th data-sort="0" style="cursor:pointer">Name ⇅</th><th data-sort="1" style="cursor:pointer">EmplID ⇅</th><th>PO_Team</th><th data-sort="3" style="cursor:pointer">Available Hrs ⇅</th><th data-sort="4" style="cursor:pointer">Actual Hrs ⇅</th><th data-sort="5" style="cursor:pointer">Utilization % ⇅</th><th>Status</th><th>Actuals Period</th></tr></thead><tbody>';
+  const utilCols = [
+    "Name ⇅",
+    "EmplID ⇅",
+    "PO_Team",
+    "Available Hrs ⇅",
+    "Actual Hrs ⇅",
+    "Utilization % ⇅",
+    "Status",
+    "Actuals Period",
+  ];
+  h += `<div class="tw"><table>${tableHead(utilCols)}<tbody>`;
   people.sort((a, b) => {
     const ua = a.totalAvail ? a.totalActual / a.totalAvail : 0;
     const ub = b.totalAvail ? b.totalActual / b.totalAvail : 0;
@@ -1136,7 +1293,16 @@ function rUtil(D) {
           : "color:#e65100";
     const teams = [...new Set(p.rules.map((r) => r.po_team))].join(", ");
     const period = p.minDt ? `${p.minDt} → ${p.maxDt}` : "—";
-    h += `<tr><td>${p.name}</td><td>${p.empl_id}</td><td style="font-size:.65rem">${teams}</td><td>${Math.round(p.totalAvail)}</td><td>${Math.round(p.totalActual)}</td><td style="font-weight:700;${color}">${pct}%</td><td>${status}</td><td style="font-size:.65rem">${period}</td></tr>`;
+    h += tableRow([
+      p.name,
+      p.empl_id,
+      cell(teams, "font-size:.65rem"),
+      Math.round(p.totalAvail),
+      Math.round(p.totalActual),
+      cell(pct + "%", "font-weight:700;" + color),
+      status,
+      cell(period, "font-size:.65rem"),
+    ]);
   });
   h += "</tbody></table></div>";
   if (!fullCfg.raw_actuals || !fullCfg.raw_actuals.length)
@@ -1146,19 +1312,18 @@ function rUtil(D) {
   // ── ACTUALS DATE RANGE BY PROJECT (UNFILTERED — shows ALL projects) ──
   const allProjEntries = Object.entries(projCoverage);
   if (allProjEntries.length) {
-    h +=
-      '<div class="box" style="margin-top:1rem"><h2>📊 Actuals Date Range by Project <span style="font-size:.7rem;font-weight:400;color:#888">(All projects — no filter impact)</span></h2>';
-    h +=
-      '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">Shows data availability across all projects regardless of Year/PO_Team filter selection.</p>';
-    h +=
-      '<div class="tw"><table id="tblDateRange"><thead><tr><th data-sort="0" style="cursor:pointer">Project ID ⇅</th><th>PO_Team</th><th data-sort="2" style="cursor:pointer">Start Date ⇅</th><th data-sort="3" style="cursor:pointer">End Date ⇅</th><th data-sort="4" style="cursor:pointer"># Rows ⇅</th><th data-sort="5" style="cursor:pointer">Duration (days) ⇅</th><th>Avg Rows/Week</th></tr></thead><tbody>';
+    h += '<div class="box" style="margin-top:1rem"><h2>📊 Actuals Date Range by Project ';
+    h += '<span style="font-size:.7rem;font-weight:400;color:#888">(All projects — no filter impact)</span></h2>';
+    h += '<p style="font-size:.72rem;color:#666;margin-bottom:.5rem">';
+    h += "Shows data availability across all projects regardless of Year/PO_Team filter selection.</p>";
+    h += `<div class="tw"><table id="tblDateRange">${tableHead(DATE_RANGE_COLS)}<tbody>`;
     allProjEntries
       .sort((a, b) => a[0] - b[0])
       .forEach(([pid, d]) => {
         const days = Math.max(1, Math.round((new Date(d.max) - new Date(d.min)) / 86400000));
         const weeks = Math.max(1, Math.ceil(days / 7));
         const avgPerWeek = Math.round((d.rows / weeks) * 10) / 10;
-        h += `<tr><td>${pid}</td><td style="font-size:.65rem">${d.team}</td><td>${d.min}</td><td>${d.max}</td><td>${d.rows.toLocaleString()}</td><td>${days}</td><td>${avgPerWeek}</td></tr>`;
+        h += tableRow([pid, cell(d.team, "font-size:.65rem"), d.min, d.max, d.rows.toLocaleString(), days, avgPerWeek]);
       });
     h += "</tbody></table></div></div>";
   }
@@ -1171,16 +1336,13 @@ function rUtil(D) {
   });
   if (filteredProj.length) {
     h += '<div class="box" style="margin-top:1rem">';
-    h +=
-      "<div class=\"collapsible-hdr\" onclick=\"this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')\">📈 Monthly Actuals (Filtered by Slicer) — " +
-      filteredProj.length +
-      " projects</div>";
+    h += collapsibleHeader(`📈 Monthly Actuals (Filtered by Slicer) — ${filteredProj.length} projects`);
     h += '<div class="collapsible-body">';
-    h +=
-      '<div class="tw"><table><thead><tr><th data-sort="0" style="cursor:pointer">Project ID ⇅</th><th>PO_Team</th><th data-sort="2" style="cursor:pointer">From ⇅</th><th data-sort="3" style="cursor:pointer">To ⇅</th><th data-sort="4" style="cursor:pointer">Rows ⇅</th><th>Weeks</th></tr></thead><tbody>';
+    const monthlyCols = ["Project ID ⇅", "PO_Team", "From ⇅", "To ⇅", "Rows ⇅", "Weeks"];
+    h += `<div class="tw"><table>${tableHead(monthlyCols)}<tbody>`;
     filteredProj.forEach(([pid, d]) => {
       const weeks = Math.max(1, Math.round((new Date(d.max) - new Date(d.min)) / 604800000) + 1);
-      h += `<tr><td>${pid}</td><td style="font-size:.65rem">${d.team}</td><td>${d.min}</td><td>${d.max}</td><td>${d.rows}</td><td>${weeks}</td></tr>`;
+      h += tableRow([pid, cell(d.team, "font-size:.65rem"), d.min, d.max, d.rows, weeks]);
     });
     h += "</tbody></table></div></div></div>";
   }
@@ -1192,20 +1354,33 @@ function rScen(D) {
   const scenarios = JSON.parse(localStorage.getItem("pf_scenarios") || "{}");
   const names = Object.keys(scenarios);
   let h = '<div class="cards">';
-  h += `<div class="card b"><h3>Saved Scenarios</h3><div class="v">${names.length}</div></div>`;
-  h += `<div class="card g"><h3>Current Working</h3><div class="v">Active</div></div>`;
+  h += statCard("b", "Saved Scenarios", names.length);
+  h += statCard("g", "Current Working", "Active");
   h += "</div>";
   // Save current as scenario
   h += '<div class="box"><h2>Save Current as Scenario</h2>';
-  h +=
-    '<div style="display:flex;gap:.5rem;align-items:center"><input type="text" id="scenName" placeholder="Scenario name (e.g. With Contractor X)" style="flex:1;padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem"><button class="btn btn-green" onclick="saveScenario()">💾 Save Scenario</button></div></div>';
+  h += '<div style="display:flex;gap:.5rem;align-items:center">';
+  h += '<input type="text" id="scenName" placeholder="Scenario name (e.g. With Contractor X)" ';
+  h += 'style="flex:1;padding:.4rem;border:1px solid #ddd;border-radius:4px;font-size:.8rem">';
+  h += '<button class="btn btn-green" onclick="saveScenario()">💾 Save Scenario</button></div></div>';
   // List saved scenarios
   if (names.length) {
-    h +=
-      '<div class="box"><h2>Saved Scenarios</h2><div class="tw"><table><thead><tr><th>Name</th><th>Resources</th><th>POs</th><th>Total Forecast</th><th>Saved</th><th>Actions</th></tr></thead><tbody>';
+    const cols = ["Name", "Resources", "POs", "Total Forecast", "Saved", "Actions"];
+    h += `<div class="box"><h2>Saved Scenarios</h2><div class="tw"><table>${tableHead(cols)}<tbody>`;
     names.forEach((n) => {
       const s = scenarios[n];
-      h += `<tr><td><strong>${n}</strong></td><td>${(s.resources || []).length}</td><td>${(s.po_details || []).length}</td><td>${f(s._forecast || 0)}</td><td style="font-size:.65rem">${s._saved || "—"}</td><td><button class="btn btn-blue" style="font-size:.65rem" onclick="loadScenario('${n.replace(/'/g, "\\'")}')">Load</button> <button class="btn btn-red" style="font-size:.65rem" onclick="deleteScenario('${n.replace(/'/g, "\\'")}')">🗑️</button></td></tr>`;
+      const jsName = n.replace(/'/g, "\\'");
+      const actions =
+        `<button class="btn btn-blue" style="font-size:.65rem" onclick="loadScenario('${jsName}')">Load</button> ` +
+        `<button class="btn btn-red" style="font-size:.65rem" onclick="deleteScenario('${jsName}')">🗑️</button>`;
+      h += tableRow([
+        `<strong>${n}</strong>`,
+        (s.resources || []).length,
+        (s.po_details || []).length,
+        f(s._forecast || 0),
+        cell(s._saved || "—", "font-size:.65rem"),
+        actions,
+      ]);
     });
     h += "</tbody></table></div></div>";
   }
@@ -1276,12 +1451,7 @@ function compareScenarios() {
   const fcB = computeForecast(cfgB, []);
   const resA = cfgA.resources || [],
     resB = cfgB.resources || [];
-  let h =
-    "<table><thead><tr><th>Metric</th><th>" +
-    (aName === "_current" ? "Current" : aName) +
-    "</th><th>" +
-    bName +
-    "</th><th>Difference</th></tr></thead><tbody>";
+  let h = `<table>${tableHead(["Metric", aName === "_current" ? "Current" : aName, bName, "Difference"])}<tbody>`;
   const rows = [
     ["Resources", resA.length, resB.length],
     ["People", [...new Set(resA.map((r) => r.name))].length, [...new Set(resB.map((r) => r.name))].length],
@@ -1294,7 +1464,8 @@ function compareScenarios() {
     const diff = typeof a === "number" ? a - b : 0;
     const diffStr = typeof a === "number" ? (diff > 0 ? "+" : "") + f(diff) : "—";
     const color = diff > 0 ? "color:#c62828" : diff < 0 ? "color:#2e7d32" : "";
-    h += `<tr><td><strong>${label}</strong></td><td>${typeof a === "number" ? f(a) : a}</td><td>${typeof b === "number" ? f(b) : b}</td><td style="${color};font-weight:600">${diffStr}</td></tr>`;
+    const fmt = (x) => (typeof x === "number" ? f(x) : x);
+    h += tableRow([`<strong>${label}</strong>`, fmt(a), fmt(b), cell(diffStr, color + ";font-weight:600")]);
   });
   h += "</tbody></table>";
   // Resource diff
@@ -1314,9 +1485,7 @@ function compareScenarios() {
 
 function rTL(D) {
   // Filter resources by year (PO_Teams in filtered po_details) and PO_Team slicer
-  const validTeams = new Set(
-    (D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")),
-  );
+  const validTeams = new Set((D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const fullCfg = loadWork();
   const res = (fullCfg.resources || []).filter((r) => {
@@ -1330,17 +1499,7 @@ function rTL(D) {
   const start = allStarts.length ? new Date(Math.min(...allStarts)) : new Date("2025-01-01");
   const end = allEnds.length ? new Date(Math.max(...allEnds)) : new Date("2026-12-31");
   const span = end - start || 1;
-  const colors = [
-    "#5c6bc0",
-    "#26a69a",
-    "#e65100",
-    "#8e24aa",
-    "#2e7d32",
-    "#c62828",
-    "#1565c0",
-    "#4e342e",
-    "#00838f",
-  ];
+  const colors = ["#5c6bc0", "#26a69a", "#e65100", "#8e24aa", "#2e7d32", "#c62828", "#1565c0", "#4e342e", "#00838f"];
   // Group by PO_Team
   const groups = {};
   res.forEach((r) => {
@@ -1351,16 +1510,7 @@ function rTL(D) {
   let h =
     '<div class="box" id="resTimeline"><h2>Resource Timeline <button class="btn btn-blue" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'resTimeline\',true)">Expand All</button> <button class="btn btn-orange" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'resTimeline\',false)">Collapse All</button></h2><div class="tl-scroll"><div class="tl-inner">';
   // Month markers
-  h +=
-    '<div style="margin-left:140px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
-  let md = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (md <= end) {
-    const l = ((md - start) / span) * 100;
-    if (l >= 0 && l <= 100)
-      h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
-    md = new Date(md.getFullYear(), md.getMonth() + 1, 1);
-  }
-  h += "</div>";
+  h += monthAxis(start, end, span, 140, 18);
   Object.entries(groups).forEach(([team, members]) => {
     const byPerson = {};
     members.forEach((r) => {
@@ -1391,9 +1541,7 @@ function rTL(D) {
   return h;
 }
 function rTLInline(D) {
-  const validTeams = new Set(
-    (D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")),
-  );
+  const validTeams = new Set((D.cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const fullCfg = loadWork();
   const res = (fullCfg.resources || []).filter((r) => {
@@ -1406,17 +1554,7 @@ function rTLInline(D) {
   const start = allStarts.length ? new Date(Math.min(...allStarts)) : new Date("2025-01-01");
   const end = allEnds.length ? new Date(Math.max(...allEnds)) : new Date("2026-12-31");
   const span = end - start || 1;
-  const colors = [
-    "#5c6bc0",
-    "#26a69a",
-    "#e65100",
-    "#8e24aa",
-    "#2e7d32",
-    "#c62828",
-    "#1565c0",
-    "#4e342e",
-    "#00838f",
-  ];
+  const colors = ["#5c6bc0", "#26a69a", "#e65100", "#8e24aa", "#2e7d32", "#c62828", "#1565c0", "#4e342e", "#00838f"];
   const groups = {};
   res.forEach((r) => {
     const t = r.po_team || "Unknown";
@@ -1424,16 +1562,7 @@ function rTLInline(D) {
     groups[t].push(r);
   });
   let h = '<div class="tl-scroll"><div class="tl-inner">';
-  h +=
-    '<div style="margin-left:140px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
-  let md = new Date(start.getFullYear(), start.getMonth(), 1);
-  while (md <= end) {
-    const l = ((md - start) / span) * 100;
-    if (l >= 0 && l <= 100)
-      h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
-    md = new Date(md.getFullYear(), md.getMonth() + 1, 1);
-  }
-  h += "</div>";
+  h += monthAxis(start, end, span, 140, 18);
   let pi = 0;
   Object.entries(groups).forEach(([team, members]) => {
     const byPerson = {};
@@ -1467,9 +1596,7 @@ function rActData(D) {
   const fullCfg = loadWork();
   const rawCount = fullCfg.raw_actuals ? fullCfg.raw_actuals.length : 0;
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
-  const validTeamsAct = new Set(
-    (cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")),
-  );
+  const validTeamsAct = new Set((cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
   // Build projToTeam from full config
   const projToTeam = {};
   (fullCfg.resources || []).forEach((r) => {
@@ -1537,8 +1664,7 @@ function rActData(D) {
 
   // Show monthly actuals breakdown (collapsible)
   h += '<div class="box">';
-  h +=
-    "<div class=\"collapsible-hdr\" onclick=\"this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')\">📈 Monthly Actuals (Filtered by Slicer)</div>";
+  h += collapsibleHeader("📈 Monthly Actuals (Filtered by Slicer)");
   h += '<div class="collapsible-body">';
   h +=
     '<div class="tw"><table><thead><tr><th>Month</th><th>Actuals Cost</th><th>Rows</th><th>Actuals Burn (PO remaining)</th></tr></thead><tbody>';
@@ -1597,9 +1723,7 @@ function rActDataInline(D) {
   const fullCfg = loadWork();
   const rawCount = fullCfg.raw_actuals ? fullCfg.raw_actuals.length : 0;
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
-  const validTeamsAct = new Set(
-    (cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")),
-  );
+  const validTeamsAct = new Set((cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
   const projToTeam = {};
   (fullCfg.resources || []).forEach((r) => {
     const t = (r.po_team || "").replace(/\s+/g, "");
@@ -1615,27 +1739,26 @@ function rActDataInline(D) {
     if (!validTeamsAct.has(team)) return false;
     return normFilter ? normFilter.includes(team) : true;
   });
+  const isMatched = (row) => cfg.resources.some((res) => res.empl_id === parseInt(row["Empl ID"] || 0));
+  const matchedCount = filtered.filter(isMatched).length;
   let h = '<div class="cards">';
-  h += `<div class="card b"><h3>Total Raw Rows</h3><div class="v">${rawCount.toLocaleString()}</div></div>`;
-  h += `<div class="card g"><h3>Filtered Rows</h3><div class="v">${filtered.length.toLocaleString()}</div></div>`;
-  h += `<div class="card o"><h3>Matched to Resources</h3><div class="v">${filtered
-    .filter((r) => {
-      const eid = parseInt(r["Empl ID"] || 0);
-      return cfg.resources.some((res) => res.empl_id === eid);
-    })
-    .length.toLocaleString()}</div></div>`;
-  h += `<div class="card r"><h3>Unmatched</h3><div class="v">${filtered
-    .filter((r) => {
-      const eid = parseInt(r["Empl ID"] || 0);
-      return !cfg.resources.some((res) => res.empl_id === eid);
-    })
-    .length.toLocaleString()}</div></div>`;
+  h += statCard("b", "Total Raw Rows", rawCount.toLocaleString());
+  h += statCard("g", "Filtered Rows", filtered.length.toLocaleString());
+  h += statCard("o", "Matched to Resources", matchedCount.toLocaleString());
+  h += statCard("r", "Unmatched", (filtered.length - matchedCount).toLocaleString());
   h += "</div>";
   if (filtered.length) {
-    h +=
-      '<div class="tw" style="margin-top:.5rem"><table><thead><tr><th>Name</th><th>Empl ID</th><th>Date</th><th>Project</th><th>Reg Hrs</th><th>OT Hrs</th></tr></thead><tbody>';
+    const cols = ["Name", "Empl ID", "Date", "Project", "Reg Hrs", "OT Hrs"];
+    h += `<div class="tw" style="margin-top:.5rem"><table>${tableHead(cols)}<tbody>`;
     filtered.slice(0, 10).forEach((row) => {
-      h += `<tr><td>${row["Empl Name"] || ""}</td><td>${row["Empl ID"] || ""}</td><td>${row["Reported Dt"] || ""}</td><td>${row["Project ID"] || ""}</td><td>${row["Regular Hours"] || 0}</td><td>${row["Overtime Hours"] || 0}</td></tr>`;
+      h += tableRow([
+        row["Empl Name"] || "",
+        row["Empl ID"] || "",
+        row["Reported Dt"] || "",
+        row["Project ID"] || "",
+        row["Regular Hours"] || 0,
+        row["Overtime Hours"] || 0,
+      ]);
     });
     h += "</tbody></table></div>";
     if (filtered.length > 10)
@@ -1649,9 +1772,14 @@ function rActDataInline(D) {
 function rExp(D) {
   const exps = D.filteredExpenses;
   const total = exps.reduce((s, e) => s + e.amount, 0);
-  let h = `<div class="cards"><div class="card g"><h3>Total</h3><div class="v">${f(total)}</div></div><div class="card b"><h3>Claims</h3><div class="v">${exps.length}</div></div></div>`;
-  h +=
-    '<div class="tw" id="expTableBox"><div style="margin-bottom:4px"><button class="btn btn-blue" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'expTableBox\',true)">Expand All</button> <button class="btn btn-orange" style="font-size:.65rem;padding:2px 8px" onclick="toggleAllGrps(\'expTableBox\',false)">Collapse All</button></div><table id="tblExp" style="table-layout:fixed"><colgroup><col style="width:14%"><col style="width:12%"><col style="width:12%"><col style="width:8%"><col style="width:10%"><col style="width:22%"><col style="width:22%"></colgroup><thead><tr><th>Name</th><th>Date</th><th>Amount</th><th>Currency</th><th>ProjectID</th><th>PO_Team</th><th>Description</th></tr></thead><tbody>';
+  // Outer table and each group's inner table share column widths so they line up
+  const colgroup =
+    "<colgroup>" + [14, 12, 12, 8, 10, 22, 22].map((w) => `<col style="width:${w}%">`).join("") + "</colgroup>";
+  const cols = ["Name", "Date", "Amount", "Currency", "ProjectID", "PO_Team", "Description"];
+  let h = '<div class="cards">' + statCard("g", "Total", f(total)) + statCard("b", "Claims", exps.length) + "</div>";
+  h += '<div class="tw" id="expTableBox">';
+  h += `<div style="margin-bottom:4px">${expandCollapseButtons("expTableBox")}</div>`;
+  h += `<table id="tblExp" style="table-layout:fixed">${colgroup}${tableHead(cols)}<tbody>`;
   const expGroups = {};
   exps.forEach((e) => {
     const t = e.po_team || "Unknown";
@@ -1659,10 +1787,19 @@ function rExp(D) {
     expGroups[t].push(e);
   });
   Object.entries(expGroups).forEach(([team, items]) => {
-    h += `<tr class="grp-hdr" onclick="toggleGrp(this)"><td colspan="7">${team} (${items.length} claims, ${f(items.reduce((s, e) => s + e.amount, 0))})</td></tr>`;
-    h += `<tr class="grp-rows"><td colspan="7" style="padding:0"><table style="width:100%;margin:0;box-shadow:none;table-layout:fixed"><colgroup><col style="width:14%"><col style="width:12%"><col style="width:12%"><col style="width:8%"><col style="width:10%"><col style="width:22%"><col style="width:22%"></colgroup><tbody>`;
+    h += groupHeaderRow(7, `${team} (${items.length} claims, ${f(items.reduce((s, e) => s + e.amount, 0))})`);
+    h += '<tr class="grp-rows"><td colspan="7" style="padding:0">';
+    h += `<table style="width:100%;margin:0;box-shadow:none;table-layout:fixed">${colgroup}<tbody>`;
     items.forEach((e) => {
-      h += `<tr><td>${e.name}</td><td>${e.date}</td><td>${f(e.amount)}</td><td>${e.currency}</td><td>${e.projectID || ""}</td><td style="font-size:.65rem">${e.po_team || ""}</td><td>${e.desc}</td></tr>`;
+      h += tableRow([
+        e.name,
+        e.date,
+        f(e.amount),
+        e.currency,
+        e.projectID || "",
+        cell(e.po_team || "", "font-size:.65rem"),
+        e.desc,
+      ]);
     });
     h += `</tbody></table></td></tr>`;
   });
@@ -1707,10 +1844,10 @@ function rPO(D) {
   }, 0);
 
   let h = '<div class="cards">';
-  h += `<div class="card b"><h3>Total POs</h3><div class="v">${pos.length}</div></div>`;
-  h += `<div class="card g"><h3>Unique Projects</h3><div class="v">${Object.keys(byTeam).length}</div></div>`;
-  h += `<div class="card o"><h3>Total PO Value</h3><div class="v">${f(totalPO)}</div></div>`;
-  h += `<div class="card p"><h3>Normalized Total</h3><div class="v">${f(normTotal, "$")}</div></div>`;
+  h += statCard("b", "Total POs", pos.length);
+  h += statCard("g", "Unique Projects", Object.keys(byTeam).length);
+  h += statCard("o", "Total PO Value", f(totalPO));
+  h += statCard("p", "Normalized Total", f(normTotal, "$"));
   h += "</div>";
 
   // Timeline view of POs
@@ -1721,13 +1858,11 @@ function rPO(D) {
   const span = tEnd - tStart || 1;
   const colors = ["#5c6bc0", "#26a69a", "#e65100", "#8e24aa", "#2e7d32", "#c62828"];
   h += '<div class="box"><h2>PO & Invoice Timeline</h2><div class="tl-scroll"><div class="tl-inner">';
-  h +=
-    '<div style="margin-left:200px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
+  h += '<div style="margin-left:200px;position:relative;height:18px;font-size:.6rem;color:#888;margin-bottom:4px">';
   let md = new Date(tStart.getFullYear(), 0, 1);
   while (md <= tEnd) {
     const l = ((md - tStart) / span) * 100;
-    if (l >= 0 && l <= 100)
-      h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.getFullYear()}</span>`;
+    if (l >= 0 && l <= 100) h += `<span style="position:absolute;left:${l.toFixed(1)}%">${md.getFullYear()}</span>`;
     md = new Date(md.getFullYear() + 1, 0, 1);
   }
   h += "</div>";
@@ -1738,17 +1873,25 @@ function rPO(D) {
       re = data.maxEnd;
     const left = Math.max(0, ((rs - tStart) / span) * 100).toFixed(1);
     const width = Math.max(2, ((re - rs) / span) * 100).toFixed(1);
-    h += `<div class="tl-row"><span class="nm" style="min-width:200px;font-size:.68rem">${team}</span><div class="ba"><div class="br" style="left:${left}%;width:${width}%;background:${colors[i % colors.length]}">${f(data.value)} (${data.count} POs)${data.rollover ? " 🔄" : ""}</div></div></div>`;
+    const poBarStyle = `left:${left}%;width:${width}%;background:${colors[i % colors.length]}`;
+    const poBarLabel = `${f(data.value)} (${data.count} POs)${data.rollover ? " 🔄" : ""}`;
+    h += '<div class="tl-row">';
+    h += `<span class="nm" style="min-width:200px;font-size:.68rem">${team}</span>`;
+    h += `<div class="ba"><div class="br" style="${poBarStyle}">${poBarLabel}</div></div>`;
+    h += "</div>";
     const teamInvs = invAll.filter((inv) => (inv.po_team || "").replace(/\s+/g, "") === team);
     if (teamInvs.length) {
-      h += `<div class="tl-row"><span class="nm" style="min-width:200px;font-size:.6rem;color:#888">└ Invoices</span><div class="ba" style="height:16px">`;
+      h += '<div class="tl-row">';
+      h += '<span class="nm" style="min-width:200px;font-size:.6rem;color:#888">└ Invoices</span>';
+      h += '<div class="ba" style="height:16px">';
       teamInvs.forEach((inv) => {
         const is = new Date(inv.period_from),
           ie = new Date(inv.period_to);
         if (isNaN(is) || isNaN(ie)) return;
         const il = Math.max(0, ((is - tStart) / span) * 100).toFixed(1);
         const iw = Math.max(1, ((ie - is) / span) * 100).toFixed(1);
-        h += `<div class="br" style="left:${il}%;width:${iw}%;background:${statusColor[inv.status] || "#666"};height:16px;font-size:.55rem">${f(inv.amount)}</div>`;
+        const invBarStyle = `left:${il}%;width:${iw}%;background:${statusColor[inv.status] || "#666"};height:16px;font-size:.55rem`;
+        h += `<div class="br" style="${invBarStyle}">${f(inv.amount)}</div>`;
       });
       h += `</div></div>`;
     }
@@ -1759,35 +1902,75 @@ function rPO(D) {
   // Invoice coverage
   const invs = D.cfg.invoices || [];
   if (invs.length) {
-    h +=
-      '<div class="box"><h2>Invoice Coverage</h2><div class="tw"><table><thead><tr><th>PO_Team</th><th>PO Value</th><th>Invoiced</th><th>Paid</th><th>Coverage %</th><th>Remaining</th></tr></thead><tbody>';
+    const coverageCols = ["PO_Team", "PO Value", "Invoiced", "Paid", "Coverage %", "Remaining"];
+    h += `<div class="box"><h2>Invoice Coverage</h2><div class="tw"><table>${tableHead(coverageCols)}<tbody>`;
     Object.entries(byTeam).forEach(([team, data]) => {
       const teamInvs = invs.filter((i) => (i.po_team || "").replace(/\s+/g, "") === team);
       const invoiced = teamInvs.reduce((s, i) => s + i.amount, 0);
       const paid = teamInvs.filter((i) => i.status === "Paid").reduce((s, i) => s + i.amount, 0);
       const pct = data.value ? Math.round((invoiced / data.value) * 100) : 0;
-      h += `<tr><td style="font-size:.68rem">${team}</td><td>${f(data.value)}</td><td>${f(invoiced)}</td><td>${f(paid)}</td><td style="font-weight:600;color:${pct > 90 ? "#c62828" : pct > 70 ? "#e65100" : "#2e7d32"}">${pct}%</td><td>${f(data.value - invoiced)}</td></tr>`;
+      h += tableRow([
+        cell(team, "font-size:.68rem"),
+        f(data.value),
+        f(invoiced),
+        f(paid),
+        cell(pct + "%", "font-weight:600;color:" + pctColor(pct)),
+        f(data.value - invoiced),
+      ]);
     });
     h += "</tbody></table></div></div>";
   }
 
   // Multi-year rollover summary
   if (D.fc.rolloverByYear && Object.keys(D.fc.rolloverByYear).length > 0) {
-    h +=
-      '<div class="box"><h2>📅 Multi-Year PO Rollover</h2><p style="font-size:.75rem;color:#666;margin-bottom:.5rem">Unused budget carries forward only when <code>rollover_allowed=true</code>.</p><div class="tw"><table><thead><tr><th>Year</th><th>PO Value</th><th>Carry-In</th><th>Available</th><th>Forecast Spend</th><th>Unused</th><th>Rollover?</th></tr></thead><tbody>';
+    const rolloverCols = ["Year", "PO Value", "Carry-In", "Available", "Forecast Spend", "Unused", "Rollover?"];
+    h += '<div class="box"><h2>📅 Multi-Year PO Rollover</h2>';
+    h += '<p style="font-size:.75rem;color:#666;margin-bottom:.5rem">';
+    h += "Unused budget carries forward only when <code>rollover_allowed=true</code>.</p>";
+    h += `<div class="tw"><table>${tableHead(rolloverCols)}<tbody>`;
     Object.entries(D.fc.rolloverByYear)
       .sort((a, b) => a[0] - b[0])
       .forEach(([yr, d]) => {
-        h += `<tr><td><strong>${yr}</strong></td><td>${f(d.poValue)}</td><td style="color:#2196f3;font-weight:600">${f(d.carryIn)}</td><td style="font-weight:600">${f(d.available)}</td><td>${f(d.spent)}</td><td style="color:${d.unused > 0 ? "#4caf50" : "#c62828"};font-weight:600">${f(d.unused)}</td><td>${d.rollover_allowed ? "✅ Yes" : "❌ No"}</td></tr>`;
+        h += tableRow([
+          `<strong>${yr}</strong>`,
+          f(d.poValue),
+          cell(f(d.carryIn), "color:#2196f3;font-weight:600"),
+          cell(f(d.available), "font-weight:600"),
+          f(d.spent),
+          cell(f(d.unused), `color:${d.unused > 0 ? "#4caf50" : "#c62828"};font-weight:600`),
+          d.rollover_allowed ? "✅ Yes" : "❌ No",
+        ]);
       });
     h += "</tbody></table></div></div>";
   }
 
   // Detail table
-  h +=
-    '<div class="box"><h2>All PO Entries</h2><div class="tw"><table id="tblPO"><thead><tr><th data-sort="0" style="cursor:pointer">PO_Team ⇅</th><th data-sort="1" style="cursor:pointer">ProjectID ⇅</th><th data-sort="2" style="cursor:pointer">PO Value ⇅</th><th>Currency</th><th>Norm Currency</th><th data-sort="5" style="cursor:pointer">Start ⇅</th><th data-sort="6" style="cursor:pointer">Validity ⇅</th><th>Rollover</th><th>Status</th><th>PO Number</th></tr></thead><tbody>';
+  const poCols = [
+    "PO_Team ⇅",
+    "ProjectID ⇅",
+    "PO Value ⇅",
+    "Currency",
+    "Norm Currency",
+    "Start ⇅",
+    "Validity ⇅",
+    "Rollover",
+    "Status",
+    "PO Number",
+  ];
+  h += `<div class="box"><h2>All PO Entries</h2><div class="tw"><table id="tblPO">${tableHead(poCols)}<tbody>`;
   pos.forEach((p) => {
-    h += `<tr><td style="font-size:.68rem">${p.PO_Team_Identifier}</td><td>${p.ProjectID}</td><td>${f(p.PO_WO_value)}</td><td>${p.PO_Currency_Code}</td><td>${p.Normalized_Currency_Code}</td><td>${p.WO_StartDate}</td><td>${fmtValidity(p.PO_Validity || p.PO_Validity_Year)}</td><td>${p.rollover_allowed ? "✅" : "❌"}</td><td>${p.WO_Approval_Status}</td><td>${p.PO_WO_Number}</td></tr>`;
+    h += tableRow([
+      cell(p.PO_Team_Identifier, "font-size:.68rem"),
+      p.ProjectID,
+      f(p.PO_WO_value),
+      p.PO_Currency_Code,
+      p.Normalized_Currency_Code,
+      p.WO_StartDate,
+      fmtValidity(p.PO_Validity || p.PO_Validity_Year),
+      p.rollover_allowed ? "✅" : "❌",
+      p.WO_Approval_Status,
+      p.PO_WO_Number,
+    ]);
   });
   h += "</tbody></table></div></div>";
   return h;
@@ -1809,12 +1992,16 @@ function rFX(D) {
 }
 
 // ─── FILE UPLOAD TAB ────────────────────────────────────────────────────────
+// Opens one upload panel; the caller closes it with "</div></div>".
+function uploadSection(background, title) {
+  const summaryStyle = `padding:.6rem 1rem;background:${background};font-weight:600;font-size:.85rem`;
+  return `<div class="cfg-section"><summary style="${summaryStyle}">${title}</summary><div class="inner">`;
+}
 function rUpload(D) {
   let h = "";
   // ── EXPORT REPORTS (collapsible) ──
   h += '<div class="box" style="margin-bottom:1rem">';
-  h +=
-    "<div class=\"collapsible-hdr\" onclick=\"this.classList.toggle('collapsed');this.nextElementSibling.classList.toggle('hidden')\">📥 Export Reports</div>";
+  h += collapsibleHeader("📥 Export Reports");
   h += '<div class="collapsible-body">';
   h +=
     '<p style="font-size:.78rem;color:#666;margin-bottom:.8rem">Select sections to include, then export in your preferred format.</p>';
@@ -1858,8 +2045,7 @@ function rUpload(D) {
   h += "</div>";
   h += '<div style="display:grid;gap:1rem;grid-template-columns:1fr 1fr">';
   // Actuals upload
-  h +=
-    '<div class="cfg-section"><summary style="padding:.6rem 1rem;background:#e3f2fd;font-weight:600;font-size:.85rem">② Timesheet Actuals (CSV/JSON/XLSX)</summary><div class="inner">';
+  h += uploadSection("#e3f2fd", "② Timesheet Actuals (CSV/JSON/XLSX)");
   h +=
     '<p style="font-size:.75rem;margin-bottom:.3rem"><strong>What is this?</strong> Your timesheet export from PeopleSoft or similar system.</p>';
   h +=
@@ -1869,8 +2055,7 @@ function rUpload(D) {
   h += `<span style="font-size:.7rem;color:#888">Currently loaded: ${(D.cfg.raw_actuals || []).length} rows | ${Object.keys(D.cfg.actuals_by_project || {}).length} projects | ${D.cfg.actuals_monthly.length} months</span>`;
   h += "</div></div>";
   // Resources upload
-  h +=
-    '<div class="cfg-section"><summary style="padding:.6rem 1rem;background:#e8f5e9;font-weight:600;font-size:.85rem">③ Resource Rules (CSV/JSON/XLSX)</summary><div class="inner">';
+  h += uploadSection("#e8f5e9", "③ Resource Rules (CSV/JSON/XLSX)");
   h +=
     '<p style="font-size:.75rem;margin-bottom:.3rem"><strong>What is this?</strong> Your team allocation rules — who works on what, at what rate, for which dates.</p>';
   h +=
@@ -1880,8 +2065,7 @@ function rUpload(D) {
   h += `<span style="font-size:.7rem;color:#888">Currently loaded: ${D.cfg.resources.length} resource rules</span>`;
   h += "</div></div>";
   // Smart Solution Excel Parser
-  h +=
-    '<div class="cfg-section"><summary style="padding:.6rem 1rem;background:#fce4ec;font-weight:600;font-size:.85rem">③b 🧠 Smart Resource Parser (Solution Excel)</summary><div class="inner">';
+  h += uploadSection("#fce4ec", "③b 🧠 Smart Resource Parser (Solution Excel)");
   h +=
     '<p style="font-size:.75rem;margin-bottom:.3rem"><strong>For non-standard Excel files</strong> with section headers, merged cells, or column headers not in row 1.</p>';
   h +=
@@ -1948,6 +2132,12 @@ function handleUpload(input, type) {
   };
   reader.readAsText(file);
 }
+// "Data Quality" heading + bullet list in the upload report. Leaves its <div> open
+// (the caller closes it), matching the original markup.
+function dataQualityList(items) {
+  const lis = items.map((item) => `<li>${item}</li>`).join("");
+  return `<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem">${lis}</ul>`;
+}
 function processUpload(data, type) {
   if (type === "resources") {
     // Validate upload
@@ -1976,12 +2166,10 @@ function processUpload(data, type) {
           e = parseDate(endRaw, "uk");
         if (s && e && s > e) rowErrs.push(`Row ${i + 2}: start (${s}) > end (${e})`);
       }
-      if (!parseInt(r.empl_id || r["Empl ID"] || r.EmplID || 0))
-        rowErrs.push(`Row ${i + 2}: missing/invalid empl_id`);
+      if (!parseInt(r.empl_id || r["Empl ID"] || r.EmplID || 0)) rowErrs.push(`Row ${i + 2}: missing/invalid empl_id`);
       if (!(r.po_team || r.PO_Team_Identifier || "").trim()) rowErrs.push(`Row ${i + 2}: missing po_team`);
     });
-    if (rowErrs.length > 10)
-      uploadErrs.push(...rowErrs.slice(0, 10), `...and ${rowErrs.length - 10} more row errors`);
+    if (rowErrs.length > 10) uploadErrs.push(...rowErrs.slice(0, 10), `...and ${rowErrs.length - 10} more row errors`);
     else uploadErrs.push(...rowErrs);
     if (uploadErrs.length) {
       toast("✗ Upload validation failed: " + uploadErrs.slice(0, 3).join("; "), false);
@@ -2015,9 +2203,7 @@ function processUpload(data, type) {
       .filter((r) => r.start && r.end);
     const cfg = loadWork();
     // Cross-check: detect resources that duplicate existing PO team assignments
-    const existingPOs = new Set(
-      (cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")),
-    );
+    const existingPOs = new Set((cfg.po_details || []).map((p) => (p.PO_Team_Identifier || "").replace(/\s+/g, "")));
     const orphanTeams = new Set(resources.map((r) => r.po_team).filter((t) => t && !existingPOs.has(t)));
     if (
       cfg.resources.length &&
@@ -2038,15 +2224,11 @@ function processUpload(data, type) {
     const unmatchedTeams = new Set(resources.map((r) => r.po_team).filter((t) => !poTeams.has(t)));
     if (unmatchedTeams.size)
       warnings.push(
-        unmatchedTeams.size +
-          " resource PO_Teams not in PO_Details: " +
-          [...unmatchedTeams].slice(0, 3).join(", "),
+        unmatchedTeams.size + " resource PO_Teams not in PO_Details: " + [...unmatchedTeams].slice(0, 3).join(", "),
       );
     if (orphanTeams.size)
       warnings.push(
-        orphanTeams.size +
-          " resource PO_Teams not found in PO Details: " +
-          [...orphanTeams].slice(0, 3).join(", "),
+        orphanTeams.size + " resource PO_Teams not found in PO Details: " + [...orphanTeams].slice(0, 3).join(", "),
       );
     const invalidDates = resources.filter((r) => r.start > r.end);
     if (invalidDates.length) warnings.push(invalidDates.length + " resources have start > end date");
@@ -2081,7 +2263,17 @@ function processUpload(data, type) {
       rpt += `<tr><td style="font-weight:600">${field}</td><td>${found ? "✅ " + found : "❌ not found"}</td></tr>`;
     });
     rpt += "</tbody></table></div>";
-    rpt += `<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Valid resources: ${resources.length}</li><li>Unique people: ${[...new Set(resources.map((r) => r.name))].length}</li><li>Date range: ${resources.length ? resources.reduce((m, r) => (r.start < m ? r.start : m), resources[0].start) : "-"} → ${resources.length ? resources.reduce((m, r) => (r.end > m ? r.end : m), resources[0].end) : "-"}</li><li>Duplicates: ${dupes.length}</li></ul>`;
+    const firstStart = resources.length
+      ? resources.reduce((m, r) => (r.start < m ? r.start : m), resources[0].start)
+      : "-";
+    const lastEnd = resources.length ? resources.reduce((m, r) => (r.end > m ? r.end : m), resources[0].end) : "-";
+    rpt += dataQualityList([
+      `Total rows: ${data.length}`,
+      `Valid resources: ${resources.length}`,
+      `Unique people: ${[...new Set(resources.map((r) => r.name))].length}`,
+      `Date range: ${firstStart} → ${lastEnd}`,
+      `Duplicates: ${dupes.length}`,
+    ]);
     if (warnings.length)
       rpt +=
         '<div class="val-err" style="margin-top:.5rem"><ul>' +
@@ -2099,8 +2291,7 @@ function processUpload(data, type) {
     const sample = data[0] || {};
     if (!sample["Empl ID"] && !sample.empl_id) uploadErrs.push('Missing "Empl ID" column');
     if (!sample["Reported Dt"] && !sample.reported_dt) uploadErrs.push('Missing "Reported Dt" column');
-    if (!sample["Regular Hours"] && sample["Regular Hours"] !== "0")
-      uploadErrs.push('Missing "Regular Hours" column');
+    if (!sample["Regular Hours"] && sample["Regular Hours"] !== "0") uploadErrs.push('Missing "Regular Hours" column');
     // Row-level validation
     const rowErrs = [];
     data.forEach((r, i) => {
@@ -2115,8 +2306,7 @@ function processUpload(data, type) {
       if (otHrs < 0) rowErrs.push(`Row ${i + 2}: negative Overtime Hours (${otHrs})`);
       if (regHrs > 24) rowErrs.push(`Row ${i + 2}: Regular Hours > 24 (${regHrs})`);
     });
-    if (rowErrs.length > 10)
-      uploadErrs.push(...rowErrs.slice(0, 10), `...and ${rowErrs.length - 10} more row errors`);
+    if (rowErrs.length > 10) uploadErrs.push(...rowErrs.slice(0, 10), `...and ${rowErrs.length - 10} more row errors`);
     else uploadErrs.push(...rowErrs);
     if (uploadErrs.length) {
       toast("✗ Upload validation failed: " + uploadErrs.slice(0, 3).join("; "), false);
@@ -2137,9 +2327,7 @@ function processUpload(data, type) {
     const actDupes = Object.values(actDupeMap).filter((c) => c > 1).length;
     if (
       actDupes &&
-      !confirm(
-        "⚠️ " + actDupes + " duplicate timesheet entries detected (same employee+date+project). Import anyway?",
-      )
+      !confirm("⚠️ " + actDupes + " duplicate timesheet entries detected (same employee+date+project). Import anyway?")
     )
       return;
     // Store raw actuals for processing
@@ -2178,7 +2366,13 @@ function processUpload(data, type) {
       rpt += `<li>✅ ${c}</li>`;
     });
     rpt += "</ul></div>";
-    rpt += `<div><h3 style="font-size:.8rem;margin-bottom:.3rem">Data Quality</h3><ul style="font-size:.72rem;margin-left:1rem"><li>Total rows: ${data.length}</li><li>Unique employees: ${new Set(data.map((r) => r["Empl ID"])).size}</li><li>Date range: ${dateRange[0] || "?"} → ${dateRange[dateRange.length - 1] || "?"}</li><li>Duplicate rows: ${actDupes}</li><li>Projects: ${new Set(data.map((r) => r["Project ID"])).size}</li></ul>`;
+    rpt += dataQualityList([
+      `Total rows: ${data.length}`,
+      `Unique employees: ${new Set(data.map((r) => r["Empl ID"])).size}`,
+      `Date range: ${dateRange[0] || "?"} → ${dateRange[dateRange.length - 1] || "?"}`,
+      `Duplicate rows: ${actDupes}`,
+      `Projects: ${new Set(data.map((r) => r["Project ID"])).size}`,
+    ]);
     if (actDupes)
       rpt += `<div class="val-err" style="margin-top:.5rem">⚠️ ${actDupes} duplicate timesheet entries detected (same employee+date+project)</div>`;
     rpt += "</div></div></div>";
@@ -2289,16 +2483,20 @@ function parseSolutionExcel() {
       if (res.name) resources.push(res);
     }
     // Show preview
-    let h = `<div class="box" style="margin-top:.5rem"><h2>🧠 Parsed: ${resources.length} resources from "${bestSheet}" (header row ${bestHeaderRow + 1})</h2>`;
+    const title = `🧠 Parsed: ${resources.length} resources from "${bestSheet}" (header row ${bestHeaderRow + 1})`;
+    let h = `<div class="box" style="margin-top:.5rem"><h2>${title}</h2>`;
     h += `<p style="font-size:.72rem;color:#666">Matched ${bestScore} columns: ${Object.keys(bestMapping).join(", ")}</p>`;
-    h +=
-      '<div class="tw" style="max-height:200px;overflow:auto"><table><thead><tr><th>Name</th><th>EmplID</th><th>Role</th><th>Start</th><th>End</th><th>Rate</th><th>Alloc</th><th>PO_Team</th></tr></thead><tbody>';
+    const cols = ["Name", "EmplID", "Role", "Start", "End", "Rate", "Alloc", "PO_Team"];
+    h += `<div class="tw" style="max-height:200px;overflow:auto"><table>${tableHead(cols)}<tbody>`;
     resources.slice(0, 15).forEach((r) => {
-      h += `<tr><td>${r.name}</td><td>${r.empl_id}</td><td>${r.role}</td><td>${r.start}</td><td>${r.end}</td><td>${r.bill_rate}</td><td>${r.alloc}</td><td>${r.po_team}</td></tr>`;
+      h += tableRow([r.name, r.empl_id, r.role, r.start, r.end, r.bill_rate, r.alloc, r.po_team]);
     });
     h += "</tbody></table></div>";
     if (resources.length > 15) h += `<p style="font-size:.7rem;color:#888">Showing 15 of ${resources.length}</p>`;
-    h += `<div style="margin-top:.5rem;display:flex;gap:.5rem"><button class="btn btn-green" onclick="applySolutionResources()">✅ Apply to Dashboard</button><button class="btn btn-orange" onclick="document.getElementById('solutionPreview').innerHTML=''">Cancel</button></div></div>`;
+    h += '<div style="margin-top:.5rem;display:flex;gap:.5rem">';
+    h += '<button class="btn btn-green" onclick="applySolutionResources()">✅ Apply to Dashboard</button>';
+    h += `<button class="btn btn-orange" onclick="document.getElementById('solutionPreview').innerHTML=''">Cancel</button>`;
+    h += "</div></div>";
     preview.innerHTML = h;
     // Store parsed for apply
     window.__parsedSolutionResources = resources;
@@ -2312,8 +2510,7 @@ function applySolutionResources() {
   }
   const cfg = loadWork();
   const existing = cfg.resources.length;
-  if (existing && !confirm(`Replace ${existing} existing resources with ${resources.length} parsed ones?`))
-    return;
+  if (existing && !confirm(`Replace ${existing} existing resources with ${resources.length} parsed ones?`)) return;
   cfg.resources = resources;
   saveWork(cfg);
   toast(`✓ ${resources.length} resources applied from Solution Excel`);
@@ -2653,13 +2850,7 @@ function exportPDF() {
     doc.autoTable({
       startY: 22,
       head: [["PO_Team", "Invoice", "Period", "Amount", "Status"]],
-      body: invs.map((i) => [
-        i.po_team,
-        i.invoice_number,
-        i.period_from + " → " + i.period_to,
-        f(i.amount),
-        i.status,
-      ]),
+      body: invs.map((i) => [i.po_team, i.invoice_number, i.period_from + " → " + i.period_to, f(i.amount), i.status]),
       theme: "striped",
       styles: { fontSize: 7 },
     });
@@ -2981,8 +3172,18 @@ function rCfg(D) {
   h +=
     '<p style="font-size:.75rem;margin-bottom:.5rem">Select a file and target section. The file will be parsed and JSON pasted into the corresponding textarea below.</p>';
   h += '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">';
-  h +=
-    '<select id="cfgImportTarget" style="padding:4px 8px;font-size:.78rem;border:1px solid #ddd;border-radius:4px"><option value="po_details">PO Details</option><option value="resources">Resources</option><option value="invoices">Invoices</option><option value="fx_rates">FX Rates</option><option value="ot_params">OT Params</option><option value="expenses">Expenses</option><option value="actuals_monthly">Monthly Actuals</option></select>';
+  const importTargets = [
+    ["po_details", "PO Details"],
+    ["resources", "Resources"],
+    ["invoices", "Invoices"],
+    ["fx_rates", "FX Rates"],
+    ["ot_params", "OT Params"],
+    ["expenses", "Expenses"],
+    ["actuals_monthly", "Monthly Actuals"],
+  ];
+  h += '<select id="cfgImportTarget" style="padding:4px 8px;font-size:.78rem;border:1px solid #ddd;border-radius:4px">';
+  h += importTargets.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
+  h += "</select>";
   h += '<input type="file" id="cfgImportFile" accept=".xlsx,.csv,.json" style="font-size:.75rem">';
   h += '<button class="btn btn-green" onclick="cfgImportFile()">⬆️ Import</button>';
   h += '</div><div id="cfgImportStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
@@ -2997,26 +3198,37 @@ function rCfg(D) {
     { key: "actuals_monthly", label: "Monthly Actuals", data: D.cfg.actuals_monthly, tall: true },
   ];
   sections.forEach((s, i) => {
-    h += `<details class="cfg-section"${i === 0 ? " open" : ""}><summary>${s.label}</summary><div class="inner"><textarea id="cfg_${s.key}"${s.tall ? ' style="min-height:350px"' : ""}>${JSON.stringify(s.data, null, 2)}</textarea><button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button></div></details>`;
+    const textareaStyle = s.tall ? ' style="min-height:350px"' : "";
+    h += `<details class="cfg-section"${i === 0 ? " open" : ""}><summary>${s.label}</summary><div class="inner">`;
+    h += `<textarea id="cfg_${s.key}"${textareaStyle}>${JSON.stringify(s.data, null, 2)}</textarea>`;
+    h += `<button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button>`;
+    h += "</div></details>";
   });
-  h +=
-    '<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner"><p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p><button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button><p style="font-size:.8rem;margin:1rem 0 .5rem">Reset everything to factory defaults (PIN required):</p><button class="btn btn-red" onclick="promptFactoryReset()">⚠️ Factory Reset</button></div></details>';
-  h +=
-    '<details class="cfg-section" style="margin-top:1.5rem;border:1px solid #c5cae9"><summary style="background:#e8eaf6;font-size:.9rem">📖 README — Definitions & Logic</summary><div class="inner" style="font-size:.75rem;line-height:1.6;color:#333">';
+  h += '<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner">';
+  h += '<p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p>';
+  h += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
+  h += '<p style="font-size:.8rem;margin:1rem 0 .5rem">Reset everything to factory defaults (PIN required):</p>';
+  h += '<button class="btn btn-red" onclick="promptFactoryReset()">⚠️ Factory Reset</button>';
+  h += "</div></details>";
+  h += '<details class="cfg-section" style="margin-top:1.5rem;border:1px solid #c5cae9">';
+  h += '<summary style="background:#e8eaf6;font-size:.9rem">📖 README — Definitions & Logic</summary>';
+  h += '<div class="inner" style="font-size:.75rem;line-height:1.6;color:#333">';
   h += '<h3 style="font-size:.85rem;margin-bottom:.5rem">Core Concepts</h3>';
   h += '<table style="font-size:.72rem;margin-bottom:1rem"><tbody>';
-  h +=
-    '<tr><td style="font-weight:600;padding:3px 12px 3px 0">PO_Team</td><td>Unique identifier linking a Project to a Purchase Order. Format: <code>ProjectID_Client_Identifier</code></td></tr>';
-  h +=
-    '<tr><td style="font-weight:600;padding:3px 12px 3px 0">PO_Validity</td><td>End month of PO validity in <code>mm-yy</code> format (e.g. "12-25" = Dec 2025)</td></tr>';
-  h +=
-    '<tr><td style="font-weight:600;padding:3px 12px 3px 0">Rollover</td><td>When <code>rollover_allowed=true</code>, unused budget from one PO year carries forward to the next</td></tr>';
-  h +=
-    '<tr><td style="font-weight:600;padding:3px 12px 3px 0">Bill Rate</td><td>Hourly rate for a resource in PO currency</td></tr>';
-  h +=
-    '<tr><td style="font-weight:600;padding:3px 12px 3px 0">Hour Mult</td><td>Hours multiplier per timesheet entry. Use 8 for day-rate resources, 1 for hourly</td></tr>';
-  h +=
-    '<tr><td style="font-weight:600;padding:3px 12px 3px 0">Alloc</td><td>Allocation percentage (0-1). 0.5 = 50% allocated to this PO_Team</td></tr>';
+  const glossary = [
+    [
+      "PO_Team",
+      "Unique identifier linking a Project to a Purchase Order. Format: <code>ProjectID_Client_Identifier</code>",
+    ],
+    ["PO_Validity", 'End month of PO validity in <code>mm-yy</code> format (e.g. "12-25" = Dec 2025)'],
+    ["Rollover", "When <code>rollover_allowed=true</code>, unused budget from one PO year carries forward to the next"],
+    ["Bill Rate", "Hourly rate for a resource in PO currency"],
+    ["Hour Mult", "Hours multiplier per timesheet entry. Use 8 for day-rate resources, 1 for hourly"],
+    ["Alloc", "Allocation percentage (0-1). 0.5 = 50% allocated to this PO_Team"],
+  ];
+  glossary.forEach(([term, definition]) => {
+    h += `<tr><td style="font-weight:600;padding:3px 12px 3px 0">${term}</td><td>${definition}</td></tr>`;
+  });
   h += "</tbody></table>";
   h += '<h3 style="font-size:.85rem;margin-bottom:.5rem">Forecast Calculation</h3>';
   h +=
@@ -3138,8 +3350,7 @@ function importFullConfig() {
       return;
     }
     saveWork(cfg);
-    status.innerHTML =
-      '<span style="color:#2e7d32">✅ Imported: ' + loaded.join(", ") + ". Dashboard updated!</span>";
+    status.innerHTML = '<span style="color:#2e7d32">✅ Imported: ' + loaded.join(", ") + ". Dashboard updated!</span>";
     toast("✓ Full config imported — " + loaded.length + " sections loaded");
     setTimeout(render, 500);
   });
@@ -3264,27 +3475,44 @@ function validateData(key, data) {
     data.forEach((e, i) => {
       if (!e.name) errs.push(`Row ${i + 1}: missing name`);
       if (!e.date || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) errs.push(`Row ${i + 1}: date must be yyyy-mm-dd`);
-      if (e.amount === undefined || typeof e.amount !== "number")
-        errs.push(`Row ${i + 1}: amount must be a number`);
+      if (e.amount === undefined || typeof e.amount !== "number") errs.push(`Row ${i + 1}: amount must be a number`);
     });
   }
   return errs;
 }
-function promptMasterSave() {
+// PIN prompt modal; the confirm button calls checkPin(action).
+function showPinModal({ title, message, action, confirmLabel, confirmCls, cancelCls }) {
   const d = document.createElement("div");
   d.className = "modal-bg";
   d.innerHTML =
-    '<div class="modal"><h3>🔒 Save as Master</h3><p style="font-size:.82rem;margin-bottom:.8rem">This overwrites the master config. Enter PIN:</p><input type="password" id="pinInput" placeholder="Enter PIN" maxlength="10"><div><button class="btn btn-green" onclick="checkPin(\'save\')">Confirm</button><button class="btn btn-red" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div></div>';
+    `<div class="modal"><h3>${title}</h3>` +
+    `<p style="font-size:.82rem;margin-bottom:.8rem">${message}</p>` +
+    '<input type="password" id="pinInput" placeholder="Enter PIN" maxlength="10">' +
+    `<div><button class="btn ${confirmCls}" onclick="checkPin('${action}')">${confirmLabel}</button>` +
+    `<button class="btn ${cancelCls}" onclick="this.closest('.modal-bg').remove()">Cancel</button></div>` +
+    "</div>";
   document.body.appendChild(d);
   d.querySelector("input").focus();
 }
+function promptMasterSave() {
+  showPinModal({
+    title: "🔒 Save as Master",
+    message: "This overwrites the master config. Enter PIN:",
+    action: "save",
+    confirmLabel: "Confirm",
+    confirmCls: "btn-green",
+    cancelCls: "btn-red",
+  });
+}
 function promptFactoryReset() {
-  const d = document.createElement("div");
-  d.className = "modal-bg";
-  d.innerHTML =
-    '<div class="modal"><h3>⚠️ Factory Reset</h3><p style="font-size:.82rem;margin-bottom:.8rem">This resets BOTH master and working config to defaults. Enter PIN:</p><input type="password" id="pinInput" placeholder="Enter PIN" maxlength="10"><div><button class="btn btn-red" onclick="checkPin(\'reset\')">Reset All</button><button class="btn btn-blue" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div></div>';
-  document.body.appendChild(d);
-  d.querySelector("input").focus();
+  showPinModal({
+    title: "⚠️ Factory Reset",
+    message: "This resets BOTH master and working config to defaults. Enter PIN:",
+    action: "reset",
+    confirmLabel: "Reset All",
+    confirmCls: "btn-red",
+    cancelCls: "btn-blue",
+  });
 }
 function deduplicateActuals(cfg) {
   if (!cfg.raw_actuals || !cfg.raw_actuals.length) return cfg;
@@ -3296,8 +3524,7 @@ function deduplicateActuals(cfg) {
   const before = cfg.raw_actuals.length;
   cfg.raw_actuals = [...seen.values()];
   const removed = before - cfg.raw_actuals.length;
-  if (removed > 0)
-    console.log(`Dedup: removed ${removed} duplicate actuals (${before}→${cfg.raw_actuals.length})`);
+  if (removed > 0) console.log(`Dedup: removed ${removed} duplicate actuals (${before}→${cfg.raw_actuals.length})`);
   return { cfg, removed };
 }
 function checkPin(action) {
@@ -3403,9 +3630,7 @@ function drawCharts(tab, D) {
     const cumPO = allMonths.map((mKey) => {
       const [mName, yy] = mKey.split("-");
       const yr = parseInt("20" + yy);
-      const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(
-        mName,
-      );
+      const mIdx = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].indexOf(mName);
       const monthEnd = new Date(yr, mIdx + 1, 0);
       let total = 0;
       poArr.forEach((p) => {
