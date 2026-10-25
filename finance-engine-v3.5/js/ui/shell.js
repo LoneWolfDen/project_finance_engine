@@ -18,6 +18,7 @@ let tab = "overview",
   charts = [];
 
 let showDataLabels = false;
+let drawChartsTimer = null;
 
 Chart.register(ChartDataLabels);
 
@@ -71,7 +72,10 @@ function render() {
     ' onchange="showDataLabels=this.checked;render()"> Show Data Labels</label>';
   document.getElementById("nav").innerHTML = navHtml;
   document.getElementById("app").innerHTML = `<div class="tab active">${renderTab(tab, model)}</div>`;
-  setTimeout(() => drawCharts(tab, model), 60);
+  // Cancel a draw still pending from an earlier render (e.g. at startup, when the server
+  // data arrives right after the first render): it would draw stale data onto this canvas
+  clearTimeout(drawChartsTimer);
+  drawChartsTimer = setTimeout(() => drawCharts(tab, model), 60);
 }
 
 function setYear(y) {

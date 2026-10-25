@@ -72,7 +72,10 @@ function renderSettings(model) {
       "PO_Team",
       "Unique identifier linking a Project to a Purchase Order. Format: <code>ProjectID_Client_Identifier</code>",
     ],
-    ["PO_Validity", 'End month of PO validity in <code>mm-yy</code> format (e.g. "12-25" = Dec 2025)'],
+    [
+      "PO_Validity_Year",
+      'Year the PO is valid to, e.g. <code>2025</code> (= 31 Dec 2025). For a PO ending mid-year use <code>mm-yy</code>, e.g. "06-26" = Jun 2026',
+    ],
     ["Rollover", "When <code>rollover_allowed=true</code>, unused budget from one PO year carries forward to the next"],
     ["Bill Rate", "Hourly rate for a resource in PO currency"],
     ["Hour Mult", "Hours multiplier per timesheet entry. Use 8 for day-rate resources, 1 for hourly"],
@@ -276,6 +279,13 @@ function cfgImportFile() {
   }
 }
 
+// 2025, "2025", "6-26", "06-26" or "06-2026"
+function isValidValidity(v) {
+  const s = String(v).trim();
+  if (/^\d{4}$/.test(s)) return true;
+  const m = s.match(/^(\d{1,2})-(\d{2}|\d{4})$/);
+  return !!m && +m[1] >= 1 && +m[1] <= 12;
+}
 function validateData(key, data) {
   const errs = [];
   if (!Array.isArray(data)) {
@@ -283,15 +293,17 @@ function validateData(key, data) {
     return errs;
   }
   if (key === "po_details") {
-    const req = ["PO_Team_Identifier", "PO_WO_value", "PO_Currency_Code", "PO_Validity", "WO_StartDate"];
+    const req = ["PO_Team_Identifier", "PO_WO_value", "PO_Currency_Code", "PO_Validity_Year", "WO_StartDate"];
     data.forEach((p, i) => {
       req.forEach((f) => {
-        if (!p[f] && p[f] !== 0) errs.push(`Row ${i + 1}: missing required field "${f}"`);
+        // older configs used PO_Validity; still accepted
+        const v = f === "PO_Validity_Year" ? poValidity(p) : p[f];
+        if (!v && v !== 0) errs.push(`Row ${i + 1}: missing required field "${f}"`);
       });
       if (p.PO_WO_value && (typeof p.PO_WO_value !== "number" || p.PO_WO_value <= 0))
         errs.push(`Row ${i + 1}: PO_WO_value must be a positive number`);
-      if (p.PO_Validity && !/^\d{1,2}-\d{2,4}$/.test(String(p.PO_Validity)))
-        errs.push(`Row ${i + 1}: PO_Validity must be mm-yy format (e.g. "12-25")`);
+      if (poValidity(p) && !isValidValidity(poValidity(p)))
+        errs.push(`Row ${i + 1}: PO_Validity_Year must be a year (e.g. 2025) or mm-yy (e.g. "06-26")`);
       if (p.WO_StartDate && !/^\d{4}-\d{2}-\d{2}$/.test(p.WO_StartDate))
         errs.push(`Row ${i + 1}: WO_StartDate must be yyyy-mm-dd`);
       if (p.rollover_allowed !== undefined && typeof p.rollover_allowed !== "boolean")

@@ -1,10 +1,16 @@
 // Forecast engine: PO validity dates, working days and bank holidays, FX rates, OT multipliers, resource rules.
 
-// Parse PO_Validity "mm-yy" → end-of-month Date; also supports legacy year (2025) and "mm-yyyy"
+// A PO's validity: PO_Validity_Year, which is a year (2025 → valid to 31 Dec) or a month
+// ("06-26" / "06-2026" → valid to the end of that month). Older data used PO_Validity.
+function poValidity(po) {
+  return po.PO_Validity_Year || po.PO_Validity;
+}
+
+// Parse a validity value (see poValidity) → end date
 function parseValidityEnd(v) {
   if (!v) return new Date("2025-12-31");
   const s = String(v).trim();
-  if (/^\d{4}$/.test(s)) return new Date(parseInt(s), 11, 31); // legacy: year only
+  if (/^\d{4}$/.test(s)) return new Date(parseInt(s), 11, 31); // year → 31 Dec
   const parts = s.split("-");
   if (parts.length === 2) {
     let mm = parseInt(parts[0]),
@@ -105,7 +111,7 @@ function computeForecast(cfg, filterPoTeams) {
   const poByTeam = {};
   poArr.forEach((po) => {
     const key = (po.PO_Team_Identifier || "").replace(/\s+/g, "");
-    const endDt = parseValidityEnd(po.PO_Validity || po.PO_Validity_Year);
+    const endDt = parseValidityEnd(poValidity(po));
     if (!poByTeam[key])
       poByTeam[key] = {
         PO_WO_value: 0,
@@ -197,7 +203,7 @@ function computeForecast(cfg, filterPoTeams) {
   activePOs.forEach((team) => {
     team.pos.forEach((po) => {
       if (normFilter && !normFilter.includes((po.PO_Team_Identifier || "").replace(/\s+/g, ""))) return;
-      const endDt = parseValidityEnd(po.PO_Validity || po.PO_Validity_Year);
+      const endDt = parseValidityEnd(poValidity(po));
       const yr = endDt.getFullYear();
       if (!posByYear[yr]) posByYear[yr] = [];
       posByYear[yr].push(po);

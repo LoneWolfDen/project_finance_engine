@@ -19,9 +19,9 @@ cd finance-engine-v3.5/tests/regression
 ./run.sh main     # working tree vs another branch or commit
 ```
 
-Prints `IDENTICAL` when nothing changed, otherwise the first differences.
+Prints `IDENTICAL` when nothing changed, otherwise the first differences. It then runs
+`startup-check.js`: with different data on the server and in the browser cache, the
+charts shown after page load must match the server data.
 Use it for refactors, where the output should not change at all.
 
-`fixtures/test_PO_Details.json` is the repo's `test_PO_Details.json` with
-`PO_Validity` in `mm-yy` form, which the Settings import validation requires.
 `fixtures/solution.xlsx` is a small Solution Excel for the Smart Parser.

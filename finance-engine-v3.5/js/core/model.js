@@ -17,7 +17,7 @@ function buildData() {
   const allYears = [
     ...new Set(
       (cfg.po_details || []).map((p) => {
-        const e = parseValidityEnd(p.PO_Validity || p.PO_Validity_Year);
+        const e = parseValidityEnd(poValidity(p));
         return e.getFullYear();
       }),
     ),
@@ -26,7 +26,7 @@ function buildData() {
   if (selectedYear) {
     filteredCfg = JSON.parse(JSON.stringify(cfg));
     filteredCfg.po_details = cfg.po_details.filter((p) => {
-      const e = parseValidityEnd(p.PO_Validity || p.PO_Validity_Year);
+      const e = parseValidityEnd(poValidity(p));
       return e.getFullYear() === parseInt(selectedYear);
     });
   }

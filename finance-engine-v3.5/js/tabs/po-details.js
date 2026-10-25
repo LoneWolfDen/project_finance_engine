@@ -8,7 +8,7 @@ function renderPODetails(model) {
   const byTeam = {};
   pos.forEach((p) => {
     const k = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
-    const endDt = parseValidityEnd(p.PO_Validity || p.PO_Validity_Year);
+    const endDt = parseValidityEnd(poValidity(p));
     if (!byTeam[k])
       byTeam[k] = {
         value: 0,
@@ -44,7 +44,7 @@ function renderPODetails(model) {
 
   // Timeline view of POs
   const allStarts = pos.map((p) => new Date(p.WO_StartDate)).filter((d) => !isNaN(d));
-  const allEnds = pos.map((p) => parseValidityEnd(p.PO_Validity || p.PO_Validity_Year));
+  const allEnds = pos.map((p) => parseValidityEnd(poValidity(p)));
   const tStart = allStarts.length ? new Date(Math.min(...allStarts)) : new Date("2024-01-01");
   const tEnd = allEnds.length ? new Date(Math.max(...allEnds)) : new Date("2027-12-31");
   const span = tEnd - tStart || 1;
@@ -159,7 +159,7 @@ function renderPODetails(model) {
       p.PO_Currency_Code,
       p.Normalized_Currency_Code,
       p.WO_StartDate,
-      fmtValidity(p.PO_Validity || p.PO_Validity_Year),
+      fmtValidity(poValidity(p)),
       p.rollover_allowed ? "✅" : "❌",
       p.WO_Approval_Status,
       p.PO_WO_Number,

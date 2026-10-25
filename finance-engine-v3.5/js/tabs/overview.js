@@ -45,7 +45,7 @@ function renderOverview(model) {
   const teamValidityEnd = {};
   (model.cfg.po_details || []).forEach((p) => {
     const t = (p.PO_Team_Identifier || "").replace(/\s+/g, "");
-    const endDt = parseValidityEnd(p.PO_Validity || p.PO_Validity_Year);
+    const endDt = parseValidityEnd(poValidity(p));
     if (!teamValidityEnd[t] || endDt > teamValidityEnd[t]) teamValidityEnd[t] = endDt;
   });
   const fcPerTeam = {};

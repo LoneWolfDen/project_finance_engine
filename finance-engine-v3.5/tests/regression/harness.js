@@ -118,10 +118,37 @@ const TABS = ["overview","burndown","monthly","po","invoices","resources","utili
         timeout: 10000,
       });
       await page.evaluate((t) => doSave(t), target);
+      // what the save reported: validation errors, or the success toast
+      out.snaps["save_" + target] = await page.evaluate(
+        (t) =>
+          document.getElementById("cfg_" + t).parentElement.querySelector(".val-err")?.textContent ||
+          [...document.querySelectorAll(".toast")].pop()?.textContent,
+        target,
+      );
       await settle(); // doSave re-renders after 400ms
     });
   }
   await snap("2_uploaded");
+
+  // PO validity rules used by the Settings import
+  await step("validation", async () => {
+    const po = { PO_Team_Identifier: "T", PO_WO_value: 1, PO_Currency_Code: "GBP", WO_StartDate: "2025-01-01" };
+    const cases = [
+      { PO_Validity_Year: 2025 },
+      { PO_Validity_Year: "2026" },
+      { PO_Validity_Year: "06-26" },
+      { PO_Validity_Year: "6-2026" },
+      { PO_Validity: "12-25" }, // older configs
+      { PO_Validity_Year: "13-25" },
+      { PO_Validity_Year: "25" },
+      { PO_Validity_Year: "Dec 2025" },
+      {},
+    ];
+    out.snaps.validation = await page.evaluate(
+      ([po, cases]) => cases.map((c) => [JSON.stringify(c), validateData("po_details", [{ ...po, ...c }])]),
+      [po, cases],
+    );
+  });
 
   // Filters
   await step("labels", () => page.evaluate(() => { showDataLabels = true; render(); }));
