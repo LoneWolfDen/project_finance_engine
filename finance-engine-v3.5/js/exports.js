@@ -7,24 +7,13 @@ function expSel(id) {
 
 function getExportData() {
   const model = buildData();
-  const fcMap = {};
-  model.fc.burndown.forEach((m) => {
-    fcMap[m.month] = { forecast: m.forecast, forecast_burn: m.forecast_burn };
-  });
-  const actMap = {};
-  model.actuals.forEach((m) => {
-    actMap[m.month] = { actuals: m.actuals, actuals_burn: m.actuals_burn };
-  });
-  const allMonths = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
-    (a, b) => new Date("1 " + a) - new Date("1 " + b),
-  );
-  const monthly = allMonths.map((m) => ({
-    Month: m,
-    "Forecast Spend": fcMap[m] ? fcMap[m].forecast : null,
-    "Actuals Spend": actMap[m] ? actMap[m].actuals : null,
-    Variance: actMap[m] && fcMap[m] ? Math.round((actMap[m].actuals - fcMap[m].forecast) * 100) / 100 : null,
-    "Forecast Burn": fcMap[m] ? fcMap[m].forecast_burn : null,
-    "Actuals Burn": actMap[m] ? actMap[m].actuals_burn : null,
+  const monthly = mergeMonthly(model).map((m) => ({
+    Month: m.month,
+    "Forecast Spend": m.forecast,
+    "Actuals Spend": m.actuals,
+    Variance: m.hasActuals && m.hasForecast ? Math.round((m.actuals - m.forecast) * 100) / 100 : null,
+    "Forecast Burn": m.forecast_burn,
+    "Actuals Burn": m.actuals_burn,
   }));
   const normFilter = selectedPoTeams.length ? selectedPoTeams.map((t) => t.replace(/\s+/g, "")) : null;
   const invs = (model.cfg.invoices || []).filter((i) =>

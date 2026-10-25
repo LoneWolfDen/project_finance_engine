@@ -1,25 +1,8 @@
 // 📈 Variance tab.
 
 function renderVariance(model) {
-  // Merge forecast (from resource rules) and actuals (from timesheets) by month
-  const fcMap = {};
-  model.fc.burndown.forEach((m) => {
-    fcMap[m.month] = { forecast: m.forecast, forecast_burn: m.forecast_burn };
-  });
-  const actMap = {};
-  model.actuals.forEach((m) => {
-    actMap[m.month] = { actuals: m.actuals, actuals_burn: m.actuals_burn };
-  });
-  const allMonths = [...new Set([...Object.keys(fcMap), ...Object.keys(actMap)])].sort(
-    (a, b) => new Date("1 " + a) - new Date("1 " + b),
-  );
-  const merged = allMonths.map((m) => ({
-    month: m,
-    forecast: fcMap[m] ? fcMap[m].forecast : null,
-    actuals: actMap[m] ? actMap[m].actuals : null,
-    actuals_burn: actMap[m] ? actMap[m].actuals_burn : null,
-    forecast_burn: fcMap[m] ? fcMap[m].forecast_burn : null,
-  }));
+  // Forecast (from resource rules) and actuals (from timesheets) by month
+  const merged = mergeMonthly(model);
   let html = '<div class="box"><h2>Variance: Actuals − Forecast</h2><canvas id="c3" height="70"></canvas></div>';
   const cols = ["Month", "Forecast", "Actuals", "Variance", "Actuals Burn", "Forecast Burn"];
   html += `<div class="tw"><table>${tableHead(cols)}<tbody>`;
@@ -36,4 +19,30 @@ function renderVariance(model) {
   });
   html += "</tbody></table></div>";
   return html;
+}
+
+// Actuals − forecast per month (canvas c3): red over forecast, green under, grey unknown
+function drawVarianceCharts(model) {
+  const months = mergeMonthly(model);
+  const varData = months.map((m) => (m.actuals != null && m.forecast != null ? m.actuals - m.forecast : null));
+  addChart("c3", {
+    type: "bar",
+    data: {
+      labels: months.map((m) => m.month),
+      datasets: [
+        {
+          label: "Variance (Act−Fc)",
+          data: varData,
+          backgroundColor: varData.map((v) =>
+            v != null ? (v > 0 ? "rgba(244,67,54,0.7)" : "rgba(76,175,80,0.7)") : "rgba(200,200,200,0.3)",
+          ),
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: "top" }, datalabels: kLabels() },
+      scales: { y: { ticks: moneyTicks() } },
+    },
+  });
 }

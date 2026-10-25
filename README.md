@@ -14,12 +14,12 @@ Built by Vamsi Yedlapalli | github.com/LoneWolfDen
 | `data/holidays.js` | Bank holidays by location |
 | `js/core/storage.js` | Load/save working and master config (server API, localStorage fallback) |
 | `js/core/forecast.js` | Forecast engine: working days, FX, OT multipliers, resource rules |
-| `js/core/model.js` | Year / PO_Team filters and `buildData()`, the model every tab renders from |
+| `js/core/model.js` | Year / PO_Team filters, `buildData()` (the model every tab renders from), `mergeMonthly()` |
 | `js/ui/shell.js` | Nav bar, filters, `render()`, `fmtMoney()`, toasts, sortable tables |
 | `js/ui/html.js` | HTML helpers shared by the tabs (`tableHead`, `tableRow`, `statCard`, ...) |
-| `js/tabs/*.js` | One file per tab: `overview`, `burndown`, `variance`, `po-details`, `invoices`, `resources`, `utilization`, `expenses`, `scenarios`, `data-reports`, `settings` |
+| `js/ui/chart-helpers.js` | Chart.js helpers shared by the tabs (`addChart`, `kLabels`, `moneyTicks`) |
+| `js/tabs/*.js` | One file per tab: `overview`, `burndown`, `variance`, `po-details`, `invoices`, `resources`, `utilization`, `expenses`, `scenarios`, `data-reports`, `settings`. A tab with charts also draws them there (`drawOverviewCharts`, ...) |
 | `js/exports.js` | Excel, PDF and PowerPoint exports |
-| `js/charts.js` | Chart.js charts per tab |
 | `js/main.js` | Startup (loaded last) |
 | `js/chat.js` | AI assistant panel |
 | `tests/regression/` | Headless-browser test: `./run.sh` compares the working tree with the last commit |
