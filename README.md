@@ -2,6 +2,8 @@
 
 Active version: `finance-engine-v3.5`. Earlier versions (v1, v2, v3) are kept, unchanged, in `archive/`. Each runs standalone.
 
+`excel-project-planner/` holds a separate MS Project-compatible Excel planner (tasks, Gantt, resources, sprints); see its README.
+
 Built by Vamsi Yedlapalli | github.com/LoneWolfDen
 
 ## finance-engine-v3.5 layout
