@@ -3,3 +3,4 @@ __pycache__/
 *.db
 *.xlsx
 tests/regression/node_modules
+!tests/regression/fixtures/*.xlsx
