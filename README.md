@@ -4,6 +4,18 @@ Active version: `finance-engine-v3.5`. Earlier versions (v1, v2, v3) are kept, u
 
 Built by Vamsi Yedlapalli | github.com/LoneWolfDen
 
+## finance-engine-v3.5 layout
+
+| Path | What's in it |
+|---|---|
+| `index.html` | Page markup only |
+| `css/style.css` | All styles |
+| `data/defaults.js` | Default config (POs, resources, FX rates, actuals) used when the server has no saved data |
+| `data/holidays.js` | Bank holidays by location |
+| `js/app.js` | App logic: forecast engine, tabs, tables, charts, exports |
+| `js/chat.js` | AI assistant panel |
+| `server.py` | Serves the page and static files, stores config in SQLite, proxies chat to Ollama |
+
 ## Run finance-engine-v3.5
 
 ### Option 1: Run with Python
