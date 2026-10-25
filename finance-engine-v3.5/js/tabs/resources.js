@@ -54,14 +54,9 @@ function renderResources(model) {
   const allRes = normFilter
     ? model.cfg.resources.filter((r) => normFilter.includes((r.po_team || "").replace(/\s+/g, "")))
     : model.cfg.resources;
-  // Deduplicate by unique key: empl_id+projectID+po_team+start+end
-  const seen = new Set();
-  const res = allRes.filter((r) => {
-    const key = `${r.empl_id}|${r.projectID}|${(r.po_team || "").replace(/\s+/g, "")}|${r.start}|${r.end}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  // All rules are shown: duplicates are highlighted, not hidden, because the forecast counts every copy
+  const res = allRes;
+  const dupes = duplicateRules(res);
   let html = '<div class="cards">';
   html += statCard("b", "People", [...new Set(res.map((r) => r.name))].length);
   html += statCard("g", "Rules", res.length);
@@ -69,6 +64,15 @@ function renderResources(model) {
   html += statCard("r", "Total Forecast", fmtMoney(model.fc.total));
   html += "</div>";
   html += renderResourceVersions(model);
+  if (dupes.count) {
+    html +=
+      '<div class="val-err" style="margin-bottom:.8rem">⚠️ ' + dupes.count + " duplicate rule(s), highlighted below";
+    html += " (same person, project, team and dates). The forecast counts every copy.";
+    if (dupes.exact)
+      html += ` <button class="btn btn-orange" style="font-size:.65rem" onclick="removeExactDuplicates()">Remove ${dupes.exact} exact duplicate(s)</button>`;
+    if (dupes.count > dupes.exact) html += " Rules that differ (e.g. rate) need fixing by hand.";
+    html += "</div>";
+  }
   html += '<div style="margin-bottom:.5rem;display:flex;gap:.5rem;align-items:center">';
   html += '<button class="btn btn-blue" onclick="saveResTable()">💾 Save All (recalculates forecast)</button>';
   html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
@@ -94,7 +98,7 @@ function renderResources(model) {
     members.forEach((r) => {
       const dailyCost = r.bill_rate * r.alloc * 8; // in the team's PO currency
       const values = { ...r, empl_id: r.empl_id || 0, projectID: r.projectID || "" };
-      html += `<tr>${editableResCells(values)}<td style="font-weight:600">${fmtMoney(dailyCost, rateSymbol(model, r))}</td><td>${RES_DELETE_BTN}</td></tr>`;
+      html += `<tr${dupes.rows.has(r) ? ' style="background:#ffebee" title="Duplicate rule"' : ""}>${editableResCells(values)}<td style="font-weight:600">${fmtMoney(dailyCost, rateSymbol(model, r))}</td><td>${RES_DELETE_BTN}</td></tr>`;
     });
     html += `</tbody></table></div></div>`;
   });
@@ -107,6 +111,37 @@ function renderResources(model) {
   return html;
 }
 
+// Rules for the same person, project, team and dates. count = rules beyond the first of each set;
+// exact = those identical in every field (safe to remove); rows = every rule in a duplicate set
+function duplicateRules(resources) {
+  const ruleKey = (r) => `${r.empl_id}|${r.projectID}|${(r.po_team || "").replace(/\s+/g, "")}|${r.start}|${r.end}`;
+  const groups = {};
+  resources.forEach((r) => (groups[ruleKey(r)] = groups[ruleKey(r)] || []).push(r));
+  const rows = new Set();
+  let count = 0,
+    exact = 0;
+  Object.values(groups).forEach((g) => {
+    if (g.length < 2) return;
+    g.forEach((r) => rows.add(r));
+    count += g.length - 1;
+    exact += g.length - new Set(g.map((r) => JSON.stringify(r))).size;
+  });
+  return { count, exact, rows };
+}
+function removeExactDuplicates() {
+  const cfg = loadWork();
+  const seen = new Set();
+  const before = cfg.resources.length;
+  cfg.resources = cfg.resources.filter((r) => {
+    const k = JSON.stringify(r);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  saveWork(cfg);
+  toast(`✓ Removed ${before - cfg.resources.length} exact duplicate rule(s)`);
+  render();
+}
 function addResRowTo(tid, team) {
   const tbody = document.querySelector("#res_" + tid + " tbody");
   if (!tbody) return;

@@ -98,6 +98,17 @@ function renderDataAndReports(model) {
   html += "</div>";
   html += '<div id="fullCfgStatus" style="margin-top:.5rem;font-size:.75rem"></div>';
   html += "</div></div>";
+  // Excel workbook exported by this app (possibly edited in Excel)
+  html +=
+    '<div class="cfg-section" style="border:2px solid #2e7d32;margin-bottom:1.2rem"><summary style="padding:.8rem 1rem;background:#2e7d32;color:#fff;font-weight:700;font-size:.9rem">📥 Import Excel workbook</summary><div class="inner">';
+  html +=
+    '<p style="font-size:.78rem;margin-bottom:.5rem">Load a workbook exported with <strong>Excel (.xlsx)</strong>, after editing its configuration sheets (PO Details, Resources, FX Rates, Holidays…) in Excel. You see what changes before anything is saved.</p>';
+  html += '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">';
+  html += '<input type="file" id="wbImport" accept=".xlsx" style="font-size:.78rem">';
+  html += '<button class="btn btn-blue" onclick="previewWorkbookImport()">🔍 Preview import</button>';
+  html += "</div>";
+  html += '<div id="wbImportPreview" style="margin-top:.5rem;font-size:.75rem"></div>';
+  html += "</div></div>";
   // Guided steps
   html +=
     '<div style="margin-bottom:1rem;padding:.8rem 1rem;background:#f3e5f5;border-radius:8px;border:1px solid #ce93d8;font-size:.75rem">';

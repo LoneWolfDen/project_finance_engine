@@ -48,6 +48,7 @@ function renderSettings(model) {
     { key: "ot_params", label: "OT Params", data: model.cfg.ot_params },
     { key: "expenses", label: "Expenses", data: model.cfg.expenses },
     { key: "actuals_monthly", label: "Monthly Actuals", data: model.cfg.actuals_monthly, tall: true },
+    { key: "holidays", label: "Holidays", data: model.cfg.holidays || HOLIDAYS_BY_LOC, tall: true },
   ];
   sections.forEach((s, i) => {
     const textareaStyle = s.tall ? ' style="min-height:350px"' : "";
@@ -56,6 +57,11 @@ function renderSettings(model) {
     html += `<button class="btn btn-green" onclick="doSave('${s.key}')">💾 Save ${s.label}</button>`;
     html += "</div></details>";
   });
+  html +=
+    '<details class="cfg-section" ontoggle="if (this.open) loadHistory()"><summary>🕘 Save history</summary><div class="inner">';
+  html +=
+    '<p style="font-size:.75rem;color:#666;margin-bottom:.5rem">Every save keeps the version it replaces (the last 50). Restore one to undo an import or edit; the current config is kept too.</p>';
+  html += '<div id="historyList">Loading…</div></div></details>';
   html += '<details class="cfg-section"><summary>🔄 Reset</summary><div class="inner">';
   html += '<p style="font-size:.8rem;margin-bottom:.5rem">Reset working config to master data (no PIN needed):</p>';
   html += '<button class="btn btn-orange" onclick="restoreFromMaster();render()">↩️ Restore from Master</button>';
@@ -155,6 +161,7 @@ function exportFullConfig() {
     actuals_monthly: cfg.actuals_monthly,
     normalized_currency: cfg.normalized_currency,
     resource_versions: cfg.resource_versions || [],
+    holidays: cfg.holidays || HOLIDAYS_BY_LOC,
   };
   const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -206,6 +213,10 @@ function importFullConfig() {
     if (typeof data.normalized_currency === "string") {
       cfg.normalized_currency = data.normalized_currency;
       loaded.push("normalized_currency (" + data.normalized_currency + ")");
+    }
+    if (data.holidays && typeof data.holidays === "object" && !Array.isArray(data.holidays)) {
+      cfg.holidays = data.holidays;
+      loaded.push("holidays (" + Object.keys(data.holidays).length + " locations)");
     }
     if (Array.isArray(data.resource_versions)) {
       cfg.resource_versions = data.resource_versions;
@@ -298,6 +309,18 @@ function isValidValidity(v) {
 }
 function validateData(key, data) {
   const errs = [];
+  if (key === "holidays") {
+    // { "UK": ["2025-01-01", ...], ... }
+    if (!data || typeof data !== "object" || Array.isArray(data))
+      return ['Holidays must be an object like { "UK": ["2025-12-25"] }'];
+    Object.entries(data).forEach(([loc, days]) => {
+      if (!Array.isArray(days)) return errs.push(`${loc}: must be a list of dates`);
+      days.forEach((d) => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || isNaN(new Date(d))) errs.push(`${loc}: "${d}" is not a yyyy-mm-dd date`);
+      });
+    });
+    return errs;
+  }
   if (!Array.isArray(data)) {
     errs.push("Data must be a JSON array");
     return errs;

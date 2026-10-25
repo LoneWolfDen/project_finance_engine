@@ -53,12 +53,12 @@ function collapsibleHeader(label) {
 // within the start→end span. labelWidth matches the row-name column width.
 function monthAxis(start, end, span, labelWidth, height) {
   let html = `<div style="margin-left:${labelWidth}px;position:relative;height:${height}px;font-size:.6rem;color:#888;margin-bottom:4px">`;
-  let monthStart = new Date(start.getFullYear(), start.getMonth(), 1);
+  let monthStart = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
   while (monthStart <= end) {
     const l = ((monthStart - start) / span) * 100;
     if (l >= 0 && l <= 100)
-      html += `<span style="position:absolute;left:${l.toFixed(1)}%">${monthStart.toLocaleString("en", { month: "short", year: "2-digit" })}</span>`;
-    monthStart = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+      html += `<span style="position:absolute;left:${l.toFixed(1)}%">${MONTH_NAMES[monthStart.getUTCMonth()]} ${String(monthStart.getUTCFullYear()).slice(2)}</span>`;
+    monthStart = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1));
   }
   return html + "</div>";
 }

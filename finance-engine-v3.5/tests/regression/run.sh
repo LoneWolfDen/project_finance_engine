@@ -20,6 +20,13 @@ node harness.js "$TMP/$APP_REL" 3201 "$TMP/base.json"
 echo "Working tree:"
 node harness.js "$APP" 3202 "$TMP/new.json"
 node compare.js "$TMP/base.json" "$TMP/new.json"
+# Same results in other time zones (dates are UTC; local time once shifted weekdays and months)
+for tz in America/New_York Asia/Kolkata; do
+  HARNESS_TZ=$tz node harness.js "$APP" 3206 "$TMP/tz.json" > /dev/null
+  echo -n "$tz: " && node compare.js "$TMP/new.json" "$TMP/tz.json"
+done
 node startup-check.js "$APP" 3203 | tail -1
 node currency-check.js "$APP" 3204 | tail -1
 node versions-check.js "$APP" 3205 | tail -1
+node robustness-check.js "$APP" 3207 | tail -1
+node excel-check.js "$APP" 3208 | tail -1

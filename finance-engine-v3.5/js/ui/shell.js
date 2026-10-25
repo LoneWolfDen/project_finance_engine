@@ -73,7 +73,7 @@ function render() {
   navHtml += normCurrencySelect(model);
   document.getElementById("nav").innerHTML = navHtml;
   document.getElementById("app").innerHTML =
-    `<div class="tab active">${fxWarningBanner(model)}${renderTab(tab, model)}</div>`;
+    `<div class="tab active">${warningBanner(model)}${renderTab(tab, model)}</div>`;
   // Cancel a draw still pending from an earlier render (e.g. at startup, when the server
   // data arrives right after the first render): it would draw stale data onto this canvas
   clearTimeout(drawChartsTimer);
@@ -99,14 +99,21 @@ function setNormalizedCurrency(code) {
   saveWork(cfg);
   render();
 }
-// Currencies with no FX rate would silently convert at 1
-function fxWarningBanner(model) {
-  if (!model.fxWarnings.length) return "";
-  return (
-    '<div class="val-err" style="margin-bottom:.8rem">⚠️ No FX rate for ' +
-    model.fxWarnings.join(", ") +
-    " in Settings → FX Rates (as of today), so those amounts are not converted. Add a rate to fix the totals.</div>"
-  );
+// Data problems that make figures wrong without an error: missing FX rates (converted at 1)
+// and resource work the bank-holiday list doesn't cover
+function warningBanner(model) {
+  let html = "";
+  if (model.fxWarnings.length)
+    html +=
+      '<div class="val-err" style="margin-bottom:.8rem">⚠️ No FX rate for ' +
+      model.fxWarnings.join(", ") +
+      " in Settings → FX Rates (as of today), so those amounts are not converted. Add a rate to fix the totals.</div>";
+  if (model.holidayWarnings.length)
+    html +=
+      '<div class="val-err" style="margin-bottom:.8rem;background:#fff8e1;border-color:#ffe082;color:#795548">📅 Bank holidays missing: ' +
+      model.holidayWarnings.join("; ") +
+      ". Working days there count every weekday; add them in Settings → Holidays.</div>";
+  return html;
 }
 function setYear(y) {
   selectedYear = y;

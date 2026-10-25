@@ -35,7 +35,9 @@ function getExportData() {
   return { model, monthly, invs, res, sel };
 }
 
-function exportExcel() {
+// Simpler workbook written in the browser (no charts, report sheets only): used when the
+// server can't build the full one (see excel-workbook.js)
+function exportExcelBasic() {
   const { model, monthly, invs, res, sel } = getExportData();
   const wb = XLSX.utils.book_new();
   const sig = [[""], ["Crafted by Vamsi Yedlapalli | github.com/LoneWolfDen"]];

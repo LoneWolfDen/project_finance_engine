@@ -46,11 +46,28 @@ and save again. Every version shows, for the PO_Teams in view, its cost from tod
 working days the budget left (PO value − actuals − expenses) covers, the date funding runs out,
 and the additional amount needed. Versions are stored in the config (server and Full Config export).
 
+## Excel workbook
+
+**Data & Reports → Excel (.xlsx)** downloads one workbook with:
+
+- report sheets for the current filters (Summary, Monthly, Burndown, PO Teams, Version Funding,
+  Version Budget, PO Rollover) with **native Excel charts** you can edit in Excel;
+- every configuration section as its own sheet (PO Details, Resources, Invoices, Expenses,
+  FX Rates, OT Params, Monthly Actuals, Timesheet, Holidays, Resource Versions, Settings).
+
+The server builds it with `openpyxl` (`pip install -r requirements.txt`; the Docker image includes it).
+Without it the app falls back to a simpler workbook without charts or configuration.
+
+To make changes in Excel: edit the configuration sheets (keep the column headers; dates as
+yyyy-mm-dd or Excel dates), then **Data & Reports → Import Excel workbook → Preview import**.
+The preview shows the rows per sheet and blocks invalid data; **Apply import** replaces those
+sections, and the previous config stays in **Settings → Save history**.
+
 ## Run finance-engine-v3.5
 
 ### Option 1: Run with Python
 
-Requirements: Python 3.11 or later.
+Requirements: Python 3.11 or later, and `pip install -r requirements.txt` (openpyxl, for the Excel workbook).
 
 1. Open a terminal in the project directory:
 
@@ -64,7 +81,7 @@ Requirements: Python 3.11 or later.
 	python3 server.py
 	```
 
-	The server listens on `http://localhost:3005` by default.
+	The server listens on `http://localhost:3005` by default, and only accepts connections from this computer.
 
 3. Open [http://localhost:3005](http://localhost:3005) in a browser.
 
@@ -84,10 +101,11 @@ From the repository root, build the image and start a container:
 
 ```bash
 docker build -t finance-engine-v3.5 ./finance-engine-v3.5
-docker run --rm -p 3005:3005 finance-engine-v3.5
+docker run --rm -p 127.0.0.1:3005:3005 -v finance-engine-data:/data finance-engine-v3.5
 ```
 
-Then open [http://localhost:3005](http://localhost:3005).
+Then open [http://localhost:3005](http://localhost:3005). Your data is kept in the Docker volume
+`finance-engine-data`, so it survives restarts; `127.0.0.1:` keeps the app reachable from this computer only.
 
 To preserve the SQLite database after the container stops, mount the version
 directory and run the container from the version directory instead:
@@ -95,7 +113,7 @@ directory and run the container from the version directory instead:
 ```bash
 cd finance-engine-v3.5
 docker build -t finance-engine-v3.5 .
-docker run --rm -p 3005:3005 -v "$PWD:/app" finance-engine-v3.5
+docker run --rm -p 127.0.0.1:3005:3005 -v "$PWD:/app" -v finance-engine-data:/data finance-engine-v3.5
 ```
 
 ### Optional: Ollama chat mode
